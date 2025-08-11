@@ -15,7 +15,7 @@
                 </CollectionViewSource.GroupDescriptions>
             </CollectionViewSource>
 
-            <!-- Group the media by Category (now bound to ViewModel) -->
+            <!-- Group the media by Category -->
             <CollectionViewSource x:Key="mediaByCategory" Source="{Binding Media}">
                 <CollectionViewSource.GroupDescriptions>
                     <PropertyGroupDescription PropertyName="Category"/>
@@ -89,11 +89,16 @@
                                    Foreground="{DynamicResource Brush.TextDim}"/>
                     </StackPanel>
 
-                    <!-- Equal width and thickness -->
+                    <!-- Equal width AND height -->
                     <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
-                        <Button Content="Discord" Style="{StaticResource PrimaryButton}" Width="110" Margin="0,0,8,0"
+                        <Button Content="Discord"
+                                Style="{StaticResource PrimaryButton}"
+                                Width="110" Height="36"
+                                Margin="0,0,8,0"
                                 Click="Discord_Click"/>
-                        <Button Content="Website" Style="{StaticResource GhostButton}" Width="110"
+                        <Button Content="Website"
+                                Style="{StaticResource GhostButton}"
+                                Width="110" Height="36"
                                 Click="Website_Click"/>
                     </StackPanel>
                 </Grid>
@@ -185,6 +190,8 @@
                                                 BorderBrush="{DynamicResource Brush.Border}" BorderThickness="1">
                                             <Grid ClipToBounds="True">
                                                 <Image Source="{Binding ImageUrl}" Stretch="UniformToFill"/>
+
+                                                <!-- Caption strip -->
                                                 <Border Background="#66000000" VerticalAlignment="Bottom">
                                                     <StackPanel Margin="6,4,6,4">
                                                         <TextBlock Text="{Binding Title}" Foreground="#F0FFFFFF"
@@ -193,8 +200,32 @@
                                                                    Foreground="#CCFFFFFF" FontSize="10"/>
                                                     </StackPanel>
                                                 </Border>
-                                                <Button Background="Transparent" BorderBrush="{x:Null}" Cursor="Hand"
-                                                        Tag="{Binding Link}" Click="OpenLink_Click"/>
+
+                                                <!-- Full-tile click + subtle hover overlay -->
+                                                <Button Tag="{Binding Link}"
+                                                        Click="OpenLink_Click"
+                                                        Background="Transparent"
+                                                        BorderThickness="0"
+                                                        Cursor="Hand">
+                                                    <Button.Template>
+                                                        <ControlTemplate TargetType="Button">
+                                                            <Grid>
+                                                                <!-- transparent by default; fades in on hover -->
+                                                                <Rectangle x:Name="Hover"
+                                                                           Fill="#22000000"
+                                                                           Opacity="0" />
+                                                            </Grid>
+                                                            <ControlTemplate.Triggers>
+                                                                <Trigger Property="IsMouseOver" Value="True">
+                                                                    <Setter TargetName="Hover" Property="Opacity" Value="1"/>
+                                                                </Trigger>
+                                                                <Trigger Property="IsPressed" Value="True">
+                                                                    <Setter TargetName="Hover" Property="Opacity" Value="0.8"/>
+                                                                </Trigger>
+                                                            </ControlTemplate.Triggers>
+                                                        </ControlTemplate>
+                                                    </Button.Template>
+                                                </Button>
                                             </Grid>
                                         </Border>
                                     </DataTemplate>
