@@ -53,6 +53,8 @@ namespace SimTools.Views
 
         private void OnUnloaded(object sender, RoutedEventArgs e)
         {
+            // Make sure we persist on quick exits
+            try { PerformSave(); } catch { }
             _inputMonitor?.Dispose();
             _inputMonitor = null;
         }
@@ -237,10 +239,11 @@ namespace SimTools.Views
             // Update model (try common property names)
             TrySetStringProperty(item, new[] { "BindingLabel", "Display", "AssignedKey", "KeyName", "Key", "Binding" }, label);
 
-            // Update the button UI immediately
+            // Update the button UI immediately + store canonical descriptor in Tag (for future matching)
             var btn = sender as Button;
             if (btn != null)
             {
+                btn.Tag = result; // store full device descriptor
                 if (btn.Content is TextBlock tb) tb.Text = label;
                 else btn.Content = label;
 
@@ -259,7 +262,7 @@ namespace SimTools.Views
             if (item != null)
                 TrySetStringProperty(item, new[] { "BindingLabel", "Display", "AssignedKey", "KeyName", "Key", "Binding" }, "None");
 
-            // Also clear the visible Assign button text
+            // Also clear the visible Assign button content and Tag
             var rowGrid = FindAncestor<Grid>(fe);
             if (rowGrid != null)
             {
@@ -268,6 +271,7 @@ namespace SimTools.Views
                     var assignBtn = child as Button;
                     if (assignBtn != null && Grid.GetColumn(assignBtn) == 1)
                     {
+                        assignBtn.Tag = null;
                         if (assignBtn.Content is TextBlock tb) tb.Text = "None";
                         else assignBtn.Content = "None";
                         break;
@@ -300,31 +304,53 @@ namespace SimTools.Views
         // ---------- Global input -> flash matching binding ----------
         private void OnGlobalInput(InputBindingResult input)
         {
-            // Build a comparable label the same way Assign does
-            string candidate = input?.ToString();
-            if (string.IsNullOrWhiteSpace(candidate)) return;
+            if (input == null) return;
 
-            // Find first row whose binding string matches (best-effort contains check)
-            var items = (KeybindsItems.ItemsSource as IEnumerable) ?? Enumerable.Empty<object>();
+            // Scan visible rows and general-setting buttons for a matching device
+            // Match strategy:
+            //  - if both have VendorId/ProductId and they match => match
+            //  - else if both are Keyboard/Mouse and ControlLabel matches => match
+            //  - else if both HID and UsagePage/Usage text appears in ControlLabel => fuzzy match
+            Func<InputBindingResult, InputBindingResult, bool> isMatch = (a, b) =>
+            {
+                if (a == null || b == null) return false;
+                if (a.VendorId != 0 && b.VendorId != 0 && a.VendorId == b.VendorId && a.ProductId == b.ProductId) return true;
+                if (string.Equals(a.DeviceType, "Keyboard", StringComparison.OrdinalIgnoreCase) &&
+                    string.Equals(b.DeviceType, "Keyboard", StringComparison.OrdinalIgnoreCase) &&
+                    string.Equals(a.ControlLabel, b.ControlLabel, StringComparison.OrdinalIgnoreCase)) return true;
+                if (string.Equals(a.DeviceType, "Mouse", StringComparison.OrdinalIgnoreCase) &&
+                    string.Equals(b.DeviceType, "Mouse", StringComparison.OrdinalIgnoreCase) &&
+                    string.Equals(a.ControlLabel, b.ControlLabel, StringComparison.OrdinalIgnoreCase)) return true;
+                if (string.Equals(a.DeviceType, "HID", StringComparison.OrdinalIgnoreCase) &&
+                    string.Equals(b.DeviceType, "HID", StringComparison.OrdinalIgnoreCase))
+                {
+                    // Try fuzzy usage match
+                    return a.ControlLabel == b.ControlLabel ||
+                           (a.ControlLabel ?? "").Contains("UsagePage") && (b.ControlLabel ?? "").Contains("UsagePage");
+                }
+                return false;
+            };
+
+            // Keybind rows
+            var items = (KeybindsList.ItemsSource as IEnumerable) ?? Enumerable.Empty<object>();
             foreach (var item in items)
             {
-                string bound = GetStringProperty(item, new[] { "BindingLabel", "Display", "AssignedKey", "KeyName", "Key", "Binding" });
-                if (string.IsNullOrWhiteSpace(bound)) continue;
+                var cp = (ContentPresenter)KeybindsList.ItemContainerGenerator.ContainerFromItem(item);
+                if (cp == null) continue;
 
-                if (StringEqualsLoose(bound, candidate))
+                var btn = FindVisualDescendants<Button>(cp).FirstOrDefault(b => Grid.GetColumn(b) == 1);
+                if (btn?.Tag is InputBindingResult bound && isMatch(bound, input))
                 {
-                    // Find the container and its Assign button
-                    var cp = (ContentPresenter)KeybindsItems.ItemContainerGenerator.ContainerFromItem(item);
-                    if (cp == null) continue;
-
-                    var btn = FindVisualDescendants<Button>(cp).FirstOrDefault(b => Grid.GetColumn(b) == 1);
-                    if (btn != null)
-                    {
-                        btn.Dispatcher.Invoke(() => FlashAssignButton(btn));
-                        break; // flash first match
-                    }
+                    btn.Dispatcher.Invoke(() => FlashAssignButton(btn));
+                    break;
                 }
             }
+
+            // General settings buttons
+            if (NextMapBtn?.Tag is InputBindingResult next && isMatch(next, input))
+                NextMapBtn.Dispatcher.Invoke(() => FlashAssignButton(NextMapBtn));
+            if (PrevMapBtn?.Tag is InputBindingResult prev && isMatch(prev, input))
+                PrevMapBtn.Dispatcher.Invoke(() => FlashAssignButton(PrevMapBtn));
         }
 
         private void FlashAssignButton(Button btn)
@@ -343,23 +369,29 @@ namespace SimTools.Views
             t.Start();
         }
 
-        // ---------- General settings hotkeys ----------
-        private void NextMapKey_OnKeyDown(object sender, KeyEventArgs e) => SetHotkeyOnViewModel("NextMapHotkey", e);
-        private void PrevMapKey_OnKeyDown(object sender, KeyEventArgs e) => SetHotkeyOnViewModel("PrevMapHotkey", e);
-
-        private void SetHotkeyOnViewModel(string propertyName, KeyEventArgs e)
+        // ---------- General settings (click-to-assign, same flow as rows) ----------
+        private void NextMapAssign_Click(object sender, RoutedEventArgs e)
         {
-            var vm = DataContext;
-            if (vm == null) return;
+            var owner = Window.GetWindow(this);
+            var result = InputCapture.CaptureBinding(owner);
+            if (result == null) return;
 
-            string label = FormatKeyboardKey(e.Key);
-            var prop = vm.GetType().GetProperty(propertyName, BindingFlags.Instance | BindingFlags.Public);
-            if (prop != null && prop.CanWrite)
-            {
-                try { prop.SetValue(vm, label, null); } catch { }
-            }
+            // Set label on VM
+            TrySetStringProperty(DataContext, new[] { "NextMapHotkey", "NextMapBinding", "NextMapKey" }, result.ToString());
 
-            e.Handled = true;
+            // Store descriptor for future flash matching
+            NextMapBtn.Tag = result;
+            QueueSave();
+        }
+
+        private void PrevMapAssign_Click(object sender, RoutedEventArgs e)
+        {
+            var owner = Window.GetWindow(this);
+            var result = InputCapture.CaptureBinding(owner);
+            if (result == null) return;
+
+            TrySetStringProperty(DataContext, new[] { "PrevMapHotkey", "PrevMapBinding", "PrevMapKey" }, result.ToString());
+            PrevMapBtn.Tag = result;
             QueueSave();
         }
 
@@ -380,54 +412,11 @@ namespace SimTools.Views
             return false;
         }
 
-        private static string GetStringProperty(object target, string[] propNames)
-        {
-            if (target == null) return null;
-            foreach (var name in propNames)
-            {
-                var p = target.GetType().GetProperty(name, BindingFlags.Instance | BindingFlags.Public);
-                if (p != null && p.PropertyType == typeof(string))
-                {
-                    try
-                    {
-                        var v = p.GetValue(target) as string;
-                        if (!string.IsNullOrWhiteSpace(v)) return v;
-                    }
-                    catch { }
-                }
-            }
-            return null;
-        }
-
-        private static bool StringEqualsLoose(string a, string b)
-        {
-            if (string.Equals(a, b, StringComparison.OrdinalIgnoreCase)) return true;
-            // Looser compare: ignore extra spaces/casing
-            return string.Equals(Norm(a), Norm(b), StringComparison.OrdinalIgnoreCase);
-        }
-
-        private static string Norm(string s) => (s ?? "").Replace("  ", " ").Trim();
-
-        private static string FormatKeyboardKey(Key key)
-        {
-            if (key >= Key.F1 && key <= Key.F24) return key.ToString();
-            if (key >= Key.NumPad0 && key <= Key.NumPad9) return "Num" + (key - Key.NumPad0);
-            if (key == Key.Space) return "Space";
-            if (key == Key.Return) return "Enter";
-            if (key == Key.Escape) return "Esc";
-            if (key == Key.LeftCtrl || key == Key.RightCtrl) return "Ctrl";
-            if (key == Key.LeftAlt || key == Key.RightAlt) return "Alt";
-            if (key == Key.LeftShift || key == Key.RightShift) return "Shift";
-            return key.ToString();
-        }
-
         private static T FindAncestor<T>(DependencyObject child) where T : DependencyObject
         {
             var parent = VisualTreeHelper.GetParent(child);
             while (parent != null && !(parent is T))
-            {
                 parent = VisualTreeHelper.GetParent(parent);
-            }
             return parent as T;
         }
 

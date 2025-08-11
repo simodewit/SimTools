@@ -9,7 +9,52 @@
                 <ResourceDictionary Source="pack://application:,,,/Themes/Styles.xaml"/>
             </ResourceDictionary.MergedDictionaries>
 
-            <!-- Text-only toolbar button (page-local fallback) -->
+            <!-- Dark square ScrollBar (page-local) -->
+            <Style TargetType="ScrollBar">
+                <Setter Property="Background" Value="#0AFFFFFF"/>
+                <Setter Property="Width" Value="10"/>
+                <Setter Property="Height" Value="10"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="ScrollBar">
+                            <Grid x:Name="Root" Background="{TemplateBinding Background}">
+                                <Track x:Name="PART_Track" IsDirectionReversed="true">
+                                    <Track.DecreaseRepeatButton>
+                                        <RepeatButton Width="0" Height="0" Background="Transparent" BorderThickness="0"/>
+                                    </Track.DecreaseRepeatButton>
+                                    <Track.Thumb>
+                                        <Thumb x:Name="Thumb" Background="#3A3F47" BorderBrush="#505862" BorderThickness="1"
+                                               Height="40" Width="40"/>
+                                    </Track.Thumb>
+                                    <Track.IncreaseRepeatButton>
+                                        <RepeatButton Width="0" Height="0" Background="Transparent" BorderThickness="0"/>
+                                    </Track.IncreaseRepeatButton>
+                                </Track>
+                            </Grid>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="Orientation" Value="Horizontal">
+                                    <Setter TargetName="Root" Property="Height" Value="10"/>
+                                    <Setter TargetName="Thumb" Property="Height" Value="8"/>
+                                    <Setter TargetName="Thumb" Property="Width" Value="40"/>
+                                </Trigger>
+                                <Trigger Property="Orientation" Value="Vertical">
+                                    <Setter TargetName="Root" Property="Width" Value="10"/>
+                                    <Setter TargetName="Thumb" Property="Width" Value="8"/>
+                                    <Setter TargetName="Thumb" Property="Height" Value="40"/>
+                                </Trigger>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="Thumb" Property="Background" Value="#4B525C"/>
+                                </Trigger>
+                                <Trigger Property="IsEnabled" Value="False">
+                                    <Setter TargetName="Thumb" Property="Opacity" Value="0.35"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <!-- Text-only toolbar button (fallback) -->
             <Style x:Key="ToolbarTextButton" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
                 <Setter Property="Background" Value="Transparent"/>
                 <Setter Property="BorderBrush" Value="Transparent"/>
@@ -173,7 +218,8 @@
 
                     <ListBox ItemsSource="{Binding Profiles}" SelectedItem="{Binding SelectedProfile}"
                              Background="Transparent" BorderThickness="0"
-                             ItemContainerStyle="{StaticResource SlimListBoxItem}">
+                             ItemContainerStyle="{StaticResource SlimListBoxItem}"
+                             ScrollViewer.VerticalScrollBarVisibility="Auto">
                         <ListBox.ItemTemplate>
                             <DataTemplate>
                                 <TextBlock Text="{Binding Name}" />
@@ -201,7 +247,8 @@
 
                     <ListBox ItemsSource="{Binding Maps}" SelectedItem="{Binding SelectedMap}"
                              Background="Transparent" BorderThickness="0"
-                             ItemContainerStyle="{StaticResource SlimListBoxItem}">
+                             ItemContainerStyle="{StaticResource SlimListBoxItem}"
+                             ScrollViewer.VerticalScrollBarVisibility="Auto">
                         <ListBox.ItemTemplate>
                             <DataTemplate>
                                 <TextBlock Text="{Binding Name}" />
@@ -227,8 +274,13 @@
                         </StackPanel>
                     </Grid>
 
-                    <ItemsControl x:Name="KeybindsItems" ItemsSource="{Binding Keybinds}">
-                        <ItemsControl.ItemTemplate>
+                    <!-- ListBox for keybind rows, with its own dark scrollbar -->
+                    <ListBox x:Name="KeybindsList"
+                             ItemsSource="{Binding Keybinds}"
+                             Background="Transparent" BorderThickness="0"
+                             ScrollViewer.VerticalScrollBarVisibility="Auto"
+                             MaxHeight="420">
+                        <ListBox.ItemTemplate>
                             <DataTemplate DataType="{x:Type models:KeybindBinding}">
                                 <Grid Margin="0,4">
                                     <Grid.ColumnDefinitions>
@@ -246,7 +298,7 @@
                                              VerticalContentAlignment="Center"
                                              VerticalAlignment="Center"/>
 
-                                    <!-- Assign (visible outlined button, stretches; shows device+key after capture) -->
+                                    <!-- Assign -->
                                     <Button x:Name="AssignBtn"
                                             Grid.Column="1"
                                             Style="{StaticResource AssignButton}"
@@ -256,7 +308,7 @@
                                         <TextBlock Text="{Binding}" TextTrimming="CharacterEllipsis" />
                                     </Button>
 
-                                    <!-- CLEAR (accent link) -->
+                                    <!-- CLEAR -->
                                     <Button Grid.Column="2" Content="Clear"
                                             Style="{StaticResource LinkAccentButton}"
                                             Margin="8,0,0,0"
@@ -273,13 +325,13 @@
                                             VerticalAlignment="Center"/>
                                 </Grid>
                             </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
                 </DockPanel>
             </Border>
         </Grid>
 
-        <!-- General settings (breathing space) -->
+        <!-- General settings -->
         <Border Grid.Row="2" Style="{DynamicResource Card}" Margin="0,12,0,0">
             <StackPanel>
                 <TextBlock Text="General Settings" FontWeight="Bold" Margin="0,0,0,6"/>
@@ -291,22 +343,22 @@
 
                     <StackPanel Grid.Column="0" Margin="0,0,10,0">
                         <TextBlock Text="Hotkey: Next Map"/>
-                        <Border Background="{DynamicResource Brush.SurfaceAlt}"
-                                BorderBrush="{DynamicResource Brush.Border}"
-                                BorderThickness="1" CornerRadius="6" Padding="10"
-                                KeyDown="NextMapKey_OnKeyDown">
-                            <TextBlock Text="{Binding NextMapHotkey}"/>
-                        </Border>
+                        <Button x:Name="NextMapBtn"
+                                Style="{StaticResource AssignButton}"
+                                Click="NextMapAssign_Click"
+                                HorizontalAlignment="Stretch">
+                            <TextBlock Text="{Binding NextMapHotkey}" TextTrimming="CharacterEllipsis"/>
+                        </Button>
                     </StackPanel>
 
                     <StackPanel Grid.Column="1" Margin="10,0,0,0">
                         <TextBlock Text="Hotkey: Previous Map"/>
-                        <Border Background="{DynamicResource Brush.SurfaceAlt}"
-                                BorderBrush="{DynamicResource Brush.Border}"
-                                BorderThickness="1" CornerRadius="6" Padding="10"
-                                KeyDown="PrevMapKey_OnKeyDown">
-                            <TextBlock Text="{Binding PrevMapHotkey}"/>
-                        </Border>
+                        <Button x:Name="PrevMapBtn"
+                                Style="{StaticResource AssignButton}"
+                                Click="PrevMapAssign_Click"
+                                HorizontalAlignment="Stretch">
+                            <TextBlock Text="{Binding PrevMapHotkey}" TextTrimming="CharacterEllipsis"/>
+                        </Button>
                     </StackPanel>
                 </Grid>
             </StackPanel>

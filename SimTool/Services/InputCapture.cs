@@ -10,7 +10,7 @@ namespace SimTools.Services
     public class InputBindingResult
     {
         public string DeviceType { get; set; }    // Keyboard / Mouse / HID
-        public string DeviceName { get; set; }    // Friendly-ish name or VID:PID
+        public string DeviceName { get; set; }    // Friendly-ish name or VID:PID or device path
         public ushort VendorId { get; set; }
         public ushort ProductId { get; set; }
         public string ControlLabel { get; set; }  // e.g., Enter / LeftButton / UsagePage 1, Usage 4
@@ -21,7 +21,7 @@ namespace SimTools.Services
 
     public static class InputCapture
     {
-        /// <summary>Modal capture dialog – waits for the next input and returns a binding descriptor.</summary>
+        /// Modal capture dialog – waits for the next input and returns a binding descriptor.
         public static InputBindingResult CaptureBinding(Window owner)
         {
             var dlg = new RawCaptureWindow { Owner = owner };
@@ -29,10 +29,8 @@ namespace SimTools.Services
             return ok == true ? dlg.Result : null;
         }
 
-        /// <summary>
-        /// Start a background Raw Input monitor and invoke <paramref name="onInput"/> whenever an input is received.
+        /// Start a background Raw Input monitor and invoke onInput whenever an input is received.
         /// Returns an IDisposable to stop monitoring.
-        /// </summary>
         public static IDisposable StartMonitor(Window owner, Action<InputBindingResult> onInput)
         {
             if (owner == null) throw new ArgumentNullException(nameof(owner));
@@ -127,7 +125,8 @@ namespace SimTools.Services
                     new RAWINPUTDEVICE { usUsagePage = 0x01, usUsage = 0x04, dwFlags = 0, hwndTarget = _source.Handle }, // Joystick
                     new RAWINPUTDEVICE { usUsagePage = 0x01, usUsage = 0x05, dwFlags = 0, hwndTarget = _source.Handle }, // Gamepad
                     new RAWINPUTDEVICE { usUsagePage = 0x01, usUsage = 0x08, dwFlags = 0, hwndTarget = _source.Handle }, // Multi-axis (wheels)
-                    new RAWINPUTDEVICE { usUsagePage = 0x01, usUsage = 0x00, dwFlags = 0, hwndTarget = _source.Handle }, // Generic Desktop (catch-all)
+                    new RAWINPUTDEVICE { usUsagePage = 0x02, usUsage = 0x00, dwFlags = 0, hwndTarget = _source.Handle }, // Simulation Controls (generic)
+                    new RAWINPUTDEVICE { usUsagePage = 0x0C, usUsage = 0x01, dwFlags = 0, hwndTarget = _source.Handle }, // Consumer Control
                 };
 
                 RegisterRawInputDevices(rid, (uint)rid.Length, (uint)Marshal.SizeOf(typeof(RAWINPUTDEVICE)));
@@ -195,7 +194,8 @@ namespace SimTools.Services
                     new RAWINPUTDEVICE { usUsagePage = 0x01, usUsage = 0x04, dwFlags = RIDEV_INPUTSINK, hwndTarget = _source.Handle }, // Joystick
                     new RAWINPUTDEVICE { usUsagePage = 0x01, usUsage = 0x05, dwFlags = RIDEV_INPUTSINK, hwndTarget = _source.Handle }, // Gamepad
                     new RAWINPUTDEVICE { usUsagePage = 0x01, usUsage = 0x08, dwFlags = RIDEV_INPUTSINK, hwndTarget = _source.Handle }, // Multi-axis (wheels)
-                    new RAWINPUTDEVICE { usUsagePage = 0x01, usUsage = 0x00, dwFlags = RIDEV_INPUTSINK, hwndTarget = _source.Handle }, // Generic Desktop
+                    new RAWINPUTDEVICE { usUsagePage = 0x02, usUsage = 0x00, dwFlags = RIDEV_INPUTSINK, hwndTarget = _source.Handle }, // Simulation Controls
+                    new RAWINPUTDEVICE { usUsagePage = 0x0C, usUsage = 0x01, dwFlags = RIDEV_INPUTSINK, hwndTarget = _source.Handle }, // Consumer Control
                 };
 
                 RegisterRawInputDevices(rid, (uint)rid.Length, (uint)Marshal.SizeOf(typeof(RAWINPUTDEVICE)));
@@ -277,6 +277,8 @@ namespace SimTools.Services
                                   out ushort vid, out ushort pid,
                                   out string name, out ushort usagePage, out ushort usage);
 
+                    // We can't parse vendor-specific button indices without full HID parsing;
+                    // treat any report as "a control moved/pressed" from this device.
                     return new InputBindingResult
                     {
                         DeviceType = "HID",
