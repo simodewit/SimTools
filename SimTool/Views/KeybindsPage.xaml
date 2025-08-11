@@ -9,17 +9,18 @@
                 <ResourceDictionary Source="pack://application:,,,/Themes/Styles.xaml"/>
             </ResourceDictionary.MergedDictionaries>
 
-            <!-- LOCAL FALLBACK: Text-only toolbar button (fixes unresolved resource) -->
+            <!-- Text-only toolbar button (page-local fallback) -->
             <Style x:Key="ToolbarTextButton" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
                 <Setter Property="Background" Value="Transparent"/>
                 <Setter Property="BorderBrush" Value="Transparent"/>
                 <Setter Property="BorderThickness" Value="0"/>
                 <Setter Property="Padding" Value="6,4"/>
                 <Setter Property="Foreground" Value="{DynamicResource Brush.TextDim}"/>
+                <Setter Property="Cursor" Value="Hand"/>
                 <Setter Property="Template">
                     <Setter.Value>
                         <ControlTemplate TargetType="Button">
-                            <Border x:Name="Root" Background="{TemplateBinding Background}">
+                            <Border Background="{TemplateBinding Background}">
                                 <TextBlock Text="{TemplateBinding Content}" FontWeight="SemiBold"
                                            Foreground="{TemplateBinding Foreground}" Margin="6,2"/>
                             </Border>
@@ -39,24 +40,92 @@
                 </Setter>
             </Style>
 
-            <!-- Slimmer list item style (no background) -->
+            <!-- Accent link-like button (for Clear) -->
+            <Style x:Key="LinkAccentButton" TargetType="Button" BasedOn="{StaticResource ToolbarTextButton}">
+                <Setter Property="Foreground" Value="{DynamicResource Brush.Accent}"/>
+                <Setter Property="Padding" Value="4,2"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="Button">
+                            <TextBlock x:Name="Lbl"
+                                       Text="{TemplateBinding Content}"
+                                       Foreground="{TemplateBinding Foreground}"
+                                       FontWeight="SemiBold"
+                                       Margin="4,2"/>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="Lbl" Property="TextBlock.TextDecorations" Value="Underline"/>
+                                </Trigger>
+                                <Trigger Property="IsPressed" Value="True">
+                                    <Setter Property="Opacity" Value="0.85"/>
+                                </Trigger>
+                                <Trigger Property="IsEnabled" Value="False">
+                                    <Setter Property="Opacity" Value="0.55"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <!-- Assign button: visible, stretches full width -->
+            <Style x:Key="AssignButton" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+                <Setter Property="Padding" Value="8,4"/>
+                <Setter Property="Height" Value="28"/>
+                <Setter Property="HorizontalAlignment" Value="Stretch"/>
+                <Setter Property="Background" Value="{DynamicResource Brush.SurfaceAlt}"/>
+                <Setter Property="BorderBrush" Value="{DynamicResource Brush.Border}"/>
+                <Setter Property="BorderThickness" Value="1"/>
+                <Setter Property="Foreground" Value="{DynamicResource Brush.Text}"/>
+                <Setter Property="Cursor" Value="Hand"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="Button">
+                            <Border x:Name="Root"
+                                    Background="{TemplateBinding Background}"
+                                    CornerRadius="4"
+                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                    BorderThickness="{TemplateBinding BorderThickness}">
+                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="Root" Property="Background" Value="#1A1E23"/>
+                                </Trigger>
+                                <Trigger Property="IsPressed" Value="True">
+                                    <Setter TargetName="Root" Property="Background" Value="#20252B"/>
+                                </Trigger>
+                                <Trigger Property="IsEnabled" Value="False">
+                                    <Setter Property="Opacity" Value="0.55"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <!-- Selection style: only left accent bar, no filled background -->
             <Style x:Key="SlimListBoxItem" TargetType="ListBoxItem">
                 <Setter Property="Padding" Value="4"/>
                 <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
                 <Setter Property="Template">
                     <Setter.Value>
                         <ControlTemplate TargetType="ListBoxItem">
-                            <Border x:Name="bd" Background="Transparent" CornerRadius="0">
-                                <ContentPresenter Margin="4,2"/>
-                            </Border>
+                            <Grid>
+                                <Border x:Name="Sel" Width="3" HorizontalAlignment="Left" Visibility="Collapsed"
+                                        CornerRadius="2" Background="{DynamicResource Brush.Accent}"/>
+                                <Border x:Name="Bg" Background="Transparent" CornerRadius="6">
+                                    <ContentPresenter Margin="10,4,8,4"/>
+                                </Border>
+                            </Grid>
                             <ControlTemplate.Triggers>
-                                <!-- selection: no fill, just stronger text -->
                                 <Trigger Property="IsSelected" Value="True">
+                                    <Setter TargetName="Sel" Property="Visibility" Value="Visible"/>
                                     <Setter Property="Foreground" Value="{DynamicResource Brush.Text}"/>
                                     <Setter Property="FontWeight" Value="SemiBold"/>
                                 </Trigger>
                                 <Trigger Property="IsMouseOver" Value="True">
-                                    <Setter TargetName="bd" Property="Background" Value="#10000000"/>
+                                    <Setter TargetName="Bg" Property="Background" Value="#14000000"/>
                                 </Trigger>
                             </ControlTemplate.Triggers>
                         </ControlTemplate>
@@ -93,11 +162,9 @@
                         </Grid.ColumnDefinitions>
                         <TextBlock Text="Profiles" FontWeight="Bold" VerticalAlignment="Center"/>
 
-                        <!-- Text-only toolbar buttons -->
                         <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right">
                             <Button Content="Add"    Style="{StaticResource ToolbarTextButton}" Command="{Binding AddProfile}" />
                             <Button Content="Remove" Style="{StaticResource ToolbarTextButton}" Command="{Binding RemoveProfile}" />
-                            <Button Content="Save"   Style="{StaticResource ToolbarTextButton}" Command="{Binding Save}" />
                         </StackPanel>
                     </Grid>
 
@@ -106,7 +173,6 @@
                              ItemContainerStyle="{StaticResource SlimListBoxItem}">
                         <ListBox.ItemTemplate>
                             <DataTemplate>
-                                <!-- text-only row -->
                                 <TextBlock Text="{Binding Name}" />
                             </DataTemplate>
                         </ListBox.ItemTemplate>
@@ -124,7 +190,6 @@
                         </Grid.ColumnDefinitions>
                         <TextBlock Text="Maps" FontWeight="Bold" VerticalAlignment="Center"/>
 
-                        <!-- Text-only toolbar buttons -->
                         <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right">
                             <Button Content="Add"    Style="{StaticResource ToolbarTextButton}" Command="{Binding AddMap}" />
                             <Button Content="Remove" Style="{StaticResource ToolbarTextButton}" Command="{Binding RemoveMap}" />
@@ -148,12 +213,13 @@
                 <DockPanel LastChildFill="True">
                     <Grid DockPanel.Dock="Top" Margin="0,0,0,8">
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
                         <TextBlock Text="Keybinds" FontWeight="Bold" VerticalAlignment="Center"/>
-
-                        <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right">
+                        <StackPanel Grid.Column="3" Orientation="Horizontal" HorizontalAlignment="Right">
                             <Button Content="Add Action" Style="{StaticResource ToolbarTextButton}" Command="{Binding AddKeybind}" />
                         </StackPanel>
                     </Grid>
@@ -163,23 +229,40 @@
                             <DataTemplate DataType="{x:Type models:KeybindBinding}">
                                 <Grid Margin="0,4">
                                     <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="2*"/>
-                                        <ColumnDefinition Width="2*"/>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto"/>
                                         <ColumnDefinition Width="Auto"/>
                                     </Grid.ColumnDefinitions>
 
-                                    <TextBox Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}"/>
+                                    <!-- Action name (slimmer) -->
+                                    <TextBox Grid.Column="0"
+                                             Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}"
+                                             Padding="6,2"
+                                             Height="28"/>
 
-                                    <!-- Click to assign (opens small listening dialog) -->
+                                    <!-- Assign (visible outlined button, stretches; shows device+key after capture) -->
                                     <Button Grid.Column="1"
-                                            Style="{StaticResource ToolbarTextButton}"
-                                            Click="AssignKey_Click">
-                                        <TextBlock Text="{Binding}" />
+                                            Style="{StaticResource AssignButton}"
+                                            Click="AssignKey_Click"
+                                            ToolTip="Click to assign a key or device control"
+                                            HorizontalAlignment="Stretch">
+                                        <TextBlock Text="{Binding}" TextTrimming="CharacterEllipsis" />
                                     </Button>
 
-                                    <Button Grid.Column="2" Content="Remove"
+                                    <!-- CLEAR (accent link) -->
+                                    <Button Grid.Column="2" Content="Clear"
+                                            Style="{StaticResource LinkAccentButton}"
+                                            Margin="8,0,0,0"
+                                            Click="ClearKey_Click"
+                                            ToolTip="Clear this binding"/>
+
+                                    <!-- Remove row -->
+                                    <Button Grid.Column="3" Content="Remove"
                                             Style="{StaticResource ToolbarTextButton}"
-                                            Click="RemoveKeybind_Click"/>
+                                            Margin="8,0,0,0"
+                                            Click="RemoveKeybind_Click"
+                                            ToolTip="Remove this action"/>
                                 </Grid>
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
@@ -188,30 +271,36 @@
             </Border>
         </Grid>
 
-        <!-- General settings -->
+        <!-- General settings (breathing space) -->
         <Border Grid.Row="2" Style="{DynamicResource Card}" Margin="0,12,0,0">
             <StackPanel>
-                <TextBlock Text="General Settings" FontWeight="Bold"/>
-                <UniformGrid Columns="2" Margin="0,6,0,0">
-                    <StackPanel>
+                <TextBlock Text="General Settings" FontWeight="Bold" Margin="0,0,0,6"/>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition/>
+                        <ColumnDefinition/>
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel Grid.Column="0" Margin="0,0,10,0">
                         <TextBlock Text="Hotkey: Next Map"/>
                         <Border Background="{DynamicResource Brush.SurfaceAlt}"
                                 BorderBrush="{DynamicResource Brush.Border}"
-                                BorderThickness="1" CornerRadius="6" Padding="8"
+                                BorderThickness="1" CornerRadius="6" Padding="10"
                                 KeyDown="NextMapKey_OnKeyDown">
                             <TextBlock Text="{Binding NextMapHotkey}"/>
                         </Border>
                     </StackPanel>
-                    <StackPanel>
+
+                    <StackPanel Grid.Column="1" Margin="10,0,0,0">
                         <TextBlock Text="Hotkey: Previous Map"/>
                         <Border Background="{DynamicResource Brush.SurfaceAlt}"
                                 BorderBrush="{DynamicResource Brush.Border}"
-                                BorderThickness="1" CornerRadius="6" Padding="8"
+                                BorderThickness="1" CornerRadius="6" Padding="10"
                                 KeyDown="PrevMapKey_OnKeyDown">
                             <TextBlock Text="{Binding PrevMapHotkey}"/>
                         </Border>
                     </StackPanel>
-                </UniformGrid>
+                </Grid>
             </StackPanel>
         </Border>
     </Grid>

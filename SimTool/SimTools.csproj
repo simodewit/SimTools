@@ -64,6 +64,7 @@
     <Compile Include="Models\OverlayElement.cs" />
     <Compile Include="Services\AppState.cs" />
     <Compile Include="Services\HotkeyService.cs" />
+    <Compile Include="Services\InputCapture.cs" />
     <Compile Include="Services\MediaService.cs" />
     <Compile Include="Services\NewsService.cs" />
     <Compile Include="Services\StorageService.cs" />
