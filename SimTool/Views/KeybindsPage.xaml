@@ -1,0 +1,158 @@
+﻿<UserControl x:Class="SimTools.Views.KeybindsPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:models="clr-namespace:SimTools.Models">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="pack://application:,,,/Themes/Colors.xaml"/>
+                <ResourceDictionary Source="pack://application:,,,/Themes/Styles.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </UserControl.Resources>
+
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Text="Keybind Profiles &amp; Maps" FontWeight="Bold" FontSize="18" Margin="0,0,0,8"/>
+
+        <!-- Three bars -->
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="2*"/>
+                <ColumnDefinition Width="2*"/>
+                <ColumnDefinition Width="3*"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Profiles -->
+            <Border Style="{DynamicResource Card}" Margin="0,0,8,0">
+                <DockPanel LastChildFill="True">
+                    <Grid DockPanel.Dock="Top" Margin="0,0,0,8">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="Profiles" FontWeight="Bold" VerticalAlignment="Center"/>
+
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right">
+                            <Button Content="Add"    Style="{StaticResource ToolbarRectButton}" Command="{Binding AddProfile}" />
+                            <Button Content="Remove" Style="{StaticResource ToolbarRectButton}" Command="{Binding RemoveProfile}" />
+                            <Button Content="Save"   Style="{StaticResource ToolbarRectButton}" Command="{Binding Save}" />
+                        </StackPanel>
+                    </Grid>
+
+                    <ListBox ItemsSource="{Binding Profiles}" SelectedItem="{Binding SelectedProfile}">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <DockPanel>
+                                    <TextBox Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}"
+                                             BorderThickness="0" Background="Transparent"/>
+                                </DockPanel>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </DockPanel>
+            </Border>
+
+            <!-- Maps -->
+            <Border Grid.Column="1" Style="{DynamicResource Card}" Margin="4,0,4,0">
+                <DockPanel LastChildFill="True">
+                    <Grid DockPanel.Dock="Top" Margin="0,0,0,8">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="Maps" FontWeight="Bold" VerticalAlignment="Center"/>
+
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right">
+                            <Button Content="Add"    Style="{StaticResource ToolbarRectButton}" Command="{Binding AddMap}" />
+                            <Button Content="Remove" Style="{StaticResource ToolbarRectButton}" Command="{Binding RemoveMap}" />
+                        </StackPanel>
+                    </Grid>
+
+                    <ListBox ItemsSource="{Binding Maps}" SelectedItem="{Binding SelectedMap}">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <TextBox Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}"
+                                         BorderThickness="0" Background="Transparent"/>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </DockPanel>
+            </Border>
+
+            <!-- Keybinds -->
+            <Border Grid.Column="2" Style="{DynamicResource Card}" Margin="8,0,0,0">
+                <DockPanel LastChildFill="True">
+                    <Grid DockPanel.Dock="Top" Margin="0,0,0,8">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="Keybinds" FontWeight="Bold" VerticalAlignment="Center"/>
+
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right">
+                            <Button Content="Add Action" Style="{StaticResource ToolbarTextButton}" Command="{Binding AddKeybind}" />
+                        </StackPanel>
+                    </Grid>
+
+                    <ItemsControl ItemsSource="{Binding Keybinds}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate DataType="{x:Type models:KeybindBinding}">
+                                <Grid Margin="0,4">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="2*"/>
+                                        <ColumnDefinition Width="2*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBox Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}"/>
+                                    <Border Grid.Column="1"
+                                            Background="{DynamicResource Brush.SurfaceAlt}"
+                                            BorderBrush="{DynamicResource Brush.Border}"
+                                            BorderThickness="1" CornerRadius="6" Padding="8"
+                                            KeyDown="AssignKey_OnKeyDown">
+                                        <TextBlock Text="{Binding}"/>
+                                    </Border>
+                                    <Button Grid.Column="2" Content="Remove"
+                                            Style="{StaticResource ToolbarTextButton}"
+                                            Click="RemoveKeybind_Click"/>
+                                </Grid>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </DockPanel>
+            </Border>
+        </Grid>
+
+        <!-- General settings -->
+        <Border Grid.Row="2" Style="{DynamicResource Card}" Margin="0,12,0,0">
+            <StackPanel>
+                <TextBlock Text="General Settings" FontWeight="Bold"/>
+                <UniformGrid Columns="2" Margin="0,6,0,0">
+                    <StackPanel>
+                        <TextBlock Text="Hotkey: Next Map"/>
+                        <Border Background="{DynamicResource Brush.SurfaceAlt}"
+                                BorderBrush="{DynamicResource Brush.Border}"
+                                BorderThickness="1" CornerRadius="6" Padding="8"
+                                KeyDown="NextMapKey_OnKeyDown">
+                            <TextBlock Text="{Binding NextMapHotkey}"/>
+                        </Border>
+                    </StackPanel>
+                    <StackPanel>
+                        <TextBlock Text="Hotkey: Previous Map"/>
+                        <Border Background="{DynamicResource Brush.SurfaceAlt}"
+                                BorderBrush="{DynamicResource Brush.Border}"
+                                BorderThickness="1" CornerRadius="6" Padding="8"
+                                KeyDown="PrevMapKey_OnKeyDown">
+                            <TextBlock Text="{Binding PrevMapHotkey}"/>
+                        </Border>
+                    </StackPanel>
+                </UniformGrid>
+            </StackPanel>
+        </Border>
+    </Grid>
+</UserControl>

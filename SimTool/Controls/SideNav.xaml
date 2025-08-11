@@ -1,0 +1,118 @@
+﻿<UserControl x:Class="SimTools.Controls.SideNav"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="clr-namespace:SimTools.ViewModels"
+             Height="Auto" Width="220">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="pack://application:,,,/Themes/Colors.xaml"/>
+                <ResourceDictionary Source="pack://application:,,,/Themes/Styles.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </UserControl.Resources>
+
+    <Grid Background="{DynamicResource Brush.Surface}">
+        <StackPanel>
+            <!-- Header aligned with nav text; no divider line -->
+            <TextBlock Text="Pages" FontSize="18" FontWeight="Bold"
+                       Margin="12,16,0,8"/>
+
+            <!-- Home -->
+            <Button Style="{DynamicResource NavTextButton}" Command="{Binding NavigateHome}">
+                <Button.Template>
+                    <ControlTemplate TargetType="Button">
+                        <Grid>
+                            <Border x:Name="Sel" Width="3" HorizontalAlignment="Left" Visibility="Collapsed"
+                                    CornerRadius="2" Background="{DynamicResource Brush.Accent}"/>
+                            <Border x:Name="Bg" Background="{TemplateBinding Background}" CornerRadius="6">
+                                <TextBlock Text="Home" Margin="12,2,8,2"/>
+                            </Border>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bg" Property="Background" Value="#14000000"/>
+                                <Setter Property="Foreground" Value="{DynamicResource Brush.Text}"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Bg" Property="Background" Value="#1E000000"/>
+                                <Setter Property="Foreground" Value="{DynamicResource Brush.Text}"/>
+                            </Trigger>
+                            <DataTrigger Binding="{Binding DataContext.SelectedPage, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                         Value="{x:Static vm:Page.Home}">
+                                <Setter TargetName="Sel" Property="Visibility" Value="Visible"/>
+                                <Setter TargetName="Bg" Property="Background" Value="#191C20"/>
+                                <Setter Property="Foreground" Value="{DynamicResource Brush.Text}"/>
+                                <Setter Property="FontWeight" Value="SemiBold"/>
+                            </DataTrigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Button.Template>
+            </Button>
+
+            <!-- Keybinds -->
+            <Button Style="{DynamicResource NavTextButton}" Command="{Binding NavigateKeybinds}">
+                <Button.Template>
+                    <ControlTemplate TargetType="Button">
+                        <Grid>
+                            <Border x:Name="Sel" Width="3" HorizontalAlignment="Left" Visibility="Collapsed"
+                                    CornerRadius="2" Background="{DynamicResource Brush.Accent}"/>
+                            <Border x:Name="Bg" Background="{TemplateBinding Background}" CornerRadius="6">
+                                <TextBlock Text="Keybinds" Margin="12,2,8,2"/>
+                            </Border>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bg" Property="Background" Value="#14000000"/>
+                                <Setter Property="Foreground" Value="{DynamicResource Brush.Text}"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Bg" Property="Background" Value="#1E000000"/>
+                                <Setter Property="Foreground" Value="{DynamicResource Brush.Text}"/>
+                            </Trigger>
+                            <DataTrigger Binding="{Binding DataContext.SelectedPage, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                         Value="{x:Static vm:Page.Keybinds}">
+                                <Setter TargetName="Sel" Property="Visibility" Value="Visible"/>
+                                <Setter TargetName="Bg" Property="Background" Value="#191C20"/>
+                                <Setter Property="Foreground" Value="{DynamicResource Brush.Text}"/>
+                                <Setter Property="FontWeight" Value="SemiBold"/>
+                            </DataTrigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Button.Template>
+            </Button>
+
+            <!-- Overlay Editor -->
+            <Button Style="{DynamicResource NavTextButton}" Command="{Binding NavigateOverlay}">
+                <Button.Template>
+                    <ControlTemplate TargetType="Button">
+                        <Grid>
+                            <Border x:Name="Sel" Width="3" HorizontalAlignment="Left" Visibility="Collapsed"
+                                    CornerRadius="2" Background="{DynamicResource Brush.Accent}"/>
+                            <Border x:Name="Bg" Background="{TemplateBinding Background}" CornerRadius="6">
+                                <TextBlock Text="Overlay Editor" Margin="12,2,8,2"/>
+                            </Border>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bg" Property="Background" Value="#14000000"/>
+                                <Setter Property="Foreground" Value="{DynamicResource Brush.Text}"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Bg" Property="Background" Value="#1E000000"/>
+                                <Setter Property="Foreground" Value="{DynamicResource Brush.Text}"/>
+                            </Trigger>
+                            <DataTrigger Binding="{Binding DataContext.SelectedPage, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                         Value="{x:Static vm:Page.Overlay}">
+                                <Setter TargetName="Sel" Property="Visibility" Value="Visible"/>
+                                <Setter TargetName="Bg" Property="Background" Value="#191C20"/>
+                                <Setter Property="Foreground" Value="{DynamicResource Brush.Text}"/>
+                                <Setter Property="FontWeight" Value="SemiBold"/>
+                            </DataTrigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Button.Template>
+            </Button>
+        </StackPanel>
+    </Grid>
+</UserControl>
