@@ -1,5 +1,7 @@
 ﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- Pull in brushes from Colors.xaml -->
     <ResourceDictionary.MergedDictionaries>
         <ResourceDictionary Source="pack://application:,,,/Themes/Colors.xaml"/>
     </ResourceDictionary.MergedDictionaries>
@@ -12,6 +14,7 @@
         <Setter Property="TextOptions.TextHintingMode" Value="Fixed"/>
     </Style>
 
+    <!-- Windows default font/colors -->
     <Style TargetType="Window">
         <Setter Property="Background" Value="{DynamicResource Brush.Background}"/>
         <Setter Property="Foreground" Value="{DynamicResource Brush.Text}"/>
@@ -19,8 +22,8 @@
         <Setter Property="FontSize" Value="14"/>
     </Style>
 
-    <!-- Card -->
-    <Style TargetType="Border" x:Key="Card">
+    <!-- Card container -->
+    <Style x:Key="Card" TargetType="Border">
         <Setter Property="Background" Value="{DynamicResource Brush.Surface}"/>
         <Setter Property="BorderBrush" Value="{DynamicResource Brush.Border}"/>
         <Setter Property="BorderThickness" Value="1"/>
@@ -76,7 +79,7 @@
         </Setter>
     </Style>
 
-    <!-- Text-only toolbar button -->
+    <!-- Text-only toolbar button (for "Add / Remove / Save") -->
     <Style x:Key="ToolbarTextButton" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
         <Setter Property="Background" Value="Transparent"/>
         <Setter Property="BorderBrush" Value="Transparent"/>
@@ -106,7 +109,7 @@
         </Setter>
     </Style>
 
-    <!-- Rectangular, low-profile toolbar button -->
+    <!-- Rectangular, low-profile button (kept for reuse elsewhere) -->
     <Style x:Key="ToolbarRectButton" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
         <Setter Property="Padding" Value="6,4"/>
         <Setter Property="Background" Value="{DynamicResource Brush.SurfaceAlt}"/>
@@ -138,12 +141,13 @@
         </Setter>
     </Style>
 
-    <!-- ADDED: Ghost button (outlined, subtle) -->
+    <!-- Outlined/ghost button (now same thickness as Primary) -->
     <Style x:Key="GhostButton" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
         <Setter Property="Background" Value="Transparent"/>
         <Setter Property="BorderBrush" Value="{DynamicResource Brush.Border}"/>
         <Setter Property="BorderThickness" Value="1"/>
-        <Setter Property="Padding" Value="8,6"/>
+        <!-- Match vertical thickness to Primary -->
+        <Setter Property="Padding" Value="10,8"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="Button">
@@ -170,7 +174,7 @@
         </Setter>
     </Style>
 
-    <!-- Accent primary -->
+    <!-- Accent primary button -->
     <Style x:Key="PrimaryButton" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
         <Setter Property="Background" Value="{DynamicResource Brush.Accent}"/>
         <Setter Property="Foreground" Value="#0E141A"/>
@@ -202,7 +206,7 @@
         </Setter>
     </Style>
 
-    <!-- Nav text button -->
+    <!-- Left nav text-only button (SideNav) -->
     <Style x:Key="NavTextButton" TargetType="Button">
         <Setter Property="Background" Value="Transparent"/>
         <Setter Property="Foreground" Value="{DynamicResource Brush.TextDim}"/>
@@ -346,4 +350,5 @@
             </Setter.Value>
         </Setter>
     </Style>
+
 </ResourceDictionary>

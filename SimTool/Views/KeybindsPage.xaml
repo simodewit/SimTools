@@ -8,6 +8,61 @@
                 <ResourceDictionary Source="pack://application:,,,/Themes/Colors.xaml"/>
                 <ResourceDictionary Source="pack://application:,,,/Themes/Styles.xaml"/>
             </ResourceDictionary.MergedDictionaries>
+
+            <!-- LOCAL FALLBACK: Text-only toolbar button (fixes unresolved resource) -->
+            <Style x:Key="ToolbarTextButton" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+                <Setter Property="Background" Value="Transparent"/>
+                <Setter Property="BorderBrush" Value="Transparent"/>
+                <Setter Property="BorderThickness" Value="0"/>
+                <Setter Property="Padding" Value="6,4"/>
+                <Setter Property="Foreground" Value="{DynamicResource Brush.TextDim}"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="Button">
+                            <Border x:Name="Root" Background="{TemplateBinding Background}">
+                                <TextBlock Text="{TemplateBinding Content}" FontWeight="SemiBold"
+                                           Foreground="{TemplateBinding Foreground}" Margin="6,2"/>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter Property="Foreground" Value="{DynamicResource Brush.Text}"/>
+                                </Trigger>
+                                <Trigger Property="IsPressed" Value="True">
+                                    <Setter Property="Opacity" Value="0.85"/>
+                                </Trigger>
+                                <Trigger Property="IsEnabled" Value="False">
+                                    <Setter Property="Opacity" Value="0.55"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <!-- Slimmer list item style (no background) -->
+            <Style x:Key="SlimListBoxItem" TargetType="ListBoxItem">
+                <Setter Property="Padding" Value="4"/>
+                <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="ListBoxItem">
+                            <Border x:Name="bd" Background="Transparent" CornerRadius="0">
+                                <ContentPresenter Margin="4,2"/>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <!-- selection: no fill, just stronger text -->
+                                <Trigger Property="IsSelected" Value="True">
+                                    <Setter Property="Foreground" Value="{DynamicResource Brush.Text}"/>
+                                    <Setter Property="FontWeight" Value="SemiBold"/>
+                                </Trigger>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="bd" Property="Background" Value="#10000000"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
         </ResourceDictionary>
     </UserControl.Resources>
 
@@ -38,20 +93,21 @@
                         </Grid.ColumnDefinitions>
                         <TextBlock Text="Profiles" FontWeight="Bold" VerticalAlignment="Center"/>
 
+                        <!-- Text-only toolbar buttons -->
                         <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right">
-                            <Button Content="Add"    Style="{StaticResource ToolbarRectButton}" Command="{Binding AddProfile}" />
-                            <Button Content="Remove" Style="{StaticResource ToolbarRectButton}" Command="{Binding RemoveProfile}" />
-                            <Button Content="Save"   Style="{StaticResource ToolbarRectButton}" Command="{Binding Save}" />
+                            <Button Content="Add"    Style="{StaticResource ToolbarTextButton}" Command="{Binding AddProfile}" />
+                            <Button Content="Remove" Style="{StaticResource ToolbarTextButton}" Command="{Binding RemoveProfile}" />
+                            <Button Content="Save"   Style="{StaticResource ToolbarTextButton}" Command="{Binding Save}" />
                         </StackPanel>
                     </Grid>
 
-                    <ListBox ItemsSource="{Binding Profiles}" SelectedItem="{Binding SelectedProfile}">
+                    <ListBox ItemsSource="{Binding Profiles}" SelectedItem="{Binding SelectedProfile}"
+                             Background="Transparent" BorderThickness="0"
+                             ItemContainerStyle="{StaticResource SlimListBoxItem}">
                         <ListBox.ItemTemplate>
                             <DataTemplate>
-                                <DockPanel>
-                                    <TextBox Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}"
-                                             BorderThickness="0" Background="Transparent"/>
-                                </DockPanel>
+                                <!-- text-only row -->
+                                <TextBlock Text="{Binding Name}" />
                             </DataTemplate>
                         </ListBox.ItemTemplate>
                     </ListBox>
@@ -68,17 +124,19 @@
                         </Grid.ColumnDefinitions>
                         <TextBlock Text="Maps" FontWeight="Bold" VerticalAlignment="Center"/>
 
+                        <!-- Text-only toolbar buttons -->
                         <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right">
-                            <Button Content="Add"    Style="{StaticResource ToolbarRectButton}" Command="{Binding AddMap}" />
-                            <Button Content="Remove" Style="{StaticResource ToolbarRectButton}" Command="{Binding RemoveMap}" />
+                            <Button Content="Add"    Style="{StaticResource ToolbarTextButton}" Command="{Binding AddMap}" />
+                            <Button Content="Remove" Style="{StaticResource ToolbarTextButton}" Command="{Binding RemoveMap}" />
                         </StackPanel>
                     </Grid>
 
-                    <ListBox ItemsSource="{Binding Maps}" SelectedItem="{Binding SelectedMap}">
+                    <ListBox ItemsSource="{Binding Maps}" SelectedItem="{Binding SelectedMap}"
+                             Background="Transparent" BorderThickness="0"
+                             ItemContainerStyle="{StaticResource SlimListBoxItem}">
                         <ListBox.ItemTemplate>
                             <DataTemplate>
-                                <TextBox Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}"
-                                         BorderThickness="0" Background="Transparent"/>
+                                <TextBlock Text="{Binding Name}" />
                             </DataTemplate>
                         </ListBox.ItemTemplate>
                     </ListBox>
@@ -109,14 +167,16 @@
                                         <ColumnDefinition Width="2*"/>
                                         <ColumnDefinition Width="Auto"/>
                                     </Grid.ColumnDefinitions>
+
                                     <TextBox Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}"/>
-                                    <Border Grid.Column="1"
-                                            Background="{DynamicResource Brush.SurfaceAlt}"
-                                            BorderBrush="{DynamicResource Brush.Border}"
-                                            BorderThickness="1" CornerRadius="6" Padding="8"
-                                            KeyDown="AssignKey_OnKeyDown">
-                                        <TextBlock Text="{Binding}"/>
-                                    </Border>
+
+                                    <!-- Click to assign (opens small listening dialog) -->
+                                    <Button Grid.Column="1"
+                                            Style="{StaticResource ToolbarTextButton}"
+                                            Click="AssignKey_Click">
+                                        <TextBlock Text="{Binding}" />
+                                    </Button>
+
                                     <Button Grid.Column="2" Content="Remove"
                                             Style="{StaticResource ToolbarTextButton}"
                                             Click="RemoveKeybind_Click"/>
