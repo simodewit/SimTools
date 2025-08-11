@@ -5,30 +5,25 @@ using System.Net.Http;
 using System.Threading.Tasks;
 using System.Xml.Linq;
 using System.Collections.Generic;
+using System.Text.RegularExpressions;
 
 namespace SimTools.Services
 {
-    public class NewsItem
+    public class MediaItem
     {
         public string Title { get; set; }
         public string Link { get; set; }
+        public string ImageUrl { get; set; }
         public DateTime PubDate { get; set; }
         public string Category { get; set; }  // Normalized series (F1, WEC, etc.)
-
-        public NewsItem(string title, string link, DateTime pubDate, string category)
-        {
-            Title = title;
-            Link = link;
-            PubDate = pubDate;
-            Category = string.IsNullOrWhiteSpace(category) ? "Other" : category;
-        }
     }
 
-    public class NewsService
+    public class MediaService
     {
         private readonly HttpClient _http = new HttpClient();
+        private static readonly XNamespace MediaNs = "http://search.yahoo.com/mrss/";
 
-        // Primary “all” feed plus per-series feeds to fill underrepresented categories
+        // Same series list as News to broaden coverage
         private static readonly (string Category, string Url)[] Sources = new[]
         {
             ("F1",            "https://www.motorsport.com/rss/f1/news/"),
@@ -48,16 +43,18 @@ namespace SimTools.Services
             ("Other",         "https://www.motorsport.com/rss/all/news/")
         };
 
-        public async Task<ObservableCollection<NewsItem>> FetchAsync(int max = 40)
+        public async Task<ObservableCollection<MediaItem>> FetchAsync(int max = 30, IEnumerable<string> excludeLinks = null)
         {
             try
             {
-                var items = new List<NewsItem>();
+                var exclude = new HashSet<string>(NormalizeLinks(excludeLinks), StringComparer.OrdinalIgnoreCase);
+
+                var items = new List<MediaItem>();
                 var seenLinks = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
                 foreach (var src in Sources)
                 {
-                    List<NewsItem> fromFeed;
+                    List<MediaItem> fromFeed;
                     try
                     {
                         var xml = await _http.GetStringAsync(src.Url);
@@ -70,10 +67,14 @@ namespace SimTools.Services
 
                     foreach (var it in fromFeed)
                     {
-                        if (string.IsNullOrWhiteSpace(it.Link)) continue;
+                        if (string.IsNullOrWhiteSpace(it.Link) || string.IsNullOrWhiteSpace(it.ImageUrl))
+                            continue;
+
                         var norm = NormalizeLink(it.Link);
-                        if (seenLinks.Contains(norm)) continue;
+                        if (exclude.Contains(norm)) continue;      // de-dupe vs news
+                        if (seenLinks.Contains(norm)) continue;     // de-dupe within media
                         seenLinks.Add(norm);
+
                         items.Add(it);
                     }
                 }
@@ -81,18 +82,18 @@ namespace SimTools.Services
                 // Sort all items by recency then balance per category
                 items = items.OrderByDescending(n => n.PubDate).ToList();
                 var balanced = BalanceBySeries(items, max);
-                return new ObservableCollection<NewsItem>(balanced);
+                return new ObservableCollection<MediaItem>(balanced);
             }
             catch
             {
-                return new ObservableCollection<NewsItem>();
+                return new ObservableCollection<MediaItem>();
             }
         }
 
-        private List<NewsItem> ParseFeed(string xml, string forcedCategory)
+        private List<MediaItem> ParseFeed(string xml, string forcedCategory)
         {
             var doc = XDocument.Parse(xml);
-            var list = new List<NewsItem>();
+            var list = new List<MediaItem>();
 
             foreach (var x in doc.Descendants("item"))
             {
@@ -100,23 +101,41 @@ namespace SimTools.Services
                 var link = (string)(x.Element("link") ?? new XElement("link", ""));
                 var pub = ParseDate((string)x.Element("pubDate"));
 
-                // If feed is series-specific, prefer forced label; otherwise try to normalize
+                // image candidates
+                var imageUrl =
+                    (string)x.Element(MediaNs + "content")?.Attribute("url") ??
+                    x.Elements(MediaNs + "content").Select(mc => mc.Attribute("url")?.Value).FirstOrDefault() ??
+                    (string)x.Element("enclosure")?.Attribute("url") ??
+                    ExtractFirstImgSrc((string)x.Element("description"));
+
+                if (string.IsNullOrWhiteSpace(imageUrl)) continue;
+
                 var cats = x.Elements("category").Select(c => (string)c).Where(s => !string.IsNullOrWhiteSpace(s)).ToList();
                 var series = string.IsNullOrWhiteSpace(forcedCategory) || forcedCategory == "Other"
                     ? NormalizeSeries(title, cats)
                     : forcedCategory;
 
-                list.Add(new NewsItem(title, link, pub, series));
+                list.Add(new MediaItem
+                {
+                    Title = title,
+                    Link = link,
+                    PubDate = pub,
+                    ImageUrl = imageUrl,
+                    Category = string.IsNullOrWhiteSpace(series) ? "Other" : series
+                });
             }
 
             return list;
         }
 
-        private static DateTime ParseDate(string s)
+        private static IEnumerable<string> NormalizeLinks(IEnumerable<string> links)
         {
-            DateTime dt;
-            if (DateTime.TryParse(s, out dt)) return dt.ToLocalTime();
-            return DateTime.Now;
+            if (links == null) yield break;
+            foreach (var l in links)
+            {
+                var s = NormalizeLink(l);
+                if (!string.IsNullOrWhiteSpace(s)) yield return s;
+            }
         }
 
         private static string NormalizeLink(string link)
@@ -135,7 +154,20 @@ namespace SimTools.Services
             return link.ToLowerInvariant();
         }
 
-        // Map item to a racing series (avoid event/circuit labels)
+        private static DateTime ParseDate(string s)
+        {
+            DateTime dt;
+            if (DateTime.TryParse(s, out dt)) return dt.ToLocalTime();
+            return DateTime.Now;
+        }
+
+        private static string ExtractFirstImgSrc(string html)
+        {
+            if (string.IsNullOrEmpty(html)) return null;
+            var m = Regex.Match(html, "img\\s+[^>]*src=[\"']([^\"']+)[\"']", RegexOptions.IgnoreCase);
+            return m.Success ? m.Groups[1].Value : null;
+        }
+
         private static string NormalizeSeries(string title, IList<string> categories)
         {
             var hay = (title + " | " + string.Join(" | ", categories)).ToLowerInvariant();
@@ -170,7 +202,7 @@ namespace SimTools.Services
         }
 
         // Limit to 5 per category overall and avoid NASCAR dominance (<= 3)
-        private static List<NewsItem> BalanceBySeries(List<NewsItem> items, int max)
+        private static List<MediaItem> BalanceBySeries(List<MediaItem> items, int max)
         {
             const int perCategoryCap = 5;
             const int nascarOverallCap = 3;
@@ -183,7 +215,7 @@ namespace SimTools.Services
                 "F1","WEC","IMSA","GT3","IndyCar","NASCAR","WRC","DTM","MotoGP","SuperFormula","F2","F3","F4","Other"
             };
 
-            var result = new List<NewsItem>(max);
+            var result = new List<MediaItem>(max);
 
             // Round-robin up to perCategoryCap
             for (int pass = 0; pass < perCategoryCap && result.Count < max; pass++)
@@ -191,7 +223,7 @@ namespace SimTools.Services
                 foreach (var cat in order)
                 {
                     if (result.Count >= max) break;
-                    List<NewsItem> list;
+                    List<MediaItem> list;
                     if (groups.TryGetValue(cat, out list) && list.Count > 0)
                     {
                         if (cat == "NASCAR" && result.Count(x => x.Category == "NASCAR") >= nascarOverallCap)

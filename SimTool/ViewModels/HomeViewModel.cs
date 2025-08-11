@@ -1,43 +1,35 @@
-﻿using SimTools.Helpers;
-using SimTools.Services;
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
+using System.Linq;
 using System.Threading.Tasks;
+using SimTools.Services;
 
 namespace SimTools.ViewModels
 {
-    public class HomeViewModel : ViewModelBase
+    public class HomeViewModel
     {
-        private readonly NewsService _news = new NewsService();
-
-        private ObservableCollection<NewsItem> _newsItems = new ObservableCollection<NewsItem>();
-        public ObservableCollection<NewsItem> News
-        {
-            get { return _newsItems; }
-            set { Set(ref _newsItems, value); }
-        }
-
-        private string _rssUrl = "https://www.motorsport.com/rss/all/news/";
-        public string RssUrl
-        {
-            get { return _rssUrl; }
-            set
-            {
-                if (Set(ref _rssUrl, value))
-                {
-                    var _ = LoadNews();
-                }
-            }
-        }
+        public ObservableCollection<NewsItem> News { get; } = new ObservableCollection<NewsItem>();
+        public ObservableCollection<MediaItem> Media { get; } = new ObservableCollection<MediaItem>();
 
         public HomeViewModel()
         {
-            var _ = LoadNews();
+            // Kick off async load (fire-and-forget)
+            _ = LoadAsync();
         }
 
-        private async Task LoadNews()
+        private async Task LoadAsync()
         {
-            _news.RssUrl = RssUrl;
-            News = await _news.FetchAsync();
+            // 1) Load News (balanced & capped per series)
+            var newsSvc = new NewsService();
+            var newsItems = await newsSvc.FetchAsync(40);
+            News.Clear();
+            foreach (var n in newsItems) News.Add(n);
+
+            // 2) Load Media excluding News links (unique content), balanced & capped
+            var excludeLinks = newsItems.Select(n => n.Link);
+            var mediaSvc = new MediaService();
+            var mediaItems = await mediaSvc.FetchAsync(30, excludeLinks);
+            Media.Clear();
+            foreach (var m in mediaItems) Media.Add(m);
         }
     }
 }

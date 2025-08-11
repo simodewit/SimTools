@@ -14,7 +14,6 @@
 
     <Grid Background="{DynamicResource Brush.Surface}">
         <StackPanel>
-            <!-- Header aligned with nav text; no divider line -->
             <TextBlock Text="Pages" FontSize="18" FontWeight="Bold"
                        Margin="12,16,0,8"/>
 
@@ -31,17 +30,18 @@
                         </Grid>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Bg" Property="Background" Value="#14000000"/>
+                                <Setter TargetName="Bg" Property="Background" Value="#1C2025"/>
                                 <Setter Property="Foreground" Value="{DynamicResource Brush.Text}"/>
                             </Trigger>
                             <Trigger Property="IsPressed" Value="True">
-                                <Setter TargetName="Bg" Property="Background" Value="#1E000000"/>
+                                <Setter TargetName="Bg" Property="Background" Value="#23282E"/>
                                 <Setter Property="Foreground" Value="{DynamicResource Brush.Text}"/>
                             </Trigger>
                             <DataTrigger Binding="{Binding DataContext.SelectedPage, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                          Value="{x:Static vm:Page.Home}">
                                 <Setter TargetName="Sel" Property="Visibility" Value="Visible"/>
-                                <Setter TargetName="Bg" Property="Background" Value="#191C20"/>
+                                <!-- brighter selection -->
+                                <Setter TargetName="Bg" Property="Background" Value="#2F343B"/>
                                 <Setter Property="Foreground" Value="{DynamicResource Brush.Text}"/>
                                 <Setter Property="FontWeight" Value="SemiBold"/>
                             </DataTrigger>
@@ -63,17 +63,17 @@
                         </Grid>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Bg" Property="Background" Value="#14000000"/>
+                                <Setter TargetName="Bg" Property="Background" Value="#1C2025"/>
                                 <Setter Property="Foreground" Value="{DynamicResource Brush.Text}"/>
                             </Trigger>
                             <Trigger Property="IsPressed" Value="True">
-                                <Setter TargetName="Bg" Property="Background" Value="#1E000000"/>
+                                <Setter TargetName="Bg" Property="Background" Value="#23282E"/>
                                 <Setter Property="Foreground" Value="{DynamicResource Brush.Text}"/>
                             </Trigger>
                             <DataTrigger Binding="{Binding DataContext.SelectedPage, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                          Value="{x:Static vm:Page.Keybinds}">
                                 <Setter TargetName="Sel" Property="Visibility" Value="Visible"/>
-                                <Setter TargetName="Bg" Property="Background" Value="#191C20"/>
+                                <Setter TargetName="Bg" Property="Background" Value="#2F343B"/>
                                 <Setter Property="Foreground" Value="{DynamicResource Brush.Text}"/>
                                 <Setter Property="FontWeight" Value="SemiBold"/>
                             </DataTrigger>
@@ -95,17 +95,17 @@
                         </Grid>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Bg" Property="Background" Value="#14000000"/>
+                                <Setter TargetName="Bg" Property="Background" Value="#1C2025"/>
                                 <Setter Property="Foreground" Value="{DynamicResource Brush.Text}"/>
                             </Trigger>
                             <Trigger Property="IsPressed" Value="True">
-                                <Setter TargetName="Bg" Property="Background" Value="#1E000000"/>
+                                <Setter TargetName="Bg" Property="Background" Value="#23282E"/>
                                 <Setter Property="Foreground" Value="{DynamicResource Brush.Text}"/>
                             </Trigger>
                             <DataTrigger Binding="{Binding DataContext.SelectedPage, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                          Value="{x:Static vm:Page.Overlay}">
                                 <Setter TargetName="Sel" Property="Visibility" Value="Visible"/>
-                                <Setter TargetName="Bg" Property="Background" Value="#191C20"/>
+                                <Setter TargetName="Bg" Property="Background" Value="#2F343B"/>
                                 <Setter Property="Foreground" Value="{DynamicResource Brush.Text}"/>
                                 <Setter Property="FontWeight" Value="SemiBold"/>
                             </DataTrigger>

@@ -1,7 +1,6 @@
 ﻿<UserControl x:Class="SimTools.Views.HomePage"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:sys="clr-namespace:System;assembly=mscorlib">
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <UserControl.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
@@ -15,17 +14,89 @@
                     <PropertyGroupDescription PropertyName="Category"/>
                 </CollectionViewSource.GroupDescriptions>
             </CollectionViewSource>
+
+            <!-- Group the media by Category (now bound to ViewModel) -->
+            <CollectionViewSource x:Key="mediaByCategory" Source="{Binding Media}">
+                <CollectionViewSource.GroupDescriptions>
+                    <PropertyGroupDescription PropertyName="Category"/>
+                </CollectionViewSource.GroupDescriptions>
+            </CollectionViewSource>
+
+            <!-- Page-local DARK square ScrollBar -->
+            <Style TargetType="ScrollBar">
+                <Setter Property="Foreground" Value="{DynamicResource Brush.TextDim}"/>
+                <Setter Property="Background" Value="#0AFFFFFF"/>
+                <Setter Property="Width" Value="10"/>
+                <Setter Property="Height" Value="10"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="ScrollBar">
+                            <Grid x:Name="Root" Background="{TemplateBinding Background}">
+                                <Track x:Name="PART_Track" IsDirectionReversed="true">
+                                    <Track.DecreaseRepeatButton>
+                                        <RepeatButton Width="0" Height="0" Background="Transparent" BorderThickness="0"/>
+                                    </Track.DecreaseRepeatButton>
+                                    <Track.Thumb>
+                                        <Thumb x:Name="Thumb" Background="#3A3F47" BorderBrush="#505862" BorderThickness="1"
+                                               Height="40" Width="40"/>
+                                    </Track.Thumb>
+                                    <Track.IncreaseRepeatButton>
+                                        <RepeatButton Width="0" Height="0" Background="Transparent" BorderThickness="0"/>
+                                    </Track.IncreaseRepeatButton>
+                                </Track>
+                            </Grid>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="Orientation" Value="Horizontal">
+                                    <Setter TargetName="Root" Property="Height" Value="10"/>
+                                    <Setter TargetName="Root" Property="Width" Value="Auto"/>
+                                    <Setter TargetName="Thumb" Property="Height" Value="8"/>
+                                    <Setter TargetName="Thumb" Property="Width" Value="40"/>
+                                </Trigger>
+                                <Trigger Property="Orientation" Value="Vertical">
+                                    <Setter TargetName="Root" Property="Width" Value="10"/>
+                                    <Setter TargetName="Root" Property="Height" Value="Auto"/>
+                                    <Setter TargetName="Thumb" Property="Width" Value="8"/>
+                                    <Setter TargetName="Thumb" Property="Height" Value="40"/>
+                                </Trigger>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="Thumb" Property="Background" Value="#4B525C"/>
+                                </Trigger>
+                                <Trigger Property="IsEnabled" Value="False">
+                                    <Setter TargetName="Thumb" Property="Opacity" Value="0.35"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
         </ResourceDictionary>
     </UserControl.Resources>
 
-    <ScrollViewer>
-        <StackPanel Margin="20">
+    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <StackPanel Margin="20" Orientation="Vertical">
+
+            <!-- Welcome + Socials -->
             <Border Style="{DynamicResource Card}" Margin="0,0,0,14">
-                <StackPanel>
-                    <TextBlock Text="Welcome to SimTools" FontSize="22" FontWeight="Bold"/>
-                    <TextBlock Text="Tune your wheel, map your keys, and craft overlays."
-                               Foreground="{DynamicResource Brush.TextDim}"/>
-                </StackPanel>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel Grid.Column="0">
+                        <TextBlock Text="Welcome to SimTools" FontSize="22" FontWeight="Bold"/>
+                        <TextBlock Text="Tune your wheel, map your keys, and craft overlays."
+                                   Foreground="{DynamicResource Brush.TextDim}"/>
+                    </StackPanel>
+
+                    <!-- Equal width and thickness -->
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                        <Button Content="Discord" Style="{StaticResource PrimaryButton}" Width="110" Margin="0,0,8,0"
+                                Click="Discord_Click"/>
+                        <Button Content="Website" Style="{StaticResource GhostButton}" Width="110"
+                                Click="Website_Click"/>
+                    </StackPanel>
+                </Grid>
             </Border>
 
             <Grid>
@@ -34,7 +105,7 @@
                     <ColumnDefinition/>
                 </Grid.ColumnDefinitions>
 
-                <!-- Grouped Live News -->
+                <!-- Left: Live News -->
                 <Border Style="{DynamicResource Card}" Margin="0,0,8,0">
                     <StackPanel>
                         <TextBlock Text="Live Motorsport News" FontWeight="Bold" FontSize="16" Margin="0,0,0,6"/>
@@ -52,7 +123,6 @@
 
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
-                                    <!-- subtle article background + border -->
                                     <Border Margin="0,6" Background="{DynamicResource Brush.SurfaceAlt}"
                                             BorderBrush="{DynamicResource Brush.Border}" BorderThickness="1"
                                             CornerRadius="8" Padding="10">
@@ -72,21 +142,67 @@
                     </StackPanel>
                 </Border>
 
-                <!-- Quick Tips -->
-                <Border Grid.Column="1" Style="{DynamicResource Card}" Margin="8,0,0,0">
-                    <StackPanel>
-                        <TextBlock Text="Quick Tips" FontWeight="Bold" FontSize="16"/>
-                        <StackPanel Margin="0,6,0,0">
-                            <TextBlock Foreground="{DynamicResource Brush.TextDim}" Text="• Create multiple profiles for each sim or car to switch quickly."/>
-                            <TextBlock Foreground="{DynamicResource Brush.TextDim}" Text="• Use 'Maps' to separate race, quali, and practice bindings."/>
-                            <TextBlock Foreground="{DynamicResource Brush.TextDim}" Text="• Assign 'Next/Previous Map' hotkeys to change mappings mid-race."/>
-                            <TextBlock Foreground="{DynamicResource Brush.TextDim}" Text="• Drag the 'Mapping Indicator' onto the overlay so viewers see your current map."/>
-                            <TextBlock Foreground="{DynamicResource Brush.TextDim}" Text="• Double-click names to rename profiles, maps, and actions."/>
+                <!-- Right: Quick Tips + Live Media -->
+                <StackPanel Grid.Column="1">
+                    <Border Style="{DynamicResource Card}">
+                        <StackPanel>
+                            <TextBlock Text="Quick Tips" FontWeight="Bold" FontSize="16"/>
+                            <StackPanel Margin="0,6,0,0">
+                                <TextBlock Foreground="{DynamicResource Brush.TextDim}" Text="• Create separate profiles per sim/car."/>
+                                <TextBlock Foreground="{DynamicResource Brush.TextDim}" Text="• Use Maps for race/quali/practice variants."/>
+                                <TextBlock Foreground="{DynamicResource Brush.TextDim}" Text="• Assign Next/Prev Map hotkeys for mid-stint changes."/>
+                                <TextBlock Foreground="{DynamicResource Brush.TextDim}" Text="• Drag the Mapping Indicator onto the overlay."/>
+                                <TextBlock Foreground="{DynamicResource Brush.TextDim}" Text="• Double-click names to rename quickly."/>
+                            </StackPanel>
                         </StackPanel>
-                        <Image Source="pack://application:,,,/Assets/hero_motorsport.jpg"
-                               Height="160" Stretch="UniformToFill" Margin="0,10,0,0"/>
-                    </StackPanel>
-                </Border>
+                    </Border>
+
+                    <Border Style="{DynamicResource Card}" Margin="0,12,0,0">
+                        <StackPanel>
+                            <TextBlock Text="Live Motorsport Media" FontWeight="Bold" FontSize="16" Margin="0,0,0,6"/>
+
+                            <ItemsControl ItemsSource="{Binding Source={StaticResource mediaByCategory}}">
+                                <ItemsControl.GroupStyle>
+                                    <GroupStyle>
+                                        <GroupStyle.HeaderTemplate>
+                                            <DataTemplate>
+                                                <TextBlock Text="{Binding Name}" FontWeight="SemiBold" Margin="0,10,0,4"/>
+                                            </DataTemplate>
+                                        </GroupStyle.HeaderTemplate>
+                                        <GroupStyle.Panel>
+                                            <ItemsPanelTemplate>
+                                                <WrapPanel IsItemsHost="True"/>
+                                            </ItemsPanelTemplate>
+                                        </GroupStyle.Panel>
+                                    </GroupStyle>
+                                </ItemsControl.GroupStyle>
+
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border Width="160" Height="100" Margin="0,6,6,0"
+                                                CornerRadius="8"
+                                                Background="{DynamicResource Brush.SurfaceAlt}"
+                                                BorderBrush="{DynamicResource Brush.Border}" BorderThickness="1">
+                                            <Grid ClipToBounds="True">
+                                                <Image Source="{Binding ImageUrl}" Stretch="UniformToFill"/>
+                                                <Border Background="#66000000" VerticalAlignment="Bottom">
+                                                    <StackPanel Margin="6,4,6,4">
+                                                        <TextBlock Text="{Binding Title}" Foreground="#F0FFFFFF"
+                                                                   FontSize="12" TextTrimming="CharacterEllipsis" />
+                                                        <TextBlock Text="{Binding PubDate, StringFormat={}{0:dd MMM}}"
+                                                                   Foreground="#CCFFFFFF" FontSize="10"/>
+                                                    </StackPanel>
+                                                </Border>
+                                                <Button Background="Transparent" BorderBrush="{x:Null}" Cursor="Hand"
+                                                        Tag="{Binding Link}" Click="OpenLink_Click"/>
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
             </Grid>
         </StackPanel>
     </ScrollViewer>

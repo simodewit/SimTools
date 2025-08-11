@@ -1,6 +1,7 @@
 ﻿using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Media;
 
 namespace SimTools.Controls
 {
@@ -11,33 +12,54 @@ namespace SimTools.Controls
             InitializeComponent();
         }
 
-        private Window GetWindowSafe()
+        private bool IsInsideButtons(DependencyObject source)
         {
-            return Window.GetWindow(this);
+            if (ButtonsPanel == null || source == null) return false;
+            var current = source;
+            while (current != null)
+            {
+                if (current == ButtonsPanel) return true;
+                current = VisualTreeHelper.GetParent(current);
+            }
+            return false;
         }
 
-        private void DragWindow(object sender, MouseButtonEventArgs e)
+        private void DragArea_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
-            var w = GetWindowSafe();
-            if (w != null) w.DragMove();
+            // Ignore drag if clicking on buttons
+            if (IsInsideButtons(e.OriginalSource as DependencyObject)) return;
+
+            var window = Window.GetWindow(this);
+            if (window == null) return;
+
+            // Double-click to toggle maximize
+            if (e.ClickCount == 2)
+            {
+                window.WindowState = window.WindowState == WindowState.Maximized
+                    ? WindowState.Normal
+                    : WindowState.Maximized;
+                return;
+            }
+
+            try { window.DragMove(); } catch { }
         }
 
-        private void Minimize(object sender, RoutedEventArgs e)
+        private void Min_Click(object sender, RoutedEventArgs e)
         {
-            var w = GetWindowSafe();
+            var w = Window.GetWindow(this);
             if (w != null) w.WindowState = WindowState.Minimized;
         }
 
-        private void MaxRestore(object sender, RoutedEventArgs e)
+        private void Max_Click(object sender, RoutedEventArgs e)
         {
-            var w = GetWindowSafe();
+            var w = Window.GetWindow(this);
             if (w == null) return;
-            w.WindowState = w.WindowState == WindowState.Maximized ? WindowState.Normal : WindowState.Maximized;
+            w.WindowState = (w.WindowState == WindowState.Maximized) ? WindowState.Normal : WindowState.Maximized;
         }
 
-        private void Close(object sender, RoutedEventArgs e)
+        private void Close_Click(object sender, RoutedEventArgs e)
         {
-            var w = GetWindowSafe();
+            var w = Window.GetWindow(this);
             if (w != null) w.Close();
         }
     }
