@@ -17,6 +17,7 @@
                 <Setter Property="Padding" Value="6,4"/>
                 <Setter Property="Foreground" Value="{DynamicResource Brush.TextDim}"/>
                 <Setter Property="Cursor" Value="Hand"/>
+                <Setter Property="VerticalAlignment" Value="Center"/>
                 <Setter Property="Template">
                     <Setter.Value>
                         <ControlTemplate TargetType="Button">
@@ -44,6 +45,7 @@
             <Style x:Key="LinkAccentButton" TargetType="Button" BasedOn="{StaticResource ToolbarTextButton}">
                 <Setter Property="Foreground" Value="{DynamicResource Brush.Accent}"/>
                 <Setter Property="Padding" Value="4,2"/>
+                <Setter Property="VerticalAlignment" Value="Center"/>
                 <Setter Property="Template">
                     <Setter.Value>
                         <ControlTemplate TargetType="Button">
@@ -71,8 +73,9 @@
             <!-- Assign button: visible, stretches full width -->
             <Style x:Key="AssignButton" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
                 <Setter Property="Padding" Value="8,4"/>
-                <Setter Property="Height" Value="28"/>
+                <Setter Property="Height" Value="32"/>
                 <Setter Property="HorizontalAlignment" Value="Stretch"/>
+                <Setter Property="VerticalAlignment" Value="Center"/>
                 <Setter Property="Background" Value="{DynamicResource Brush.SurfaceAlt}"/>
                 <Setter Property="BorderBrush" Value="{DynamicResource Brush.Border}"/>
                 <Setter Property="BorderThickness" Value="1"/>
@@ -224,7 +227,7 @@
                         </StackPanel>
                     </Grid>
 
-                    <ItemsControl ItemsSource="{Binding Keybinds}">
+                    <ItemsControl x:Name="KeybindsItems" ItemsSource="{Binding Keybinds}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate DataType="{x:Type models:KeybindBinding}">
                                 <Grid Margin="0,4">
@@ -235,14 +238,17 @@
                                         <ColumnDefinition Width="Auto"/>
                                     </Grid.ColumnDefinitions>
 
-                                    <!-- Action name (slimmer) -->
+                                    <!-- Action name -->
                                     <TextBox Grid.Column="0"
                                              Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}"
-                                             Padding="6,2"
-                                             Height="28"/>
+                                             Padding="8,0"
+                                             Height="32"
+                                             VerticalContentAlignment="Center"
+                                             VerticalAlignment="Center"/>
 
                                     <!-- Assign (visible outlined button, stretches; shows device+key after capture) -->
-                                    <Button Grid.Column="1"
+                                    <Button x:Name="AssignBtn"
+                                            Grid.Column="1"
                                             Style="{StaticResource AssignButton}"
                                             Click="AssignKey_Click"
                                             ToolTip="Click to assign a key or device control"
@@ -255,14 +261,16 @@
                                             Style="{StaticResource LinkAccentButton}"
                                             Margin="8,0,0,0"
                                             Click="ClearKey_Click"
-                                            ToolTip="Clear this binding"/>
+                                            ToolTip="Clear this binding"
+                                            VerticalAlignment="Center"/>
 
                                     <!-- Remove row -->
                                     <Button Grid.Column="3" Content="Remove"
                                             Style="{StaticResource ToolbarTextButton}"
                                             Margin="8,0,0,0"
                                             Click="RemoveKeybind_Click"
-                                            ToolTip="Remove this action"/>
+                                            ToolTip="Remove this action"
+                                            VerticalAlignment="Center"/>
                                 </Grid>
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>

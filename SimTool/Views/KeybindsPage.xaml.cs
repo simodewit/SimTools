@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.ComponentModel;
+using System.Linq;
 using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
@@ -20,10 +21,13 @@ namespace SimTools.Views
         private INotifyCollectionChanged _profilesCol, _mapsCol, _keybindsCol;
         private INotifyPropertyChanged _vmINPC;
 
+        private IDisposable _inputMonitor; // global input monitor for flash-on-press
+
         public KeybindsPage()
         {
             InitializeComponent();
             Loaded += OnLoaded;
+            Unloaded += OnUnloaded;
             DataContextChanged += OnDataContextChanged;
         }
 
@@ -38,6 +42,19 @@ namespace SimTools.Views
             };
 
             WireViewModel(DataContext);
+
+            // Start global input monitor (flash assign button on matching input)
+            var owner = Window.GetWindow(this);
+            if (owner != null && _inputMonitor == null)
+            {
+                _inputMonitor = InputCapture.StartMonitor(owner, OnGlobalInput);
+            }
+        }
+
+        private void OnUnloaded(object sender, RoutedEventArgs e)
+        {
+            _inputMonitor?.Dispose();
+            _inputMonitor = null;
         }
 
         private void OnDataContextChanged(object sender, DependencyPropertyChangedEventArgs e)
@@ -226,6 +243,8 @@ namespace SimTools.Views
             {
                 if (btn.Content is TextBlock tb) tb.Text = label;
                 else btn.Content = label;
+
+                FlashAssignButton(btn);
             }
 
             QueueSave();
@@ -278,6 +297,52 @@ namespace SimTools.Views
             QueueSave();
         }
 
+        // ---------- Global input -> flash matching binding ----------
+        private void OnGlobalInput(InputBindingResult input)
+        {
+            // Build a comparable label the same way Assign does
+            string candidate = input?.ToString();
+            if (string.IsNullOrWhiteSpace(candidate)) return;
+
+            // Find first row whose binding string matches (best-effort contains check)
+            var items = (KeybindsItems.ItemsSource as IEnumerable) ?? Enumerable.Empty<object>();
+            foreach (var item in items)
+            {
+                string bound = GetStringProperty(item, new[] { "BindingLabel", "Display", "AssignedKey", "KeyName", "Key", "Binding" });
+                if (string.IsNullOrWhiteSpace(bound)) continue;
+
+                if (StringEqualsLoose(bound, candidate))
+                {
+                    // Find the container and its Assign button
+                    var cp = (ContentPresenter)KeybindsItems.ItemContainerGenerator.ContainerFromItem(item);
+                    if (cp == null) continue;
+
+                    var btn = FindVisualDescendants<Button>(cp).FirstOrDefault(b => Grid.GetColumn(b) == 1);
+                    if (btn != null)
+                    {
+                        btn.Dispatcher.Invoke(() => FlashAssignButton(btn));
+                        break; // flash first match
+                    }
+                }
+            }
+        }
+
+        private void FlashAssignButton(Button btn)
+        {
+            var accent = TryFindBrush("Brush.Accent", new SolidColorBrush(Color.FromRgb(80, 200, 160)));
+            var normalBg = btn.Background;
+
+            btn.Background = accent;
+
+            var t = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(300) };
+            t.Tick += (s, e) =>
+            {
+                t.Stop();
+                btn.Background = normalBg;
+            };
+            t.Start();
+        }
+
         // ---------- General settings hotkeys ----------
         private void NextMapKey_OnKeyDown(object sender, KeyEventArgs e) => SetHotkeyOnViewModel("NextMapHotkey", e);
         private void PrevMapKey_OnKeyDown(object sender, KeyEventArgs e) => SetHotkeyOnViewModel("PrevMapHotkey", e);
@@ -315,6 +380,34 @@ namespace SimTools.Views
             return false;
         }
 
+        private static string GetStringProperty(object target, string[] propNames)
+        {
+            if (target == null) return null;
+            foreach (var name in propNames)
+            {
+                var p = target.GetType().GetProperty(name, BindingFlags.Instance | BindingFlags.Public);
+                if (p != null && p.PropertyType == typeof(string))
+                {
+                    try
+                    {
+                        var v = p.GetValue(target) as string;
+                        if (!string.IsNullOrWhiteSpace(v)) return v;
+                    }
+                    catch { }
+                }
+            }
+            return null;
+        }
+
+        private static bool StringEqualsLoose(string a, string b)
+        {
+            if (string.Equals(a, b, StringComparison.OrdinalIgnoreCase)) return true;
+            // Looser compare: ignore extra spaces/casing
+            return string.Equals(Norm(a), Norm(b), StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static string Norm(string s) => (s ?? "").Replace("  ", " ").Trim();
+
         private static string FormatKeyboardKey(Key key)
         {
             if (key >= Key.F1 && key <= Key.F24) return key.ToString();
@@ -336,6 +429,23 @@ namespace SimTools.Views
                 parent = VisualTreeHelper.GetParent(parent);
             }
             return parent as T;
+        }
+
+        private static IEnumerable<T> FindVisualDescendants<T>(DependencyObject root) where T : DependencyObject
+        {
+            if (root == null) yield break;
+            for (int i = 0; i < VisualTreeHelper.GetChildrenCount(root); i++)
+            {
+                var child = VisualTreeHelper.GetChild(root, i);
+                if (child is T t) yield return t;
+                foreach (var d in FindVisualDescendants<T>(child)) yield return d;
+            }
+        }
+
+        private static Brush TryFindBrush(string key, Brush fallback)
+        {
+            var res = Application.Current?.Resources[key] as Brush;
+            return res ?? fallback;
         }
     }
 }
