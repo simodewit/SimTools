@@ -5,7 +5,6 @@
     <Application.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
-                <!-- Use pack URIs or relative paths (no leading slash) for .NET 4.8 -->
                 <ResourceDictionary Source="pack://application:,,,/Themes/Colors.xaml"/>
                 <ResourceDictionary Source="pack://application:,,,/Themes/Styles.xaml"/>
             </ResourceDictionary.MergedDictionaries>

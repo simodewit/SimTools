@@ -23,7 +23,7 @@
         <!-- Header -->
         <StackPanel Grid.Row="0" Margin="0,0,0,10">
             <TextBlock Text="Overlay Editor" FontSize="20" FontWeight="Bold"/>
-            <TextBlock Text="Design your broadcast overlay: add tools below, then drag them onto the 16:9 preview."
+            <TextBlock Text="Click the preview button of any tool and design it to your liking."
                        Foreground="{DynamicResource Brush.TextDim}" Margin="0,2,0,0"/>
         </StackPanel>
 
@@ -66,37 +66,19 @@
             </Border>
         </Grid>
 
-        <!-- Bottom panel with dark-styled tabs -->
+        <!-- Tools panel -->
         <Border Grid.Row="2" Style="{DynamicResource Card}" Margin="0,12,0,0" Padding="12">
             <TabControl Background="Transparent">
-                <!-- Settings tab -->
-                <TabItem Header="Settings">
+
+                <TabItem Header="General">
                     <StackPanel Margin="8">
-                        <TextBlock Text="Overlay Controls" FontWeight="Bold" Margin="0,0,0,6"/>
                         <Button Content="Open Overlay Window" Command="{Binding OpenOverlay}" Style="{StaticResource PrimaryButton}" Width="220"/>
-                        <TextBlock Text="Overlay opens as a transparent window. Use the Tools tab to add components, then drag them in the preview."
-                                   Foreground="{DynamicResource Brush.TextDim}" TextWrapping="Wrap" Margin="0,8,0,0"/>
                     </StackPanel>
                 </TabItem>
 
-                <!-- Tools tab -->
-                <TabItem Header="Tools">
+                <TabItem Header="Keybinds">
                     <StackPanel Margin="8">
-                        <TextBlock Text="Drag a tool into the preview above." Foreground="{DynamicResource Brush.TextDim}" Margin="0,0,0,8"/>
-                        <ItemsControl>
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate>
-                                    <Border Background="{DynamicResource Brush.SurfaceAlt}" BorderBrush="{DynamicResource Brush.Border}"
-                                            BorderThickness="1" CornerRadius="8" Padding="12" Margin="0,6,0,0"
-                                            PreviewMouseMove="Tool_PreviewMouseMove">
-                                        <TextBlock Text="Current Mapping Indicator" Tag="MappingIndicator"/>
-                                    </Border>
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                            <ItemsControl.Items>
-                                <ContentPresenter/>
-                            </ItemsControl.Items>
-                        </ItemsControl>
+
                     </StackPanel>
                 </TabItem>
             </TabControl>
