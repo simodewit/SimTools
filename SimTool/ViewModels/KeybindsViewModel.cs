@@ -1,9 +1,10 @@
-﻿using SimTools.Helpers;
-using SimTools.Models;
-using SimTools.Services;
+﻿using System;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Windows.Input;
+using SimTools.Helpers;
+using SimTools.Models;
+using SimTools.Services;
 
 namespace SimTools.ViewModels
 {
@@ -13,6 +14,7 @@ namespace SimTools.ViewModels
         private readonly StorageService _storage;
 
         public ObservableCollection<Profile> Profiles { get { return State.Profiles; } }
+
         public Profile SelectedProfile
         {
             get { return State.CurrentProfile; }
@@ -52,9 +54,12 @@ namespace SimTools.ViewModels
         public RelayCommand RemoveMap { get; private set; }
         public RelayCommand AddKeybind { get; private set; }
         public RelayCommand RemoveKeybind { get; private set; }
-        public RelayCommand Save { get; private set; }
 
-        // General settings hotkeys
+        // What KeybindsPage looks for:
+        public ICommand SaveCommand { get; private set; }   // exact name matters
+        public void Save() => _storage.Save(Profiles);      // method fallback
+
+        // General settings hotkeys (persist these in your models if you want them saved too)
         public KeybindBinding NextMapHotkey { get; private set; } = new KeybindBinding { Name = "Next Map" };
         public KeybindBinding PrevMapHotkey { get; private set; } = new KeybindBinding { Name = "Previous Map" };
 
@@ -120,15 +125,28 @@ namespace SimTools.ViewModels
                 }
             });
 
-            Save = new RelayCommand(() => _storage.Save(Profiles));
+            SaveCommand = new RelayCommand(_ => Save(), _ => true);
         }
 
+        /// <summary>
+        /// Assigns a keyboard hotkey to a KeybindBinding using your existing model fields only.
+        /// Also sets Device/DeviceKey so it round-trips and matches global input after restart.
+        /// </summary>
         public void AssignKey(KeyEventArgs e, KeybindBinding binding)
         {
-            var cap = HotkeyService.Capture(e);
-            if (cap.Key == Key.None) return;
+            if (binding == null || e == null) return;
+
+            var cap = HotkeyService.Capture(e); // your existing capture
+            if (cap.Key == Key.None)
+                return;
+
             binding.Modifiers = cap.Modifiers;
             binding.Key = cap.Key;
+
+            // Populate device metadata used by the UI/global matching and saved to disk
+            binding.Device = "Keyboard";
+            binding.DeviceKey = FormatHotkey(binding.Modifiers, binding.Key); // e.g., "Ctrl + Shift + P"
+
             Raise("Keybinds");
             _storage.Save(Profiles);
         }
@@ -149,6 +167,33 @@ namespace SimTools.ViewModels
             if (idx < 0) idx = 0;
             idx = (idx - 1 + SelectedProfile.Maps.Count) % SelectedProfile.Maps.Count;
             SelectedMap = SelectedProfile.Maps[idx];
+        }
+
+        // ---- Helpers ----
+        private static string FormatHotkey(ModifierKeys mods, Key key)
+        {
+            if (key == Key.None && mods == ModifierKeys.None) return "None";
+
+            var parts = new System.Collections.Generic.List<string>(4);
+            if (mods.HasFlag(ModifierKeys.Control)) parts.Add("Ctrl");
+            if (mods.HasFlag(ModifierKeys.Alt)) parts.Add("Alt");
+            if (mods.HasFlag(ModifierKeys.Shift)) parts.Add("Shift");
+            if (mods.HasFlag(ModifierKeys.Windows)) parts.Add("Win");
+
+            // Friendly key names for a few common cases; fall back to enum name
+            string keyName = key switch
+            {
+                Key.Return => "Enter",
+                Key.Escape => "Esc",
+                Key.Prior => "PageUp",
+                Key.Next => "PageDown",
+                Key.OemPlus => "+",
+                Key.OemMinus => "-",
+                _ => key.ToString()
+            };
+
+            parts.Add(keyName);
+            return string.Join(" + ", parts);
         }
     }
 }

@@ -254,8 +254,9 @@
                                              Padding="8,0"
                                              Height="32"
                                              VerticalContentAlignment="Center"
-                                             VerticalAlignment="Center"/>
-
+                                             VerticalAlignment="Center"
+                                             KeyDown="KeybindName_KeyDown"/>
+                                    
                                     <!-- Assign -->
                                     <Button x:Name="AssignBtn"
                                             Grid.Column="1"

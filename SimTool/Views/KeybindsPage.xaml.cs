@@ -3,13 +3,16 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
+using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
+using SimTools.Models;
 using SimTools.Services;
 
 namespace SimTools.Views
@@ -21,7 +24,11 @@ namespace SimTools.Views
         private INotifyCollectionChanged _profilesCol, _mapsCol, _keybindsCol;
         private INotifyPropertyChanged _vmINPC;
 
-        private IDisposable _inputMonitor; // global input monitor for flash-on-press
+        // Monitor from your InputCapture (may or may not fire on your setup)
+        private IDisposable _inputMonitor;
+
+        // Live highlight state (button -> its original background)
+        private readonly Dictionary<Button, Brush> _litButtons = new Dictionary<Button, Brush>();
 
         public KeybindsPage()
         {
@@ -31,38 +38,66 @@ namespace SimTools.Views
             DataContextChanged += OnDataContextChanged;
         }
 
-        // ---------- Lifecycle / wiring ----------
+        // ---------- Debug ----------
+        [Conditional("DEBUG")] private static void D(string msg) => Debug.WriteLine("[KeybindsPage] " + msg);
+        private static string DescribeRehydrated(object o)
+        {
+            var rb = o as RehydratedBinding;
+            if (rb != null) return $"RehydratedBinding(DeviceType='{rb.DeviceType}', ControlLabel='{rb.ControlLabel}')";
+            return o == null ? "null" : o.ToString();
+        }
+        private static string DescribeInput(InputBindingResult r)
+        {
+            if (r == null) return "null";
+            return $"InputBindingResult(DeviceType='{r.DeviceType}', ControlLabel='{r.ControlLabel}', VendorId={r.VendorId}, ProductId={r.ProductId})";
+        }
+
+        // ---------- Lifecycle ----------
         private void OnLoaded(object sender, RoutedEventArgs e)
         {
+            D("OnLoaded");
             _saveTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(700) };
-            _saveTimer.Tick += (s, args) =>
-            {
-                _saveTimer.Stop();
-                PerformSave();
-            };
+            _saveTimer.Tick += (s, args) => { _saveTimer.Stop(); D("SaveTimer -> PerformSave"); PerformSave(); };
 
             WireViewModel(DataContext);
 
-            // Start global input monitor (flash assign button on matching input)
+            // Rehydrate UI after items render
+            Dispatcher.BeginInvoke(DispatcherPriority.Background, new Action(RehydrateVisibleButtons));
+
+            // Try global monitor
             var owner = Window.GetWindow(this);
             if (owner != null && _inputMonitor == null)
             {
-                _inputMonitor = InputCapture.StartMonitor(owner, OnGlobalInput);
+                try
+                {
+                    D("Starting InputCapture monitor…");
+                    _inputMonitor = InputCapture.StartMonitor(owner, OnGlobalInput);
+                    D("Monitor started: " + (_inputMonitor != null));
+                }
+                catch (Exception ex) { D("StartMonitor error: " + ex.Message); }
             }
+
+            // Fallback keyboard monitor (works while app has focus) — handles KeyDown + KeyUp
+            InputManager.Current.PreProcessInput += OnPreProcessInput;
         }
 
         private void OnUnloaded(object sender, RoutedEventArgs e)
         {
-            // Make sure we persist on quick exits
             try { PerformSave(); } catch { }
             _inputMonitor?.Dispose();
             _inputMonitor = null;
+
+            InputManager.Current.PreProcessInput -= OnPreProcessInput;
+
+            // Safety: clear any remaining highlight
+            ClearAllHighlights();
         }
 
         private void OnDataContextChanged(object sender, DependencyPropertyChangedEventArgs e)
         {
             UnwireViewModel();
             WireViewModel(e.NewValue);
+            Dispatcher.BeginInvoke(DispatcherPriority.Background, new Action(RehydrateVisibleButtons));
         }
 
         private void WireViewModel(object vm)
@@ -70,10 +105,8 @@ namespace SimTools.Views
             if (vm == null) return;
 
             _vmINPC = vm as INotifyPropertyChanged;
-            if (_vmINPC != null)
-                _vmINPC.PropertyChanged += VmOnPropertyChanged;
+            if (_vmINPC != null) _vmINPC.PropertyChanged += VmOnPropertyChanged;
 
-            // Attach to collections
             _profilesCol = GetCollection(vm, "Profiles");
             _mapsCol = GetCollection(vm, "Maps");
             _keybindsCol = GetCollection(vm, "Keybinds");
@@ -82,13 +115,12 @@ namespace SimTools.Views
             WireCollection(_mapsCol);
             WireCollection(_keybindsCol);
 
-            QueueSave(); // ensure state is persisted soon after load
+            QueueSave();
         }
 
         private void UnwireViewModel()
         {
-            if (_vmINPC != null)
-                _vmINPC.PropertyChanged -= VmOnPropertyChanged;
+            if (_vmINPC != null) _vmINPC.PropertyChanged -= VmOnPropertyChanged;
             _vmINPC = null;
 
             UnwireCollection(_profilesCol);
@@ -96,8 +128,7 @@ namespace SimTools.Views
             UnwireCollection(_keybindsCol);
             _profilesCol = _mapsCol = _keybindsCol = null;
 
-            foreach (var it in _trackedItems)
-                it.PropertyChanged -= ItemOnPropertyChanged;
+            foreach (var it in _trackedItems) it.PropertyChanged -= ItemOnPropertyChanged;
             _trackedItems.Clear();
         }
 
@@ -111,6 +142,7 @@ namespace SimTools.Views
                 if (e.PropertyName == "Maps") { UnwireCollection(_mapsCol); _mapsCol = newCol; WireCollection(_mapsCol); }
                 if (e.PropertyName == "Keybinds") { UnwireCollection(_keybindsCol); _keybindsCol = newCol; WireCollection(_keybindsCol); }
 
+                Dispatcher.BeginInvoke(DispatcherPriority.Background, new Action(RehydrateVisibleButtons));
                 QueueSave();
             }
         }
@@ -190,13 +222,11 @@ namespace SimTools.Views
                 }
             }
 
+            Dispatcher.BeginInvoke(DispatcherPriority.Background, new Action(RehydrateVisibleButtons));
             QueueSave();
         }
 
-        private void ItemOnPropertyChanged(object sender, PropertyChangedEventArgs e)
-        {
-            QueueSave();
-        }
+        private void ItemOnPropertyChanged(object sender, PropertyChangedEventArgs e) => QueueSave();
 
         private void QueueSave()
         {
@@ -224,6 +254,58 @@ namespace SimTools.Views
             }
         }
 
+        // ---------- Keyboard fallback (only while held) ----------
+        private void OnPreProcessInput(object sender, PreProcessInputEventArgs e)
+        {
+            var ke = e.StagingItem.Input as KeyEventArgs;
+            if (ke == null) return;
+
+            // Normalize to actual key
+            var key = ke.Key == Key.System ? ke.SystemKey : ke.Key;
+
+            // Ignore weird IME keys
+            if (key == Key.ImeProcessed || key == Key.DeadCharProcessed) return;
+
+            if (ke.RoutedEvent == Keyboard.PreviewKeyDownEvent || ke.RoutedEvent == Keyboard.KeyDownEvent)
+            {
+                // KeyDown -> highlight matches
+                var label = BuildKeyboardLabel(Keyboard.Modifiers, key);
+                var synthetic = new InputBindingResult { DeviceType = "Keyboard", ControlLabel = label };
+                HighlightMatches(synthetic);
+            }
+            else if (ke.RoutedEvent == Keyboard.PreviewKeyUpEvent || ke.RoutedEvent == Keyboard.KeyUpEvent)
+            {
+                // KeyUp -> clear all highlights immediately
+                ClearAllHighlights();
+            }
+        }
+
+        private static string BuildKeyboardLabel(ModifierKeys mods, Key key)
+        {
+            var sb = new StringBuilder();
+            if (mods.HasFlag(ModifierKeys.Control)) sb.Append("Ctrl+");
+            if (mods.HasFlag(ModifierKeys.Alt)) sb.Append("Alt+");
+            if (mods.HasFlag(ModifierKeys.Shift)) sb.Append("Shift+");
+            if (mods.HasFlag(ModifierKeys.Windows)) sb.Append("Win+");
+
+            string keyName;
+            switch (key)
+            {
+                case Key.Return: keyName = "Enter"; break;
+                case Key.Escape: keyName = "Esc"; break;
+                case Key.Prior: keyName = "PageUp"; break;
+                case Key.Next: keyName = "PageDown"; break;
+                case Key.OemPlus: keyName = "+"; break;
+                case Key.OemMinus: keyName = "-"; break;
+                default: keyName = key.ToString(); break;
+            }
+
+            sb.Append(keyName);
+            var s = sb.ToString();
+            if (s.EndsWith("+")) s = s.Substring(0, s.Length - 1);
+            return s;
+        }
+
         // ---------- Assign / Clear / Remove row ----------
         private void AssignKey_Click(object sender, RoutedEventArgs e)
         {
@@ -231,23 +313,20 @@ namespace SimTools.Views
             var result = InputCapture.CaptureBinding(owner);
             if (result == null) return;
 
-            string label = result.ToString();
-
             var fe = sender as FrameworkElement;
-            var item = fe?.DataContext;
+            var binding = fe?.DataContext as KeybindBinding;
+            if (binding == null) return;
 
-            // Update model (try common property names)
-            TrySetStringProperty(item, new[] { "BindingLabel", "Display", "AssignedKey", "KeyName", "Key", "Binding" }, label);
+            binding.Device = result.DeviceType;
+            binding.DeviceKey = result.ControlLabel;
+            binding.Key = Key.None;
+            binding.Modifiers = ModifierKeys.None;
 
-            // Update the button UI immediately + store canonical descriptor in Tag (for future matching)
             var btn = sender as Button;
             if (btn != null)
             {
-                btn.Tag = result; // store full device descriptor
-                if (btn.Content is TextBlock tb) tb.Text = label;
-                else btn.Content = label;
-
-                FlashAssignButton(btn);
+                btn.Tag = new RehydratedBinding { DeviceType = binding.Device, ControlLabel = binding.DeviceKey };
+                SetButtonText(btn, binding.ToString());
             }
 
             QueueSave();
@@ -256,13 +335,15 @@ namespace SimTools.Views
         private void ClearKey_Click(object sender, RoutedEventArgs e)
         {
             var fe = sender as FrameworkElement;
-            var item = fe?.DataContext;
+            var binding = fe?.DataContext as KeybindBinding;
+            if (binding != null)
+            {
+                binding.Device = null;
+                binding.DeviceKey = null;
+                binding.Key = Key.None;
+                binding.Modifiers = ModifierKeys.None;
+            }
 
-            // Clear model property
-            if (item != null)
-                TrySetStringProperty(item, new[] { "BindingLabel", "Display", "AssignedKey", "KeyName", "Key", "Binding" }, "None");
-
-            // Also clear the visible Assign button content and Tag
             var rowGrid = FindAncestor<Grid>(fe);
             if (rowGrid != null)
             {
@@ -271,9 +352,10 @@ namespace SimTools.Views
                     var assignBtn = child as Button;
                     if (assignBtn != null && Grid.GetColumn(assignBtn) == 1)
                     {
+                        // also unhighlight if currently lit
+                        Unhighlight(assignBtn);
                         assignBtn.Tag = null;
-                        if (assignBtn.Content is TextBlock tb) tb.Text = "None";
-                        else assignBtn.Content = "None";
+                        SetButtonText(assignBtn, "None");
                         break;
                     }
                 }
@@ -301,86 +383,119 @@ namespace SimTools.Views
             QueueSave();
         }
 
-        // ---------- Global input -> flash matching binding ----------
+        // ---------- Global input (treat as a "press") ----------
         private void OnGlobalInput(InputBindingResult input)
         {
             if (input == null) return;
+            // Highlight matches (we don't get an explicit release from this source)
+            HighlightMatches(input);
 
-            // Scan visible rows and general-setting buttons for a matching device
-            // Match strategy:
-            //  - if both have VendorId/ProductId and they match => match
-            //  - else if both are Keyboard/Mouse and ControlLabel matches => match
-            //  - else if both HID and UsagePage/Usage text appears in ControlLabel => fuzzy match
-            Func<InputBindingResult, InputBindingResult, bool> isMatch = (a, b) =>
-            {
-                if (a == null || b == null) return false;
-                if (a.VendorId != 0 && b.VendorId != 0 && a.VendorId == b.VendorId && a.ProductId == b.ProductId) return true;
-                if (string.Equals(a.DeviceType, "Keyboard", StringComparison.OrdinalIgnoreCase) &&
-                    string.Equals(b.DeviceType, "Keyboard", StringComparison.OrdinalIgnoreCase) &&
-                    string.Equals(a.ControlLabel, b.ControlLabel, StringComparison.OrdinalIgnoreCase)) return true;
-                if (string.Equals(a.DeviceType, "Mouse", StringComparison.OrdinalIgnoreCase) &&
-                    string.Equals(b.DeviceType, "Mouse", StringComparison.OrdinalIgnoreCase) &&
-                    string.Equals(a.ControlLabel, b.ControlLabel, StringComparison.OrdinalIgnoreCase)) return true;
-                if (string.Equals(a.DeviceType, "HID", StringComparison.OrdinalIgnoreCase) &&
-                    string.Equals(b.DeviceType, "HID", StringComparison.OrdinalIgnoreCase))
-                {
-                    // Try fuzzy usage match
-                    return a.ControlLabel == b.ControlLabel ||
-                           (a.ControlLabel ?? "").Contains("UsagePage") && (b.ControlLabel ?? "").Contains("UsagePage");
-                }
-                return false;
-            };
+            // Optional: if your global monitor fires *without* key-up events and you
+            // want to auto-clear after a short pulse, uncomment this:
+            // DispatcherTimer t = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(120) };
+            // t.Tick += (s, e) => { t.Stop(); ClearAllHighlights(); };
+            // t.Start();
+        }
 
-            // Keybind rows
+        // ---------- Highlighting logic ----------
+        private void HighlightMatches(InputBindingResult input)
+        {
+            // Rows
             var items = (KeybindsList.ItemsSource as IEnumerable) ?? Enumerable.Empty<object>();
             foreach (var item in items)
             {
-                var cp = (ContentPresenter)KeybindsList.ItemContainerGenerator.ContainerFromItem(item);
-                if (cp == null) continue;
+                var container = KeybindsList.ItemContainerGenerator.ContainerFromItem(item) as DependencyObject;
+                if (container == null) continue;
 
-                var btn = FindVisualDescendants<Button>(cp).FirstOrDefault(b => Grid.GetColumn(b) == 1);
-                if (btn?.Tag is InputBindingResult bound && isMatch(bound, input))
+                var btn = FindVisualDescendants<Button>(container).FirstOrDefault(b =>
                 {
-                    btn.Dispatcher.Invoke(() => FlashAssignButton(btn));
-                    break;
+                    try { return Grid.GetColumn(b) == 1; } catch { return true; }
+                });
+
+                if (btn?.Tag is RehydratedBinding tag && IsMatch(tag, input))
+                {
+                    Highlight(btn);
+                    // do not break; multiple rows could match (rare but safe)
                 }
             }
 
-            // General settings buttons
-            if (NextMapBtn?.Tag is InputBindingResult next && isMatch(next, input))
-                NextMapBtn.Dispatcher.Invoke(() => FlashAssignButton(NextMapBtn));
-            if (PrevMapBtn?.Tag is InputBindingResult prev && isMatch(prev, input))
-                PrevMapBtn.Dispatcher.Invoke(() => FlashAssignButton(PrevMapBtn));
+            // General buttons
+            if (NextMapBtn?.Tag is RehydratedBinding next && IsMatch(next, input)) Highlight(NextMapBtn);
+            if (PrevMapBtn?.Tag is RehydratedBinding prev && IsMatch(prev, input)) Highlight(PrevMapBtn);
         }
 
-        private void FlashAssignButton(Button btn)
+        private static bool IsMatch(RehydratedBinding tag, InputBindingResult fired)
         {
-            var accent = TryFindBrush("Brush.Accent", new SolidColorBrush(Color.FromRgb(80, 200, 160)));
-            var normalBg = btn.Background;
+            if (tag == null || fired == null) return false;
+            if (string.IsNullOrWhiteSpace(tag.DeviceType) || string.IsNullOrWhiteSpace(fired.DeviceType)) return false;
+            if (!tag.DeviceType.Equals(fired.DeviceType, StringComparison.OrdinalIgnoreCase)) return false;
 
-            btn.Background = accent;
+            var a = tag.ControlLabel ?? "";
+            var b = fired.ControlLabel ?? "";
+            if (a.Equals(b, StringComparison.OrdinalIgnoreCase)) return true;
 
-            var t = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(300) };
-            t.Tick += (s, e) =>
-            {
-                t.Stop();
-                btn.Background = normalBg;
-            };
-            t.Start();
+            // Fuzzy HID usage text
+            if (a.Contains("UsagePage") && b.Contains("UsagePage")) return true;
+
+            return false;
         }
 
-        // ---------- General settings (click-to-assign, same flow as rows) ----------
+        private void Highlight(Button btn)
+        {
+            if (btn == null) return;
+            if (_litButtons.ContainsKey(btn)) return; // already lit
+
+            var accent = TryFindBrush("Brush.Accent", new SolidColorBrush(Color.FromRgb(80, 200, 160)));
+            _litButtons[btn] = btn.Background; // remember original
+            btn.Background = accent;
+        }
+
+        private void Unhighlight(Button btn)
+        {
+            if (btn == null) return;
+            if (_litButtons.TryGetValue(btn, out var original))
+            {
+                btn.Background = original;
+                _litButtons.Remove(btn);
+            }
+        }
+
+        private void ClearAllHighlights()
+        {
+            // restore backgrounds for all lit buttons
+            foreach (var kv in _litButtons.ToList())
+            {
+                kv.Key.Background = kv.Value;
+            }
+            _litButtons.Clear();
+        }
+
+        // ---------- General settings assign ----------
         private void NextMapAssign_Click(object sender, RoutedEventArgs e)
         {
             var owner = Window.GetWindow(this);
             var result = InputCapture.CaptureBinding(owner);
             if (result == null) return;
 
-            // Set label on VM
-            TrySetStringProperty(DataContext, new[] { "NextMapHotkey", "NextMapBinding", "NextMapKey" }, result.ToString());
+            var profile = GetCurrentProfile();
+            if (profile != null)
+            {
+                TrySetStringProperty(profile, new[] { "NextMapDevice" }, result.DeviceType);
+                TrySetStringProperty(profile, new[] { "NextMapDeviceKey" }, result.ControlLabel);
+            }
+            else
+            {
+                TrySetStringProperty(DataContext, new[] { "NextMapDevice" }, result.DeviceType);
+                TrySetStringProperty(DataContext, new[] { "NextMapDeviceKey" }, result.ControlLabel);
+            }
 
-            // Store descriptor for future flash matching
-            NextMapBtn.Tag = result;
+            if (NextMapBtn != null)
+            {
+                Unhighlight(NextMapBtn);
+                NextMapBtn.Tag = new RehydratedBinding { DeviceType = result.DeviceType, ControlLabel = result.ControlLabel };
+                SetButtonText(NextMapBtn, result.ToString());
+            }
+
             QueueSave();
         }
 
@@ -390,28 +505,116 @@ namespace SimTools.Views
             var result = InputCapture.CaptureBinding(owner);
             if (result == null) return;
 
-            TrySetStringProperty(DataContext, new[] { "PrevMapHotkey", "PrevMapBinding", "PrevMapKey" }, result.ToString());
-            PrevMapBtn.Tag = result;
+            var profile = GetCurrentProfile();
+            if (profile != null)
+            {
+                TrySetStringProperty(profile, new[] { "PrevMapDevice" }, result.DeviceType);
+                TrySetStringProperty(profile, new[] { "PrevMapDeviceKey" }, result.ControlLabel);
+            }
+            else
+            {
+                TrySetStringProperty(DataContext, new[] { "PrevMapDevice" }, result.DeviceType);
+                TrySetStringProperty(DataContext, new[] { "PrevMapDeviceKey" }, result.ControlLabel);
+            }
+
+            if (PrevMapBtn != null)
+            {
+                Unhighlight(PrevMapBtn);
+                PrevMapBtn.Tag = new RehydratedBinding { DeviceType = result.DeviceType, ControlLabel = result.ControlLabel };
+                SetButtonText(PrevMapBtn, result.ToString());
+            }
+
             QueueSave();
         }
 
-        // ---------- Helpers ----------
-        private static bool TrySetStringProperty(object target, string[] propNames, string value)
+        // ---------- Rehydrate on load ----------
+        private void RehydrateVisibleButtons()
         {
-            if (target == null) return false;
-
-            foreach (var name in propNames)
+            var items = (KeybindsList?.ItemsSource as IEnumerable) ?? Enumerable.Empty<object>();
+            foreach (var item in items)
             {
-                var p = target.GetType().GetProperty(name, BindingFlags.Instance | BindingFlags.Public);
-                if (p != null && p.CanWrite && p.PropertyType == typeof(string))
+                var container = KeybindsList.ItemContainerGenerator.ContainerFromItem(item) as DependencyObject;
+                if (container == null) continue;
+
+                var btn = FindVisualDescendants<Button>(container).FirstOrDefault(b =>
                 {
-                    try { p.SetValue(target, value, null); return true; }
-                    catch { /* try next */ }
-                }
+                    try { return Grid.GetColumn(b) == 1; } catch { return true; }
+                });
+                if (btn == null) continue;
+
+                var kb = item as KeybindBinding;
+                if (kb == null) continue;
+
+                btn.Tag = BuildDescriptorFromModel(kb);
+                SetButtonText(btn, kb.ToString());
             }
-            return false;
+
+            var profile = GetCurrentProfile();
+            string nextDev = profile != null ? GetStringProperty(profile, "NextMapDevice") : GetStringProperty(DataContext, "NextMapDevice");
+            string nextKey = profile != null ? GetStringProperty(profile, "NextMapDeviceKey") : GetStringProperty(DataContext, "NextMapDeviceKey");
+            string prevDev = profile != null ? GetStringProperty(profile, "PrevMapDevice") : GetStringProperty(DataContext, "PrevMapDevice");
+            string prevKey = profile != null ? GetStringProperty(profile, "PrevMapDeviceKey") : GetStringProperty(DataContext, "PrevMapDeviceKey");
+
+            if (NextMapBtn != null)
+            {
+                if (!string.IsNullOrWhiteSpace(nextDev) || !string.IsNullOrWhiteSpace(nextKey))
+                {
+                    NextMapBtn.Tag = new RehydratedBinding { DeviceType = nextDev, ControlLabel = nextKey };
+                    SetButtonText(NextMapBtn, ComposeLabel(nextDev, nextKey));
+                }
+                else { NextMapBtn.Tag = null; SetButtonText(NextMapBtn, "None"); }
+            }
+
+            if (PrevMapBtn != null)
+            {
+                if (!string.IsNullOrWhiteSpace(prevDev) || !string.IsNullOrWhiteSpace(prevKey))
+                {
+                    PrevMapBtn.Tag = new RehydratedBinding { DeviceType = prevDev, ControlLabel = prevKey };
+                    SetButtonText(PrevMapBtn, ComposeLabel(prevDev, prevKey));
+                }
+                else { PrevMapBtn.Tag = null; SetButtonText(PrevMapBtn, "None"); }
+            }
+
+            // Ensure no stale highlights after rehydrate
+            ClearAllHighlights();
         }
 
+        private static string ComposeLabel(string device, string key)
+        {
+            if (string.IsNullOrWhiteSpace(device) && string.IsNullOrWhiteSpace(key)) return "None";
+            if (string.IsNullOrWhiteSpace(device)) return key ?? "None";
+            if (string.IsNullOrWhiteSpace(key)) return device;
+            return device + ": " + key;
+        }
+
+        private static void SetButtonText(Button btn, string label)
+        {
+            if (btn.Content is TextBlock tb) tb.Text = label;
+            else btn.Content = label;
+        }
+
+        private object BuildDescriptorFromModel(KeybindBinding kb)
+        {
+            if (kb == null) return null;
+
+            if (string.IsNullOrWhiteSpace(kb.Device) && string.IsNullOrWhiteSpace(kb.DeviceKey) &&
+                kb.Key == Key.None && kb.Modifiers == ModifierKeys.None)
+                return null;
+
+            if (!string.IsNullOrWhiteSpace(kb.Device) || !string.IsNullOrWhiteSpace(kb.DeviceKey))
+            {
+                return new RehydratedBinding { DeviceType = kb.Device, ControlLabel = kb.DeviceKey };
+            }
+            return null;
+        }
+
+        private sealed class RehydratedBinding
+        {
+            public string DeviceType { get; set; }
+            public string ControlLabel { get; set; }
+        }
+
+        // ---------- Helpers ----------
         private static T FindAncestor<T>(DependencyObject child) where T : DependencyObject
         {
             var parent = VisualTreeHelper.GetParent(child);
@@ -435,6 +638,50 @@ namespace SimTools.Views
         {
             var res = Application.Current?.Resources[key] as Brush;
             return res ?? fallback;
+        }
+
+        private static bool TrySetStringProperty(object target, string[] propNames, string value)
+        {
+            if (target == null) return false;
+            foreach (var name in propNames)
+            {
+                var p = target.GetType().GetProperty(name, BindingFlags.Instance | BindingFlags.Public);
+                if (p != null && p.CanWrite && p.PropertyType == typeof(string))
+                {
+                    try { p.SetValue(target, value, null); return true; } catch { }
+                }
+            }
+            return false;
+        }
+
+        private static string GetStringProperty(object target, string name)
+        {
+            var p = target?.GetType().GetProperty(name, BindingFlags.Instance | BindingFlags.Public);
+            return p?.GetValue(target) as string;
+        }
+
+        private object GetCurrentProfile()
+        {
+            var vm = DataContext;
+            if (vm == null) return null;
+
+            foreach (var name in new[] { "SelectedProfile", "CurrentProfile" })
+            {
+                var p = vm.GetType().GetProperty(name, BindingFlags.Instance | BindingFlags.Public);
+                if (p != null) return p.GetValue(vm);
+            }
+            return null;
+        }
+
+        private void KeybindName_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Enter)
+            {
+                var bindingExpr = (sender as TextBox)?.GetBindingExpression(TextBox.TextProperty);
+                bindingExpr?.UpdateSource();
+                Keyboard.ClearFocus();
+                e.Handled = true;
+            }
         }
     }
 }
