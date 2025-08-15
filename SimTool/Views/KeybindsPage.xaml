@@ -264,7 +264,12 @@
                         </Grid.ColumnDefinitions>
                         <TextBlock Text="Keybinds" FontWeight="Bold" VerticalAlignment="Center"/>
                         <StackPanel Grid.Column="3" Orientation="Horizontal" HorizontalAlignment="Right">
-                            <Button Content="Add Action" Style="{StaticResource ToolbarTextButton}" Command="{Binding AddKeybind}" />
+                            <Button Style="{StaticResource ToolbarTextButton}"
+                                    FontFamily="Segoe MDL2 Assets" FontSize="14"
+                                    Content="&#xE710;"
+                                    ToolTip="Add action"
+                                    AutomationProperties.Name="Add action"
+                                    Command="{Binding AddKeybind}" />
                         </StackPanel>
                     </Grid>
 
@@ -304,20 +309,24 @@
                                         <TextBlock Text="{Binding}" TextTrimming="CharacterEllipsis" />
                                     </Button>
 
-                                    <!-- CLEAR -->
-                                    <Button Grid.Column="2" Content="Clear"
+                                    <Button Grid.Column="2"
                                             Style="{StaticResource LinkAccentButton}"
+                                            FontFamily="Segoe MDL2 Assets" FontSize="14"
+                                            Content="&#xE894;"
                                             Margin="8,0,0,0"
                                             Click="ClearKey_Click"
                                             ToolTip="Clear this binding"
+                                            AutomationProperties.Name="Clear binding"
                                             VerticalAlignment="Center"/>
 
-                                    <!-- Remove row -->
-                                    <Button Grid.Column="3" Content="Remove"
+                                    <Button Grid.Column="3"
                                             Style="{StaticResource ToolbarTextButton}"
+                                            FontFamily="Segoe MDL2 Assets" FontSize="14"
+                                            Content="&#xE74D;"
                                             Margin="8,0,0,0"
                                             Click="RemoveKeybind_Click"
                                             ToolTip="Remove this action"
+                                            AutomationProperties.Name="Remove binding"
                                             VerticalAlignment="Center"/>
                                 </Grid>
                             </DataTemplate>
