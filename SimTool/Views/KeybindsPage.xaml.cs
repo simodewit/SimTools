@@ -38,8 +38,6 @@ namespace SimTools.Views
             DataContextChanged += OnDataContextChanged;
         }
 
-        // ---------- Debug ----------
-        [Conditional("DEBUG")] private static void D(string msg) => Debug.WriteLine("[KeybindsPage] " + msg);
         private static string DescribeRehydrated(object o)
         {
             var rb = o as RehydratedBinding;
@@ -55,9 +53,8 @@ namespace SimTools.Views
         // ---------- Lifecycle ----------
         private void OnLoaded(object sender, RoutedEventArgs e)
         {
-            D("OnLoaded");
             _saveTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(700) };
-            _saveTimer.Tick += (s, args) => { _saveTimer.Stop(); D("SaveTimer -> PerformSave"); PerformSave(); };
+            _saveTimer.Tick += (s, args) => { _saveTimer.Stop(); PerformSave(); };
 
             WireViewModel(DataContext);
 
@@ -70,11 +67,9 @@ namespace SimTools.Views
             {
                 try
                 {
-                    D("Starting InputCapture monitor…");
                     _inputMonitor = InputCapture.StartMonitor(owner, OnGlobalInput);
-                    D("Monitor started: " + (_inputMonitor != null));
                 }
-                catch (Exception ex) { D("StartMonitor error: " + ex.Message); }
+                catch (Exception) { }
             }
 
             // Fallback keyboard monitor (works while app has focus) — handles KeyDown + KeyUp
