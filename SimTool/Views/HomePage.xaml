@@ -21,54 +21,6 @@
                     <PropertyGroupDescription PropertyName="Category"/>
                 </CollectionViewSource.GroupDescriptions>
             </CollectionViewSource>
-
-            <!-- Page-local DARK square ScrollBar -->
-            <Style TargetType="ScrollBar">
-                <Setter Property="Foreground" Value="{DynamicResource Brush.TextDim}"/>
-                <Setter Property="Background" Value="#0AFFFFFF"/>
-                <Setter Property="Width" Value="10"/>
-                <Setter Property="Height" Value="10"/>
-                <Setter Property="Template">
-                    <Setter.Value>
-                        <ControlTemplate TargetType="ScrollBar">
-                            <Grid x:Name="Root" Background="{TemplateBinding Background}">
-                                <Track x:Name="PART_Track" IsDirectionReversed="true">
-                                    <Track.DecreaseRepeatButton>
-                                        <RepeatButton Width="0" Height="0" Background="Transparent" BorderThickness="0"/>
-                                    </Track.DecreaseRepeatButton>
-                                    <Track.Thumb>
-                                        <Thumb x:Name="Thumb" Background="#3A3F47" BorderBrush="#505862" BorderThickness="1"
-                                               Height="40" Width="40"/>
-                                    </Track.Thumb>
-                                    <Track.IncreaseRepeatButton>
-                                        <RepeatButton Width="0" Height="0" Background="Transparent" BorderThickness="0"/>
-                                    </Track.IncreaseRepeatButton>
-                                </Track>
-                            </Grid>
-                            <ControlTemplate.Triggers>
-                                <Trigger Property="Orientation" Value="Horizontal">
-                                    <Setter TargetName="Root" Property="Height" Value="10"/>
-                                    <Setter TargetName="Root" Property="Width" Value="Auto"/>
-                                    <Setter TargetName="Thumb" Property="Height" Value="8"/>
-                                    <Setter TargetName="Thumb" Property="Width" Value="40"/>
-                                </Trigger>
-                                <Trigger Property="Orientation" Value="Vertical">
-                                    <Setter TargetName="Root" Property="Width" Value="10"/>
-                                    <Setter TargetName="Root" Property="Height" Value="Auto"/>
-                                    <Setter TargetName="Thumb" Property="Width" Value="8"/>
-                                    <Setter TargetName="Thumb" Property="Height" Value="40"/>
-                                </Trigger>
-                                <Trigger Property="IsMouseOver" Value="True">
-                                    <Setter TargetName="Thumb" Property="Background" Value="#4B525C"/>
-                                </Trigger>
-                                <Trigger Property="IsEnabled" Value="False">
-                                    <Setter TargetName="Thumb" Property="Opacity" Value="0.35"/>
-                                </Trigger>
-                            </ControlTemplate.Triggers>
-                        </ControlTemplate>
-                    </Setter.Value>
-                </Setter>
-            </Style>
         </ResourceDictionary>
     </UserControl.Resources>
 

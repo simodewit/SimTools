@@ -7,6 +7,11 @@
                 <ResourceDictionary Source="pack://application:,,,/Themes/Colors.xaml"/>
                 <ResourceDictionary Source="pack://application:,,,/Themes/Styles.xaml"/>
             </ResourceDictionary.MergedDictionaries>
+
+            <!-- Asphalt background brush -->
+            <ImageBrush x:Key="AsphaltBrush"
+                    ImageSource="pack://application:,,,/SimTool;component/Images/Asphalt.png"
+                    Stretch="UniformToFill"/>
         </ResourceDictionary>
     </UserControl.Resources>
 
@@ -29,56 +34,55 @@
 
         <!-- Centered 16:9 preview -->
         <Grid Grid.Row="1">
-            <Border HorizontalAlignment="Center" VerticalAlignment="Center"
-                    Width="960" Height="540" CornerRadius="10"
-                    Background="{DynamicResource Brush.Surface}">
-                <Grid>
-                    <!-- Preview canvas for elements -->
-                    <Canvas x:Name="PreviewCanvas" AllowDrop="True"
-                            Background="#0AFFFFFF"
-                            DragOver="Preview_DragOver"
-                            Drop="Preview_Drop">
-                        <ItemsControl ItemsSource="{Binding OverlayElements}">
-                            <ItemsControl.ItemsPanel>
-                                <ItemsPanelTemplate>
-                                    <Canvas/>
-                                </ItemsPanelTemplate>
-                            </ItemsControl.ItemsPanel>
-                            <ItemsControl.ItemTemplate>
-                                <!-- Untyped template -->
-                                <DataTemplate>
-                                    <Border Background="#CC0D0F13" CornerRadius="8" Padding="8"
-                                            Canvas.Left="{Binding X}" Canvas.Top="{Binding Y}"
-                                            MouseLeftButtonDown="Element_MouseLeftButtonDown"
-                                            MouseMove="Element_MouseMove"
-                                            MouseLeftButtonUp="Element_MouseLeftButtonUp">
-                                        <StackPanel>
-                                            <TextBlock Text="Mapping" Foreground="{DynamicResource Brush.TextDim}" FontSize="12"/>
-                                            <TextBlock Text="{Binding DataContext.State.CurrentMap.Name, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                                       FontSize="20" FontWeight="Bold"/>
-                                        </StackPanel>
-                                    </Border>
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
-                    </Canvas>
-                </Grid>
-            </Border>
+            <Grid HorizontalAlignment="Center"
+          VerticalAlignment="Center"
+          Width="960" Height="540" ClipToBounds="True"
+          Background="{StaticResource AsphaltBrush}">
+                <!-- Preview canvas for elements; faint gray so it’s just barely visible -->
+                <Canvas x:Name="PreviewCanvas"
+                        AllowDrop="True"
+                        Background="#10000000"
+                        DragOver="Preview_DragOver"
+                        Drop="Preview_Drop">
+                    <ItemsControl ItemsSource="{Binding OverlayElements}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <Canvas/>
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border Background="#CC0D0F13" CornerRadius="8" Padding="8"
+                                Canvas.Left="{Binding X}" Canvas.Top="{Binding Y}"
+                                MouseLeftButtonDown="Element_MouseLeftButtonDown"
+                                MouseMove="Element_MouseMove"
+                                MouseLeftButtonUp="Element_MouseLeftButtonUp">
+                                    <StackPanel>
+                                        <TextBlock Text="Mapping" Foreground="{DynamicResource Brush.TextDim}" FontSize="12"/>
+                                        <TextBlock Text="{Binding DataContext.State.CurrentMap.Name, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                           FontSize="20" FontWeight="Bold"/>
+                                    </StackPanel>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </Canvas>
+            </Grid>
         </Grid>
 
         <!-- Tools panel -->
         <Border Grid.Row="2" Style="{DynamicResource Card}" Margin="0,12,0,0" Padding="12">
             <TabControl Background="Transparent">
 
-                <TabItem Header="General">
+                <TabItem Header="General" Cursor="Hand">
                     <StackPanel Margin="8">
-                        <Button Content="Open Overlay Window" Command="{Binding OpenOverlay}" Style="{StaticResource PrimaryButton}" Width="220"/>
+                        <Button Content="Open Overlay Window" Command="{Binding OpenOverlay}" Style="{StaticResource PrimaryButton}" Width="220" Cursor="Hand"/>
                     </StackPanel>
                 </TabItem>
 
-                <TabItem Header="Keybinds">
+                <TabItem Header="Keybinds" Cursor="Hand">
                     <StackPanel Margin="8">
-
+                        <!-- keybind content -->
                     </StackPanel>
                 </TabItem>
             </TabControl>
