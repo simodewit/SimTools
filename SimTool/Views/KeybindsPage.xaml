@@ -168,17 +168,35 @@
                         <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right">
                             <Button Content="Add"    Style="{StaticResource ToolbarTextButton}" Command="{Binding AddProfile}" />
                             <Button Content="Remove" Style="{StaticResource ToolbarTextButton}" Command="{Binding RemoveProfile}" />
+                            <!-- NEW -->
+                            <Button Content="Rename" Style="{StaticResource ToolbarTextButton}" Click="RenameProfile_Click" />
                         </StackPanel>
                     </Grid>
 
-                    <ListBox ItemsSource="{Binding Profiles}" SelectedItem="{Binding SelectedProfile}"
+                    <ListBox x:Name="ProfilesList"
+                             ItemsSource="{Binding Profiles}"
+                             SelectedItem="{Binding SelectedProfile}"
                              Background="Transparent" BorderThickness="0"
                              ItemContainerStyle="{StaticResource SlimListBoxItem}"
                              ScrollViewer.VerticalScrollBarVisibility="Auto"
                              ScrollViewer.CanContentScroll="False">
                         <ListBox.ItemTemplate>
                             <DataTemplate>
-                                <TextBlock Text="{Binding Name}" />
+                                <!-- NEW: inline editor -->
+                                <Grid>
+                                    <TextBlock x:Name="ProfileNameText"
+                                               Text="{Binding Name}"
+                                               VerticalAlignment="Center"/>
+                                    <TextBox x:Name="ProfileNameEditor"
+                                             Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}"
+                                             Visibility="Collapsed"
+                                             MinWidth="80"
+                                             Height="28"
+                                             Padding="6,0"
+                                             VerticalContentAlignment="Center"
+                                             KeyDown="ProfileNameEditor_KeyDown"
+                                             LostKeyboardFocus="ProfileNameEditor_LostFocus"/>
+                                </Grid>
                             </DataTemplate>
                         </ListBox.ItemTemplate>
                     </ListBox>
@@ -198,17 +216,35 @@
                         <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right">
                             <Button Content="Add"    Style="{StaticResource ToolbarTextButton}" Command="{Binding AddMap}" />
                             <Button Content="Remove" Style="{StaticResource ToolbarTextButton}" Command="{Binding RemoveMap}" />
+                            <!-- NEW -->
+                            <Button Content="Rename" Style="{StaticResource ToolbarTextButton}" Click="RenameMap_Click" />
                         </StackPanel>
                     </Grid>
 
-                    <ListBox ItemsSource="{Binding Maps}" SelectedItem="{Binding SelectedMap}"
+                    <ListBox x:Name="MapsList"
+                             ItemsSource="{Binding Maps}"
+                             SelectedItem="{Binding SelectedMap}"
                              Background="Transparent" BorderThickness="0"
                              ItemContainerStyle="{StaticResource SlimListBoxItem}"
                              ScrollViewer.VerticalScrollBarVisibility="Auto"
                              ScrollViewer.CanContentScroll="False">
                         <ListBox.ItemTemplate>
                             <DataTemplate>
-                                <TextBlock Text="{Binding Name}" />
+                                <!-- NEW: inline editor -->
+                                <Grid>
+                                    <TextBlock x:Name="MapNameText"
+                                               Text="{Binding Name}"
+                                               VerticalAlignment="Center"/>
+                                    <TextBox x:Name="MapNameEditor"
+                                             Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}"
+                                             Visibility="Collapsed"
+                                             MinWidth="80"
+                                             Height="28"
+                                             Padding="6,0"
+                                             VerticalContentAlignment="Center"
+                                             KeyDown="MapNameEditor_KeyDown"
+                                             LostKeyboardFocus="MapNameEditor_LostFocus"/>
+                                </Grid>
                             </DataTemplate>
                         </ListBox.ItemTemplate>
                     </ListBox>
@@ -256,7 +292,7 @@
                                              VerticalContentAlignment="Center"
                                              VerticalAlignment="Center"
                                              KeyDown="KeybindName_KeyDown"/>
-                                    
+
                                     <!-- Assign -->
                                     <Button x:Name="AssignBtn"
                                             Grid.Column="1"

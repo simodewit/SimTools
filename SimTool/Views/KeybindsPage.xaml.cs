@@ -29,7 +29,7 @@ namespace SimTools.Views
         // Live highlight state (button -> its original background)
         private readonly Dictionary<Button, Brush> _litButtons = new Dictionary<Button, Brush>();
 
-        // --- NEW: debounce when firing map switching from hotkeys ---
+        // --- Hotkey debounce for map switching ---
         private DateTime _lastNextFiredUtc = DateTime.MinValue;
         private DateTime _lastPrevFiredUtc = DateTime.MinValue;
         private static readonly TimeSpan _hotkeyDebounce = TimeSpan.FromMilliseconds(250);
@@ -76,7 +76,7 @@ namespace SimTools.Views
                 catch (Exception) { }
             }
 
-            // Fallback keyboard monitor (works while app has focus) — handles KeyDown + KeyUp
+            // Fallback keyboard monitor (works while app has focus)
             InputManager.Current.PreProcessInput += OnPreProcessInput;
         }
 
@@ -88,7 +88,6 @@ namespace SimTools.Views
 
             InputManager.Current.PreProcessInput -= OnPreProcessInput;
 
-            // Safety: clear any remaining highlight
             ClearAllHighlights();
         }
 
@@ -259,26 +258,20 @@ namespace SimTools.Views
             var ke = e.StagingItem.Input as KeyEventArgs;
             if (ke == null) return;
 
-            // Normalize to actual key
             var key = ke.Key == Key.System ? ke.SystemKey : ke.Key;
-
-            // Ignore weird IME keys
             if (key == Key.ImeProcessed || key == Key.DeadCharProcessed) return;
 
             if (ke.RoutedEvent == Keyboard.PreviewKeyDownEvent || ke.RoutedEvent == Keyboard.KeyDownEvent)
             {
-                // KeyDown -> highlight matches
                 var label = BuildKeyboardLabel(Keyboard.Modifiers, key);
                 var synthetic = new InputBindingResult { DeviceType = "Keyboard", ControlLabel = label };
                 HighlightMatches(synthetic);
 
-                // NEW: fire switching once per press while focused
                 if (!ke.IsRepeat) MaybeSwitchMapFrom(synthetic);
             }
             else if (ke.RoutedEvent == Keyboard.PreviewKeyUpEvent || ke.RoutedEvent == Keyboard.KeyUpEvent)
             {
-                // KeyUp -> clear all highlights immediately
-                ClearAllHighlights();
+                ClearRowHighlights(); // keep global Next/Prev highlight intact
             }
         }
 
@@ -354,7 +347,6 @@ namespace SimTools.Views
                     var assignBtn = child as Button;
                     if (assignBtn != null && Grid.GetColumn(assignBtn) == 1)
                     {
-                        // also unhighlight if currently lit
                         Unhighlight(assignBtn);
                         assignBtn.Tag = null;
                         SetButtonText(assignBtn, "None");
@@ -389,16 +381,8 @@ namespace SimTools.Views
         private void OnGlobalInput(InputBindingResult input)
         {
             if (input == null) return;
-            // Highlight matches (we don't get an explicit release from this source)
             HighlightMatches(input);
-
-            // NEW: act on general hotkeys
             MaybeSwitchMapFrom(input);
-
-            // Optional: auto-clear pulse
-            // DispatcherTimer t = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(120) };
-            // t.Tick += (s, e) => { t.Stop(); ClearAllHighlights(); };
-            // t.Start();
         }
 
         // ---------- Highlighting logic ----------
@@ -419,7 +403,6 @@ namespace SimTools.Views
                 if (btn?.Tag is RehydratedBinding tag && IsMatch(tag, input))
                 {
                     Highlight(btn);
-                    // do not break; multiple rows could match (rare but safe)
                 }
             }
 
@@ -438,7 +421,6 @@ namespace SimTools.Views
             var b = fired.ControlLabel ?? "";
             if (a.Equals(b, StringComparison.OrdinalIgnoreCase)) return true;
 
-            // Fuzzy HID usage text
             if (a.Contains("UsagePage") && b.Contains("UsagePage")) return true;
 
             return false;
@@ -447,10 +429,10 @@ namespace SimTools.Views
         private void Highlight(Button btn)
         {
             if (btn == null) return;
-            if (_litButtons.ContainsKey(btn)) return; // already lit
+            if (_litButtons.ContainsKey(btn)) return;
 
             var accent = TryFindBrush("Brush.Accent", new SolidColorBrush(Color.FromRgb(80, 200, 160)));
-            _litButtons[btn] = btn.Background; // remember original
+            _litButtons[btn] = btn.Background;
             btn.Background = accent;
         }
 
@@ -466,12 +448,24 @@ namespace SimTools.Views
 
         private void ClearAllHighlights()
         {
-            // restore backgrounds for all lit buttons
             foreach (var kv in _litButtons.ToList())
             {
                 kv.Key.Background = kv.Value;
+                _litButtons.Remove(kv.Key);
             }
-            _litButtons.Clear();
+        }
+
+        // NEW: clear only row highlights (keep Next/Prev highlight persistent through map switch)
+        private void ClearRowHighlights()
+        {
+            foreach (var kv in _litButtons.ToList())
+            {
+                if (kv.Key == NextMapBtn || kv.Key == PrevMapBtn)
+                    continue;
+
+                kv.Key.Background = kv.Value;
+                _litButtons.Remove(kv.Key);
+            }
         }
 
         // ---------- General settings assign ----------
@@ -579,7 +573,7 @@ namespace SimTools.Views
                 else { PrevMapBtn.Tag = null; SetButtonText(PrevMapBtn, "None"); }
             }
 
-            // Only clear row highlights; keep Next/Prev highlight intact during map switches
+            // Only drop row highlights on rehydrate; keep global Next/Prev if active
             ClearRowHighlights();
         }
 
@@ -618,7 +612,7 @@ namespace SimTools.Views
             public string ControlLabel { get; set; }
         }
 
-        // ---------- NEW: Hotkey → VM switching ----------
+        // ---------- Hotkey → VM switching ----------
         private void MaybeSwitchMapFrom(InputBindingResult input)
         {
             bool matchNext = NextMapBtn?.Tag is RehydratedBinding next && IsMatch(next, input);
@@ -639,27 +633,17 @@ namespace SimTools.Views
         private void TriggerNextMap()
         {
             if (!Dispatcher.CheckAccess()) { Dispatcher.BeginInvoke(new Action(TriggerNextMap)); return; }
-
-            // Clear any row highlights BEFORE switching maps so we don't carry stale visuals across
-            ClearAllHighlights();
-
-            // Briefly show feedback on the general button
             Highlight(NextMapBtn);
-
-            // Switch the map in the VM (NextMapCommand / fallback methods)
             ExecuteMapSwitchCommand(+1);
         }
 
         private void TriggerPrevMap()
         {
             if (!Dispatcher.CheckAccess()) { Dispatcher.BeginInvoke(new Action(TriggerPrevMap)); return; }
-
-            ClearAllHighlights();
             Highlight(PrevMapBtn);
             ExecuteMapSwitchCommand(-1);
         }
 
-        // Call into the VM via ICommand first; fall back to common method names if exposed
         private void ExecuteMapSwitchCommand(int delta)
         {
             var vm = DataContext;
@@ -670,6 +654,7 @@ namespace SimTools.Views
                 if (TryExecuteCommand(vm, "NextMapCommand")) return;
                 if (TryInvoke(vm, "SwitchToNextMap")) return;
                 if (TryInvoke(vm, "SelectNextMap")) return;
+                if (TryInvoke(vm, "NextMap")) return;
             }
             else
             {
@@ -677,11 +662,8 @@ namespace SimTools.Views
                 if (TryExecuteCommand(vm, "PreviousMapCommand")) return;
                 if (TryInvoke(vm, "SwitchToPreviousMap")) return;
                 if (TryInvoke(vm, "SelectPreviousMap")) return;
-                if (TryInvoke(vm, "SelectPrevMap")) return;
+                if (TryInvoke(vm, "PrevMap")) return;
             }
-
-            // As a final fallback, try methods named NextMap/PrevMap if you kept those names
-            if (delta > 0) TryInvoke(vm, "NextMap"); else TryInvoke(vm, "PrevMap");
         }
 
         private static bool TryExecuteCommand(object target, string propertyName)
@@ -769,18 +751,81 @@ namespace SimTools.Views
             }
         }
 
-        // Clear ONLY highlights belonging to keybind rows (not the global Next/Prev buttons).
-        private void ClearRowHighlights()
+        // ---------- NEW: Rename (profiles / maps) ----------
+        private void RenameProfile_Click(object sender, RoutedEventArgs e)
         {
-            foreach (var kv in _litButtons.ToList())
-            {
-                // keep global buttons lit; they are independent of map items
-                if (kv.Key == NextMapBtn || kv.Key == PrevMapBtn)
-                    continue;
+            BeginInlineRename(ProfilesList, "ProfileNameEditor", "ProfileNameText");
+        }
 
-                kv.Key.Background = kv.Value;
-                _litButtons.Remove(kv.Key);
+        private void RenameMap_Click(object sender, RoutedEventArgs e)
+        {
+            BeginInlineRename(MapsList, "MapNameEditor", "MapNameText");
+        }
+
+        private void BeginInlineRename(ListBox listBox, string editorName, string textName)
+        {
+            if (listBox == null || listBox.SelectedItem == null) return;
+
+            var container = listBox.ItemContainerGenerator.ContainerFromItem(listBox.SelectedItem) as DependencyObject;
+            if (container == null) return;
+
+            var editor = FindVisualDescendants<TextBox>(container).FirstOrDefault(tb => tb.Name == editorName);
+            var label = FindVisualDescendants<TextBlock>(container).FirstOrDefault(tb => tb.Name == textName);
+            if (editor == null || label == null) return;
+
+            label.Visibility = Visibility.Collapsed;
+            editor.Visibility = Visibility.Visible;
+
+            editor.Focus();
+            editor.SelectAll();
+        }
+
+        private void ProfileNameEditor_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Enter)
+            {
+                CommitAndCloseEditor(sender as TextBox);
+                e.Handled = true;
             }
+        }
+
+        private void MapNameEditor_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Enter)
+            {
+                CommitAndCloseEditor(sender as TextBox);
+                e.Handled = true;
+            }
+        }
+
+        private void ProfileNameEditor_LostFocus(object sender, KeyboardFocusChangedEventArgs e)
+        {
+            CommitAndCloseEditor(sender as TextBox);
+        }
+
+        private void MapNameEditor_LostFocus(object sender, KeyboardFocusChangedEventArgs e)
+        {
+            CommitAndCloseEditor(sender as TextBox);
+        }
+
+        private void CommitAndCloseEditor(TextBox editor)
+        {
+            if (editor == null) return;
+
+            // Update the bound Name property
+            editor.GetBindingExpression(TextBox.TextProperty)?.UpdateSource();
+
+            // Hide editor, show label
+            var grid = editor.Parent as Grid;
+            var label = grid?.Children.OfType<TextBlock>().FirstOrDefault();
+            if (label != null)
+            {
+                editor.Visibility = Visibility.Collapsed;
+                label.Visibility = Visibility.Visible;
+            }
+
+            Keyboard.ClearFocus();
+            QueueSave();
         }
     }
 }
