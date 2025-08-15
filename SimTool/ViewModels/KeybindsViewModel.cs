@@ -265,25 +265,20 @@ namespace SimTools.ViewModels
 
         private static Profile CloneProfile(Profile src)
         {
-            var p = new Profile
-            {
-                Name = src?.Name
-            };
+            var p = new Profile { Name = src?.Name };
 
             if (src?.Maps != null)
-            {
-                foreach (var m in src.Maps)
-                    p.Maps.Add(CloneMap(m));
-            }
+                foreach (var m in src.Maps) p.Maps.Add(CloneMap(m));
 
-            // If your Profile stores Next/Prev hotkey device keys, copy them too:
-            // p.NextMapDevice = src.NextMapDevice;
-            // p.NextMapDeviceKey = src.NextMapDeviceKey;
-            // p.PrevMapDevice = src.PrevMapDevice;
-            // p.PrevMapDeviceKey = src.PrevMapDeviceKey;
+            // Carry general hotkeys if the Profile model exposes them
+            CopyStringIfExists(src, p, "NextMapDevice");
+            CopyStringIfExists(src, p, "NextMapDeviceKey");
+            CopyStringIfExists(src, p, "PrevMapDevice");
+            CopyStringIfExists(src, p, "PrevMapDeviceKey");
 
             return p;
         }
+
 
         private static KeybindMap CloneMap(KeybindMap src)
         {
@@ -314,6 +309,18 @@ namespace SimTools.ViewModels
                 Modifiers = src.Modifiers
                 // copy any other fields you may have added to KeybindBinding
             };
+        }
+
+        private static void CopyStringIfExists(object src, object dst, string propName)
+        {
+            if (src == null || dst == null) return;
+            var sp = src.GetType().GetProperty(propName);
+            var dp = dst.GetType().GetProperty(propName);
+            if (sp != null && dp != null &&
+                sp.PropertyType == typeof(string) && dp.PropertyType == typeof(string) && dp.CanWrite)
+            {
+                dp.SetValue(dst, (string)sp.GetValue(src));
+            }
         }
     }
 }

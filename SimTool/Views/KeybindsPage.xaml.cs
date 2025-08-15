@@ -267,7 +267,7 @@ namespace SimTools.Views
                 var synthetic = new InputBindingResult { DeviceType = "Keyboard", ControlLabel = label };
                 HighlightMatches(synthetic);
 
-                if (!ke.IsRepeat) MaybeSwitchMapFrom(synthetic);
+                if (!ke.IsRepeat && !IsTyping()) MaybeSwitchMapFrom(synthetic);
             }
             else if (ke.RoutedEvent == Keyboard.PreviewKeyUpEvent || ke.RoutedEvent == Keyboard.KeyUpEvent)
             {
@@ -382,7 +382,9 @@ namespace SimTools.Views
         {
             if (input == null) return;
             HighlightMatches(input);
-            MaybeSwitchMapFrom(input);
+
+            if (!IsTyping())
+                MaybeSwitchMapFrom(input);
         }
 
         // ---------- Highlighting logic ----------
@@ -827,5 +829,65 @@ namespace SimTools.Views
             Keyboard.ClearFocus();
             QueueSave();
         }
+
+        private void NextMapClear_Click(object sender, RoutedEventArgs e)
+        {
+            var profile = GetCurrentProfile();
+            if (profile != null)
+            {
+                TrySetStringProperty(profile, new[] { "NextMapDevice" }, null);
+                TrySetStringProperty(profile, new[] { "NextMapDeviceKey" }, null);
+            }
+            else
+            {
+                TrySetStringProperty(DataContext, new[] { "NextMapDevice" }, null);
+                TrySetStringProperty(DataContext, new[] { "NextMapDeviceKey" }, null);
+            }
+
+            if (NextMapBtn != null)
+            {
+                Unhighlight(NextMapBtn);
+                NextMapBtn.Tag = null;
+                SetButtonText(NextMapBtn, "None");
+            }
+            QueueSave();
+        }
+
+        private void PrevMapClear_Click(object sender, RoutedEventArgs e)
+        {
+            var profile = GetCurrentProfile();
+            if (profile != null)
+            {
+                TrySetStringProperty(profile, new[] { "PrevMapDevice" }, null);
+                TrySetStringProperty(profile, new[] { "PrevMapDeviceKey" }, null);
+            }
+            else
+            {
+                TrySetStringProperty(DataContext, new[] { "PrevMapDevice" }, null);
+                TrySetStringProperty(DataContext, new[] { "PrevMapDeviceKey" }, null);
+            }
+
+            if (PrevMapBtn != null)
+            {
+                Unhighlight(PrevMapBtn);
+                PrevMapBtn.Tag = null;
+                SetButtonText(PrevMapBtn, "None");
+            }
+            QueueSave();
+        }
+
+        private static bool IsTyping()
+        {
+            // Do not trigger map switches while any TextBox/RichTextBox/PasswordBox has focus.
+            var fo = Keyboard.FocusedElement as DependencyObject;
+            while (fo != null)
+            {
+                if (fo is TextBox || fo is RichTextBox || fo is PasswordBox)
+                    return true;
+                fo = VisualTreeHelper.GetParent(fo);
+            }
+            return false;
+        }
+
     }
 }
