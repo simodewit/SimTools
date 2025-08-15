@@ -166,10 +166,29 @@
                         <TextBlock Text="Profiles" FontWeight="Bold" VerticalAlignment="Center"/>
 
                         <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right">
-                            <Button Content="Add"    Style="{StaticResource ToolbarTextButton}" Command="{Binding AddProfile}" />
-                            <Button Content="Remove" Style="{StaticResource ToolbarTextButton}" Command="{Binding RemoveProfile}" />
-                            <!-- NEW -->
-                            <Button Content="Rename" Style="{StaticResource ToolbarTextButton}" Click="RenameProfile_Click" />
+                            <!-- Add ( E710) -->
+                            <Button Style="{StaticResource ToolbarTextButton}"
+                                    FontFamily="Segoe MDL2 Assets" FontSize="14"
+                                    Content="&#xE710;"
+                                    ToolTip="Add profile"
+                                    AutomationProperties.Name="Add profile"
+                                    Command="{Binding AddProfile}" />
+
+                            <!-- Delete ( E74D) -->
+                            <Button Style="{StaticResource ToolbarTextButton}"
+                                    FontFamily="Segoe MDL2 Assets" FontSize="14"
+                                    Content="&#xE74D;"
+                                    ToolTip="Remove profile"
+                                    AutomationProperties.Name="Remove profile"
+                                    Command="{Binding RemoveProfile}" />
+
+                            <!-- Edit ( E70F) used for Rename -->
+                            <Button Style="{StaticResource ToolbarTextButton}"
+                                    FontFamily="Segoe MDL2 Assets" FontSize="14"
+                                    Content="&#xE70F;"
+                                    ToolTip="Rename profile"
+                                    AutomationProperties.Name="Rename profile"
+                                    Click="RenameProfile_Click" />
                         </StackPanel>
                     </Grid>
 
@@ -214,10 +233,30 @@
                         <TextBlock Text="Maps" FontWeight="Bold" VerticalAlignment="Center"/>
 
                         <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right">
-                            <Button Content="Add"    Style="{StaticResource ToolbarTextButton}" Command="{Binding AddMap}" />
-                            <Button Content="Remove" Style="{StaticResource ToolbarTextButton}" Command="{Binding RemoveMap}" />
-                            <!-- NEW -->
-                            <Button Content="Rename" Style="{StaticResource ToolbarTextButton}" Click="RenameMap_Click" />
+                            <!-- Add ( E710) -->
+                            <Button Style="{StaticResource ToolbarTextButton}"
+                                    FontFamily="Segoe MDL2 Assets" FontSize="14"
+                                    Content="&#xE710;"
+                                    ToolTip="Add map"
+                                    AutomationProperties.Name="Add map"
+                                    Command="{Binding AddMap}" />
+
+                            <!-- Delete ( E74D) -->
+                            <Button Style="{StaticResource ToolbarTextButton}"
+                                    FontFamily="Segoe MDL2 Assets" FontSize="14"
+                                    Content="&#xE74D;"
+                                    ToolTip="Remove map"
+                                    AutomationProperties.Name="Remove map"
+                                    Command="{Binding RemoveMap}" />
+
+                            <!-- Edit ( E70F) used for Rename -->
+                            <Button Style="{StaticResource ToolbarTextButton}"
+                                    FontFamily="Segoe MDL2 Assets" FontSize="14"
+                                    Content="&#xE70F;"
+                                    ToolTip="Rename map"
+                                    AutomationProperties.Name="Rename map"
+                                    Click="RenameMap_Click" />
+                            
                         </StackPanel>
                     </Grid>
 
