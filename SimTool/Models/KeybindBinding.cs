@@ -3,6 +3,10 @@ using System.Windows.Input;
 
 namespace SimTools.Models
 {
+    // Represents a single keybinding.
+    // Stores key, modifiers, and device info.
+    // ToString() returns a readable label (e.g., "Ctrl + K", "Mouse: Left Button").
+
     public class KeybindBinding
     {
         public Guid Id { get; set; } = Guid.NewGuid();

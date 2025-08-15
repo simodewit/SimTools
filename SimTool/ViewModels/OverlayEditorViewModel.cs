@@ -5,6 +5,10 @@ using System.Collections.ObjectModel;
 
 namespace SimTools.ViewModels
 {
+    // ViewModel for the Overlay Editor.
+    // Holds overlay elements and opens the live OverlayWindow with this VM as DataContext.
+    // Exposes CurrentMapName, Refresh(), and AddElement(...) for the editor UI.
+
     public class OverlayEditorViewModel : ViewModelBase
     {
         public AppState State { get; private set; }

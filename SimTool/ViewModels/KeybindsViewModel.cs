@@ -8,6 +8,11 @@ using SimTools.Services;
 
 namespace SimTools.ViewModels
 {
+    // ViewModel for the Keybinds page.
+    // Binds profiles/maps/keybinds from AppState and saves via StorageService.
+    // Exposes add/remove/save commands and selection properties.
+    // AssignKey() captures a keyboard hotkey and updates the binding; supports NextMap/PrevMap.
+
     public class KeybindsViewModel : ViewModelBase
     {
         public AppState State { get; private set; }
