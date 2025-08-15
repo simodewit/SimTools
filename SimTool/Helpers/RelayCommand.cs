@@ -3,6 +3,14 @@ using System.Windows.Input;
 
 namespace SimTools.Helpers
 {
+    /// <summary>
+    /// A small helper that lets WPF buttons/menus call your code.
+    /// Use it when you want to bind a button to a method.
+    /// - Pass the method to run (Execute).
+    /// - Optionally pass a check method to enable/disable the button (CanExecute).
+    /// Best for quick actions. For long-running work, use an async command class instead.
+    /// </summary>
+
     public class RelayCommand : ICommand
     {
         private readonly Action<object> _execute;

@@ -3,6 +3,13 @@ using System.Runtime.CompilerServices;
 
 namespace SimTools.Helpers
 {
+    /// <summary>
+    /// Base class for your ViewModels.
+    /// It helps the UI update when a property changes.
+    /// - Use Set(ref _field, value) inside a property setter to update the field and notify the UI.
+    /// - Use Raise() if you changed a value indirectly and still need to notify the UI.
+    /// </summary>
+
     public abstract class ViewModelBase : INotifyPropertyChanged
     {
         public event PropertyChangedEventHandler PropertyChanged;

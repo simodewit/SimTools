@@ -3,7 +3,14 @@ using SimTools.Models;
 
 namespace SimTools.Services
 {
-    // Shared state across pages (selected profile/map & navigation)
+    /// <summary>
+    /// Holds shared app state for the UI:
+    /// - The list of profiles.
+    /// - Which profile is selected right now.
+    /// - Which keybind map is selected for that profile.
+    /// Call EnsureSelections() to auto-pick the first profile/map when nothing is selected.
+    /// </summary>
+
     public class AppState
     {
         public ObservableCollection<Profile> Profiles { get; set; } = new ObservableCollection<Profile>();
