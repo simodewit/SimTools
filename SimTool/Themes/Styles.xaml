@@ -1,4 +1,12 @@
-﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+﻿<!--
+    Global style sheet for SimTools.
+    - Merges Colors.xaml to reuse the dark theme brushes.
+    - Sets defaults for common controls (Window, TextBlock, Button, TextBox, ComboBox, ListBox, Tabs, ScrollBar).
+    - Provides reusable styles: Card, ToolbarTextButton, ToolbarRectButton, GhostButton, PrimaryButton, NavTextButton.
+    - Keeps the look consistent: neutral dark surfaces, subtle borders, and an emerald accent for focus/primary actions.
+-->
+
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
     <!-- Pull in brushes from Colors.xaml -->

@@ -18,6 +18,15 @@ namespace SimTools.Services
         public string Category { get; set; }  // Normalized series (F1, WEC, etc.)
     }
 
+    /// <summary>
+    /// Downloads and parses racing RSS feeds into <see cref="MediaItem"/>s.
+    /// - <see cref="FetchAsync(int, System.Collections.Generic.IEnumerable{string})"/> gets items from several series
+    ///   (F1, WEC, IMSA, etc.), skips broken feeds, removes duplicates, and balances results per series.
+    /// - Each item has a title, link, image (from media:content/enclosure/first &lt;img&gt;), date, and a series tag.
+    /// - The optional exclude list keeps links you already showed elsewhere from appearing again.
+    /// Note: Network calls happen over HttpClient; returns an empty list on errors instead of throwing.
+    /// </summary>
+
     public class MediaService
     {
         private readonly HttpClient _http = new HttpClient();

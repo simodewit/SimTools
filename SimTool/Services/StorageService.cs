@@ -6,6 +6,12 @@ using SimTools.Models;
 
 namespace SimTools.Services
 {
+    /// <summary>
+    /// Saves and loads the app’s profiles to a single XML file in %AppData%\SimTools.
+    /// - Save(profiles): writes the current profiles.
+    /// - Load(): reads them; if the file is missing, creates a simple starter profile and returns it.
+    /// </summary>
+
     public class StorageService
     {
         private readonly string _folder = Path.Combine(

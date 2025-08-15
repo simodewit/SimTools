@@ -1,4 +1,12 @@
-﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+﻿<!--
+    Defines the application's dark theme color palette and matching brushes.
+    - Uses neutral, premium dark tones (no blue cast) for backgrounds and surfaces.
+    - Provides consistent text, border, and accent colors across the UI.
+    - Accent colors are a soft emerald green for a fresh, non-intrusive highlight.
+    Brushes are created for direct use in XAML bindings and styles.
+-->
+
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <!-- Neutral, premium dark palette (no blue cast) -->
     <Color x:Key="Color.Background">#121315</Color>

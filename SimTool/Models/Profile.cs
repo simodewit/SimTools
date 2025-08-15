@@ -3,6 +3,11 @@ using System.Collections.ObjectModel;
 
 namespace SimTools.Models
 {
+    // Represents a user profile in SimTools.
+    // - Stores navigation hotkeys for switching between keybind maps (Next/Prev).
+    // - Each profile has a unique Id, display Name, and a collection of KeybindMaps.
+    // - Profiles are persisted via StorageService and shared across the app via AppState.
+
     public class Profile
     {
         public string NextMapDevice { get; set; }
