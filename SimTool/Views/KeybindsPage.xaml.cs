@@ -271,7 +271,12 @@ namespace SimTools.Views
             }
             else if (ke.RoutedEvent == Keyboard.PreviewKeyUpEvent || ke.RoutedEvent == Keyboard.KeyUpEvent)
             {
-                ClearRowHighlights(); // keep global Next/Prev highlight intact
+                // Clear row highlights
+                ClearRowHighlights();
+
+                // Also force-clear general buttons in case they are lit
+                Unhighlight(NextMapBtn);
+                Unhighlight(PrevMapBtn);
             }
         }
 
@@ -407,10 +412,6 @@ namespace SimTools.Views
                     Highlight(btn);
                 }
             }
-
-            // General buttons
-            if (NextMapBtn?.Tag is RehydratedBinding next && IsMatch(next, input)) Highlight(NextMapBtn);
-            if (PrevMapBtn?.Tag is RehydratedBinding prev && IsMatch(prev, input)) Highlight(PrevMapBtn);
         }
 
         private static bool IsMatch(RehydratedBinding tag, InputBindingResult fired)

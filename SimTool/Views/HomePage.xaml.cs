@@ -6,7 +6,7 @@ namespace SimTools.Views
 {
     public partial class HomePage : UserControl
     {
-        private const string DiscordUrl = "https://discord.gg/your-server";
+        private const string DiscordUrl = "https://discord.gg/qTUgra7h";
         private const string WebsiteUrl = "https://your-website.com";
 
         public HomePage()

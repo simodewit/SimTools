@@ -275,11 +275,11 @@
 
                     <!-- ListBox for keybind rows, with its own dark scrollbar -->
                     <ListBox x:Name="KeybindsList"
-                             ItemsSource="{Binding Keybinds}"
-                             Background="Transparent" BorderThickness="0"
-                             ScrollViewer.VerticalScrollBarVisibility="Auto"
-                             ScrollViewer.CanContentScroll="False"
-                             MaxHeight="420">
+                            ItemsSource="{Binding Keybinds}"
+                            Background="Transparent" BorderThickness="0"
+                            ScrollViewer.VerticalScrollBarVisibility="Auto"
+                            ScrollViewer.CanContentScroll="False"
+                            VerticalAlignment="Stretch">
                         <ListBox.ItemTemplate>
                             <DataTemplate DataType="{x:Type models:KeybindBinding}">
                                 <Grid Margin="0,4">
@@ -358,20 +358,20 @@
                             </Grid.ColumnDefinitions>
 
                             <Button x:Name="NextMapBtn"
-                  Grid.Column="0"
-                  Style="{StaticResource AssignButton}"
-                  Click="NextMapAssign_Click"
-                  HorizontalAlignment="Stretch">
+                                    Grid.Column="0"
+                                    Style="{StaticResource AssignButton}"
+                                    Click="NextMapAssign_Click"
+                                    HorizontalAlignment="Stretch">
                                 <TextBlock Text="{Binding NextMapHotkey}" TextTrimming="CharacterEllipsis"/>
                             </Button>
 
                             <!-- Clear (E894) -->
                             <Button Grid.Column="1"
-                  Style="{StaticResource ToolbarTextButton}"
-                  FontFamily="Segoe MDL2 Assets" FontSize="12"
-                  Content="&#xE894;"
-                  ToolTip="Clear Next Map hotkey"
-                  Click="NextMapClear_Click"/>
+                                    Style="{StaticResource LinkAccentButton}"
+                                    FontFamily="Segoe MDL2 Assets" FontSize="12"
+                                    Content="&#xE894;"
+                                    ToolTip="Clear Next Map hotkey"
+                                    Click="NextMapClear_Click"/>
                         </Grid>
                     </StackPanel>
 
@@ -385,20 +385,20 @@
                             </Grid.ColumnDefinitions>
 
                             <Button x:Name="PrevMapBtn"
-                  Grid.Column="0"
-                  Style="{StaticResource AssignButton}"
-                  Click="PrevMapAssign_Click"
-                  HorizontalAlignment="Stretch">
+                                    Grid.Column="0"
+                                    Style="{StaticResource AssignButton}"
+                                    Click="PrevMapAssign_Click"
+                                    HorizontalAlignment="Stretch">
                                 <TextBlock Text="{Binding PrevMapHotkey}" TextTrimming="CharacterEllipsis"/>
                             </Button>
 
                             <!-- Clear (E894) -->
                             <Button Grid.Column="1"
-                  Style="{StaticResource ToolbarTextButton}"
-                  FontFamily="Segoe MDL2 Assets" FontSize="12"
-                  Content="&#xE894;"
-                  ToolTip="Clear Previous Map hotkey"
-                  Click="PrevMapClear_Click"/>
+                                    Style="{StaticResource LinkAccentButton}"
+                                    FontFamily="Segoe MDL2 Assets" FontSize="12"
+                                    Content="&#xE894;"
+                                    ToolTip="Clear Previous Map hotkey"
+                                    Click="PrevMapClear_Click"/>
                         </Grid>
                     </StackPanel>
                 </Grid>
