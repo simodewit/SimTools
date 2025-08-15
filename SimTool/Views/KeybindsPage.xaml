@@ -164,32 +164,14 @@
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
                         <TextBlock Text="Profiles" FontWeight="Bold" VerticalAlignment="Center"/>
-
                         <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right">
-                            <!-- Add ( E710) -->
-                            <Button Style="{StaticResource ToolbarTextButton}"
-                                    FontFamily="Segoe MDL2 Assets" FontSize="14"
-                                    Content="&#xE710;"
-                                    ToolTip="Add profile"
-                                    AutomationProperties.Name="Add profile"
-                                    Command="{Binding AddProfile}" />
-
-                            <!-- Delete ( E74D) -->
-                            <Button Style="{StaticResource ToolbarTextButton}"
-                                    FontFamily="Segoe MDL2 Assets" FontSize="14"
-                                    Content="&#xE74D;"
-                                    ToolTip="Remove profile"
-                                    AutomationProperties.Name="Remove profile"
-                                    Command="{Binding RemoveProfile}" />
-
-                            <!-- Edit ( E70F) used for Rename -->
-                            <Button Style="{StaticResource ToolbarTextButton}"
-                                    FontFamily="Segoe MDL2 Assets" FontSize="14"
-                                    Content="&#xE70F;"
-                                    ToolTip="Rename profile"
-                                    AutomationProperties.Name="Rename profile"
-                                    Click="RenameProfile_Click" />
+                            <Button Style="{StaticResource ToolbarTextButton}" FontFamily="Segoe MDL2 Assets" FontSize="14" Content="&#xE710;" ToolTip="Add profile"    AutomationProperties.Name="Add profile"    Command="{Binding AddProfile}" />
+                            <Button Style="{StaticResource ToolbarTextButton}" FontFamily="Segoe MDL2 Assets" FontSize="14" Content="&#xE74D;" ToolTip="Remove profile" AutomationProperties.Name="Remove profile" Command="{Binding RemoveProfile}" />
+                            <Button Style="{StaticResource ToolbarTextButton}" FontFamily="Segoe MDL2 Assets" FontSize="14" Content="&#xE70F;" ToolTip="Rename profile" AutomationProperties.Name="Rename profile" Click="RenameProfile_Click" />
+                            <!-- NEW -->
+                            <Button Style="{StaticResource ToolbarTextButton}" FontFamily="Segoe MDL2 Assets" FontSize="14" Content="&#xE8C8;" ToolTip="Duplicate profile" AutomationProperties.Name="Duplicate profile" Command="{Binding DuplicateProfile}" />
                         </StackPanel>
+
                     </Grid>
 
                     <ListBox x:Name="ProfilesList"
@@ -231,32 +213,12 @@
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
                         <TextBlock Text="Maps" FontWeight="Bold" VerticalAlignment="Center"/>
-
                         <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right">
-                            <!-- Add ( E710) -->
-                            <Button Style="{StaticResource ToolbarTextButton}"
-                                    FontFamily="Segoe MDL2 Assets" FontSize="14"
-                                    Content="&#xE710;"
-                                    ToolTip="Add map"
-                                    AutomationProperties.Name="Add map"
-                                    Command="{Binding AddMap}" />
-
-                            <!-- Delete ( E74D) -->
-                            <Button Style="{StaticResource ToolbarTextButton}"
-                                    FontFamily="Segoe MDL2 Assets" FontSize="14"
-                                    Content="&#xE74D;"
-                                    ToolTip="Remove map"
-                                    AutomationProperties.Name="Remove map"
-                                    Command="{Binding RemoveMap}" />
-
-                            <!-- Edit ( E70F) used for Rename -->
-                            <Button Style="{StaticResource ToolbarTextButton}"
-                                    FontFamily="Segoe MDL2 Assets" FontSize="14"
-                                    Content="&#xE70F;"
-                                    ToolTip="Rename map"
-                                    AutomationProperties.Name="Rename map"
-                                    Click="RenameMap_Click" />
-                            
+                            <Button Style="{StaticResource ToolbarTextButton}" FontFamily="Segoe MDL2 Assets" FontSize="14" Content="&#xE710;" ToolTip="Add map"    AutomationProperties.Name="Add map"    Command="{Binding AddMap}" />
+                            <Button Style="{StaticResource ToolbarTextButton}" FontFamily="Segoe MDL2 Assets" FontSize="14" Content="&#xE74D;" ToolTip="Remove map" AutomationProperties.Name="Remove map" Command="{Binding RemoveMap}" />
+                            <Button Style="{StaticResource ToolbarTextButton}" FontFamily="Segoe MDL2 Assets" FontSize="14" Content="&#xE70F;" ToolTip="Rename map" AutomationProperties.Name="Rename map" Click="RenameMap_Click" />
+                            <!-- NEW -->
+                            <Button Style="{StaticResource ToolbarTextButton}" FontFamily="Segoe MDL2 Assets" FontSize="14" Content="&#xE8C8;" ToolTip="Duplicate map" AutomationProperties.Name="Duplicate map" Command="{Binding DuplicateMap}" />
                         </StackPanel>
                     </Grid>
 

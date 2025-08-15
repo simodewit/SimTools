@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Windows.Input;
@@ -79,6 +80,9 @@ namespace SimTools.ViewModels
         public KeybindBinding NextMapHotkey { get; private set; } = new KeybindBinding { Name = "Next Map" };
         public KeybindBinding PrevMapHotkey { get; private set; } = new KeybindBinding { Name = "Previous Map" };
 
+        public RelayCommand DuplicateProfile { get; private set; }
+        public RelayCommand DuplicateMap { get; private set; }
+
         public KeybindsViewModel(AppState state, StorageService storage)
         {
             State = state; _storage = storage;
@@ -146,6 +150,31 @@ namespace SimTools.ViewModels
             // NEW: VM commands the view triggers when hotkeys fire
             NextMapCommand = new RelayCommand(_ => NextMap(), _ => true);
             PrevMapCommand = new RelayCommand(_ => PrevMap(), _ => true);
+
+            DuplicateProfile = new RelayCommand(() =>
+            {
+                if (SelectedProfile == null) return;
+
+                var copy = CloneProfile(SelectedProfile);
+                // Give it a friendly copy name
+                copy.Name = MakeCopyName(SelectedProfile.Name, Profiles.Select(p => p.Name));
+
+                Profiles.Add(copy);
+                SelectedProfile = copy;
+                _storage.Save(Profiles);
+            });
+
+            DuplicateMap = new RelayCommand(() =>
+            {
+                if (SelectedProfile == null || SelectedMap == null) return;
+
+                var copy = CloneMap(SelectedMap);
+                copy.Name = MakeCopyName(SelectedMap.Name, SelectedProfile.Maps.Select(m => m.Name));
+
+                SelectedProfile.Maps.Add(copy);
+                SelectedMap = copy;
+                _storage.Save(Profiles);
+            });
         }
 
         /// <summary>
@@ -214,6 +243,77 @@ namespace SimTools.ViewModels
 
             parts.Add(keyName);
             return string.Join(" + ", parts);
+        }
+
+        private static string MakeCopyName(string baseName, IEnumerable<string> existingNames)
+        {
+            if (string.IsNullOrWhiteSpace(baseName)) baseName = "Copy";
+            var set = new System.Collections.Generic.HashSet<string>(existingNames ?? Enumerable.Empty<string>(), StringComparer.OrdinalIgnoreCase);
+
+            // Try "Name - Copy", then "Name - Copy (2)", "(3)", etc.
+            string candidate = $"{baseName} - Copy";
+            if (!set.Contains(candidate)) return candidate;
+
+            int i = 2;
+            while (true)
+            {
+                candidate = $"{baseName} - Copy ({i})";
+                if (!set.Contains(candidate)) return candidate;
+                i++;
+            }
+        }
+
+        private static Profile CloneProfile(Profile src)
+        {
+            var p = new Profile
+            {
+                Name = src?.Name
+            };
+
+            if (src?.Maps != null)
+            {
+                foreach (var m in src.Maps)
+                    p.Maps.Add(CloneMap(m));
+            }
+
+            // If your Profile stores Next/Prev hotkey device keys, copy them too:
+            // p.NextMapDevice = src.NextMapDevice;
+            // p.NextMapDeviceKey = src.NextMapDeviceKey;
+            // p.PrevMapDevice = src.PrevMapDevice;
+            // p.PrevMapDeviceKey = src.PrevMapDeviceKey;
+
+            return p;
+        }
+
+        private static KeybindMap CloneMap(KeybindMap src)
+        {
+            var m = new KeybindMap
+            {
+                Name = src?.Name
+            };
+
+            if (src?.Keybinds != null)
+            {
+                foreach (var kb in src.Keybinds)
+                    m.Keybinds.Add(CloneBinding(kb));
+            }
+
+            return m;
+        }
+
+        private static KeybindBinding CloneBinding(KeybindBinding src)
+        {
+            if (src == null) return new KeybindBinding();
+
+            return new KeybindBinding
+            {
+                Name = src.Name,
+                Device = src.Device,
+                DeviceKey = src.DeviceKey,
+                Key = src.Key,
+                Modifiers = src.Modifiers
+                // copy any other fields you may have added to KeybindBinding
+            };
         }
     }
 }
