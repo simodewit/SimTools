@@ -29,6 +29,11 @@ namespace SimTools.Views
         // Live highlight state (button -> its original background)
         private readonly Dictionary<Button, Brush> _litButtons = new Dictionary<Button, Brush>();
 
+        // --- NEW: debounce when firing map switching from hotkeys ---
+        private DateTime _lastNextFiredUtc = DateTime.MinValue;
+        private DateTime _lastPrevFiredUtc = DateTime.MinValue;
+        private static readonly TimeSpan _hotkeyDebounce = TimeSpan.FromMilliseconds(250);
+
         public KeybindsPage()
         {
             InitializeComponent();
@@ -266,6 +271,9 @@ namespace SimTools.Views
                 var label = BuildKeyboardLabel(Keyboard.Modifiers, key);
                 var synthetic = new InputBindingResult { DeviceType = "Keyboard", ControlLabel = label };
                 HighlightMatches(synthetic);
+
+                // NEW: fire switching once per press while focused
+                if (!ke.IsRepeat) MaybeSwitchMapFrom(synthetic);
             }
             else if (ke.RoutedEvent == Keyboard.PreviewKeyUpEvent || ke.RoutedEvent == Keyboard.KeyUpEvent)
             {
@@ -384,8 +392,10 @@ namespace SimTools.Views
             // Highlight matches (we don't get an explicit release from this source)
             HighlightMatches(input);
 
-            // Optional: if your global monitor fires *without* key-up events and you
-            // want to auto-clear after a short pulse, uncomment this:
+            // NEW: act on general hotkeys
+            MaybeSwitchMapFrom(input);
+
+            // Optional: auto-clear pulse
             // DispatcherTimer t = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(120) };
             // t.Tick += (s, e) => { t.Stop(); ClearAllHighlights(); };
             // t.Start();
@@ -569,8 +579,8 @@ namespace SimTools.Views
                 else { PrevMapBtn.Tag = null; SetButtonText(PrevMapBtn, "None"); }
             }
 
-            // Ensure no stale highlights after rehydrate
-            ClearAllHighlights();
+            // Only clear row highlights; keep Next/Prev highlight intact during map switches
+            ClearRowHighlights();
         }
 
         private static string ComposeLabel(string device, string key)
@@ -606,6 +616,87 @@ namespace SimTools.Views
         {
             public string DeviceType { get; set; }
             public string ControlLabel { get; set; }
+        }
+
+        // ---------- NEW: Hotkey → VM switching ----------
+        private void MaybeSwitchMapFrom(InputBindingResult input)
+        {
+            bool matchNext = NextMapBtn?.Tag is RehydratedBinding next && IsMatch(next, input);
+            bool matchPrev = PrevMapBtn?.Tag is RehydratedBinding prev && IsMatch(prev, input);
+
+            if (matchNext && ShouldFire(ref _lastNextFiredUtc)) TriggerNextMap();
+            if (matchPrev && ShouldFire(ref _lastPrevFiredUtc)) TriggerPrevMap();
+        }
+
+        private static bool ShouldFire(ref DateTime lastFiredUtc)
+        {
+            var now = DateTime.UtcNow;
+            if ((now - lastFiredUtc) < _hotkeyDebounce) return false;
+            lastFiredUtc = now;
+            return true;
+        }
+
+        private void TriggerNextMap()
+        {
+            if (!Dispatcher.CheckAccess()) { Dispatcher.BeginInvoke(new Action(TriggerNextMap)); return; }
+
+            // Clear any row highlights BEFORE switching maps so we don't carry stale visuals across
+            ClearAllHighlights();
+
+            // Briefly show feedback on the general button
+            Highlight(NextMapBtn);
+
+            // Switch the map in the VM (NextMapCommand / fallback methods)
+            ExecuteMapSwitchCommand(+1);
+        }
+
+        private void TriggerPrevMap()
+        {
+            if (!Dispatcher.CheckAccess()) { Dispatcher.BeginInvoke(new Action(TriggerPrevMap)); return; }
+
+            ClearAllHighlights();
+            Highlight(PrevMapBtn);
+            ExecuteMapSwitchCommand(-1);
+        }
+
+        // Call into the VM via ICommand first; fall back to common method names if exposed
+        private void ExecuteMapSwitchCommand(int delta)
+        {
+            var vm = DataContext;
+            if (vm == null) return;
+
+            if (delta > 0)
+            {
+                if (TryExecuteCommand(vm, "NextMapCommand")) return;
+                if (TryInvoke(vm, "SwitchToNextMap")) return;
+                if (TryInvoke(vm, "SelectNextMap")) return;
+            }
+            else
+            {
+                if (TryExecuteCommand(vm, "PrevMapCommand")) return;
+                if (TryExecuteCommand(vm, "PreviousMapCommand")) return;
+                if (TryInvoke(vm, "SwitchToPreviousMap")) return;
+                if (TryInvoke(vm, "SelectPreviousMap")) return;
+                if (TryInvoke(vm, "SelectPrevMap")) return;
+            }
+
+            // As a final fallback, try methods named NextMap/PrevMap if you kept those names
+            if (delta > 0) TryInvoke(vm, "NextMap"); else TryInvoke(vm, "PrevMap");
+        }
+
+        private static bool TryExecuteCommand(object target, string propertyName)
+        {
+            var p = target?.GetType().GetProperty(propertyName, BindingFlags.Instance | BindingFlags.Public);
+            var cmd = p?.GetValue(target) as ICommand;
+            if (cmd != null && cmd.CanExecute(null)) { cmd.Execute(null); return true; }
+            return false;
+        }
+
+        private static bool TryInvoke(object target, string methodName)
+        {
+            var m = target?.GetType().GetMethod(methodName, BindingFlags.Instance | BindingFlags.Public, null, Type.EmptyTypes, null);
+            if (m != null) { try { m.Invoke(target, null); return true; } catch { } }
+            return false;
         }
 
         // ---------- Helpers ----------
@@ -675,6 +766,20 @@ namespace SimTools.Views
                 bindingExpr?.UpdateSource();
                 Keyboard.ClearFocus();
                 e.Handled = true;
+            }
+        }
+
+        // Clear ONLY highlights belonging to keybind rows (not the global Next/Prev buttons).
+        private void ClearRowHighlights()
+        {
+            foreach (var kv in _litButtons.ToList())
+            {
+                // keep global buttons lit; they are independent of map items
+                if (kv.Key == NextMapBtn || kv.Key == PrevMapBtn)
+                    continue;
+
+                kv.Key.Background = kv.Value;
+                _litButtons.Remove(kv.Key);
             }
         }
     }

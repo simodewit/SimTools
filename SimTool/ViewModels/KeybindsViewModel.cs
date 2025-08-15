@@ -64,6 +64,17 @@ namespace SimTools.ViewModels
         public ICommand SaveCommand { get; private set; }   // exact name matters
         public void Save() => _storage.Save(Profiles);      // method fallback
 
+        // NEW: Commands the view will call when hotkeys fire
+        public ICommand NextMapCommand { get; private set; }
+        public ICommand PrevMapCommand { get; private set; }
+
+        // Optional: if no profile-level storage exists, the page can store/retrieve on the VM
+        // (KeybindsPage uses reflection for NextMapDevice/NextMapDeviceKey/etc.)
+        public string NextMapDevice { get; set; }
+        public string NextMapDeviceKey { get; set; }
+        public string PrevMapDevice { get; set; }
+        public string PrevMapDeviceKey { get; set; }
+
         // General settings hotkeys (persist these in your models if you want them saved too)
         public KeybindBinding NextMapHotkey { get; private set; } = new KeybindBinding { Name = "Next Map" };
         public KeybindBinding PrevMapHotkey { get; private set; } = new KeybindBinding { Name = "Previous Map" };
@@ -131,13 +142,17 @@ namespace SimTools.ViewModels
             });
 
             SaveCommand = new RelayCommand(_ => Save(), _ => true);
+
+            // NEW: VM commands the view triggers when hotkeys fire
+            NextMapCommand = new RelayCommand(_ => NextMap(), _ => true);
+            PrevMapCommand = new RelayCommand(_ => PrevMap(), _ => true);
         }
 
         /// <summary>
         /// Assigns a keyboard hotkey to a KeybindBinding using your existing model fields only.
         /// Also sets Device/DeviceKey so it round-trips and matches global input after restart.
         /// </summary>
-        public void AssignKey(KeyEventArgs e, KeybindBinding binding)
+        public void AssignKey(System.Windows.Input.KeyEventArgs e, KeybindBinding binding)
         {
             if (binding == null || e == null) return;
 
