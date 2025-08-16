@@ -1,22 +1,23 @@
 ﻿<UserControl x:Class="SimTools.Views.OverlayEditorPage"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:models="clr-namespace:SimTools.Models">
+             xmlns:local="clr-namespace:SimTools.Controls">
     <UserControl.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
                 <ResourceDictionary Source="pack://application:,,,/Themes/Colors.xaml"/>
+                <ResourceDictionary Source="pack://application:,,,/Themes/OverlayTheme.xaml"/>
                 <ResourceDictionary Source="pack://application:,,,/Themes/Styles.xaml"/>
             </ResourceDictionary.MergedDictionaries>
 
             <!-- Asphalt background brush -->
             <ImageBrush x:Key="AsphaltBrush"
-                        ImageSource="pack://application:,,,/SimTool;component/Images/Asphalt.png"
-                        Stretch="UniformToFill"/>
+                  ImageSource="pack://application:,,,/SimTool;component/Images/Asphalt.png"
+                  Stretch="UniformToFill"/>
 
-            <!-- Reusable Map Switcher template (centered presenter uses this) -->
+            <!-- Reusable Map Switcher template (now fully themed via Overlay* resources) -->
             <DataTemplate x:Key="MapSwitcherTemplate">
-                <Border Background="#CC0D0F13" CornerRadius="8" Padding="10">
+                <Border Style="{DynamicResource OverlayPanel.Container}">
                     <Grid>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
@@ -26,46 +27,32 @@
                             <RowDefinition Height="Auto"/>
                         </Grid.RowDefinitions>
 
-                        <!-- Header -->
-                        <TextBlock Text="Map Switcher"
-                                   Foreground="{DynamicResource Brush.TextDim}"
-                                   FontSize="11" FontWeight="SemiBold"
-                                   Grid.Row="0"/>
+                        <TextBlock Text="Map Switcher" Grid.Row="0" Style="{DynamicResource OverlayText.Heading}"/>
 
-                        <!-- Above / Current / Below -->
                         <StackPanel Grid.Row="1" Margin="0,6,0,0">
-                            <TextBlock Text="{Binding PrevMapName}"
-                                       FontSize="12"
-                                       Foreground="{DynamicResource Brush.TextDim}"/>
-                            <TextBlock Text="{Binding CurrentMapName}"
-                                       FontSize="20" FontWeight="Bold"/>
-                            <TextBlock Text="{Binding NextMapName}"
-                                       FontSize="12"
-                                       Foreground="{DynamicResource Brush.TextDim}"/>
+                            <TextBlock Text="{Binding PrevMapName}" Style="{DynamicResource OverlayText.Label}"/>
+                            <TextBlock Text="{Binding CurrentMapName}" Style="{DynamicResource OverlayText.Title}"/>
+                            <TextBlock Text="{Binding NextMapName}" Style="{DynamicResource OverlayText.Label}"/>
                         </StackPanel>
 
-                        <!-- Divider -->
                         <Rectangle Grid.Row="2" Height="1" Fill="#35FFFFFF" Margin="0,8,0,8"/>
 
-                        <!-- Keybinds -->
                         <StackPanel Grid.Row="4" Orientation="Horizontal">
                             <StackPanel Margin="0,0,12,0">
-                                <TextBlock Text="Prev"
-                                           Foreground="{DynamicResource Brush.TextDim}"
-                                           FontSize="11"/>
+                                <TextBlock Text="Prev" Style="{DynamicResource OverlayText.Label}"/>
                                 <Border Background="#22000000" CornerRadius="4" Padding="4,2">
                                     <TextBlock Text="{Binding PrevMapKeyDisplay}"
-                                               FontFamily="Consolas" FontSize="12"/>
+                             FontFamily="{DynamicResource Overlay.FontFamily}"
+                             FontSize="12"/>
                                 </Border>
                             </StackPanel>
 
                             <StackPanel>
-                                <TextBlock Text="Next"
-                                           Foreground="{DynamicResource Brush.TextDim}"
-                                           FontSize="11"/>
+                                <TextBlock Text="Next" Style="{DynamicResource OverlayText.Label}"/>
                                 <Border Background="#22000000" CornerRadius="4" Padding="4,2">
                                     <TextBlock Text="{Binding NextMapKeyDisplay}"
-                                               FontFamily="Consolas" FontSize="12"/>
+                             FontFamily="{DynamicResource Overlay.FontFamily}"
+                             FontSize="12"/>
                                 </Border>
                             </StackPanel>
                         </StackPanel>
@@ -76,39 +63,37 @@
     </UserControl.Resources>
 
     <ScrollViewer VerticalScrollBarVisibility="Auto"
-                  HorizontalScrollBarVisibility="Auto"
-                  CanContentScroll="True">
+                HorizontalScrollBarVisibility="Auto"
+                CanContentScroll="True">
         <Grid Margin="20" x:Name="Root">
-            <!-- All rows are Auto so nothing competes for space -->
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
-                <!-- header -->
                 <RowDefinition Height="Auto"/>
-                <!-- preview (fixed size) -->
                 <RowDefinition Height="Auto"/>
-                <!-- bottom tabs -->
             </Grid.RowDefinitions>
 
             <!-- Header -->
             <StackPanel Grid.Row="0" Margin="0,0,0,10">
-                <TextBlock Text="Overlay Editor" FontSize="20" FontWeight="Bold"/>
+                <TextBlock Text="Overlay Editor" FontSize="20" FontWeight="Bold"
+                   FontFamily="{DynamicResource Overlay.FontFamily}"/>
                 <TextBlock Text="Select any tool to see the preview and change the settings to your liking"
-                           Foreground="{DynamicResource Brush.TextDim}" Margin="0,2,0,0"/>
+                   Foreground="{DynamicResource Brush.TextDim}" Margin="0,2,0,0"
+                   FontFamily="{DynamicResource Overlay.FontFamily}"/>
             </StackPanel>
 
             <!-- Preview: fixed 960x540, centered -->
             <Grid Grid.Row="1">
                 <Grid HorizontalAlignment="Center"
-                      Width="960" Height="540"
-                      ClipToBounds="True"
-                      Background="{StaticResource AsphaltBrush}">
+              Width="960" Height="540"
+              ClipToBounds="True"
+              Background="{StaticResource AsphaltBrush}">
 
-                    <!-- Preview canvas (elements collapsed for now so nothing shows at 0,0) -->
+                    <!-- (Keeping canvas collapsed for now) -->
                     <Canvas x:Name="PreviewCanvas"
-                            AllowDrop="True"
-                            Background="#10000000"
-                            DragOver="Preview_DragOver"
-                            Drop="Preview_Drop">
+                  AllowDrop="True"
+                  Background="#10000000"
+                  DragOver="Preview_DragOver"
+                  Drop="Preview_Drop">
                         <ItemsControl ItemsSource="{Binding OverlayElements}" Visibility="Collapsed">
                             <ItemsControl.ItemsPanel>
                                 <ItemsPanelTemplate>
@@ -117,15 +102,15 @@
                             </ItemsControl.ItemsPanel>
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
-                                    <Border Background="#CC0D0F13" CornerRadius="8" Padding="8"
-                                            Canvas.Left="{Binding X}" Canvas.Top="{Binding Y}"
-                                            MouseLeftButtonDown="Element_MouseLeftButtonDown"
-                                            MouseMove="Element_MouseMove"
-                                            MouseLeftButtonUp="Element_MouseLeftButtonUp">
+                                    <Border Style="{DynamicResource OverlayPanel.Container}"
+                          Canvas.Left="{Binding X}" Canvas.Top="{Binding Y}"
+                          MouseLeftButtonDown="Element_MouseLeftButtonDown"
+                          MouseMove="Element_MouseMove"
+                          MouseLeftButtonUp="Element_MouseLeftButtonUp">
                                         <StackPanel>
-                                            <TextBlock Text="Mapping" Foreground="{DynamicResource Brush.TextDim}" FontSize="12"/>
+                                            <TextBlock Text="Mapping" Style="{DynamicResource OverlayText.Label}"/>
                                             <TextBlock Text="{Binding DataContext.State.CurrentMap.Name, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                                       FontSize="20" FontWeight="Bold"/>
+                                 Style="{DynamicResource OverlayText.Title}"/>
                                         </StackPanel>
                                     </Border>
                                 </DataTemplate>
@@ -133,18 +118,14 @@
                         </ItemsControl>
                     </Canvas>
 
-                    <!-- Standard centered settings panel (General tab only) -->
+                    <!-- General center panel -> FONT PREVIEW -->
                     <Border x:Name="CenteredSettingsPanel"
-                            HorizontalAlignment="Center"
-                            VerticalAlignment="Center"
-                            Background="{DynamicResource Brush.OverlayPanel}"
-                            BorderBrush="{DynamicResource Brush.OverlayBorder}"
-                            BorderThickness="1"
-                            CornerRadius="10"
-                            Padding="12"
-                            MinWidth="120" MinHeight="120">
+                  HorizontalAlignment="Center"
+                  VerticalAlignment="Center"
+                  Padding="16" MinWidth="260" MinHeight="120">
+                        <!-- IMPORTANT: only ONE Style; base it on the overlay container style -->
                         <Border.Style>
-                            <Style TargetType="Border">
+                            <Style TargetType="Border" BasedOn="{StaticResource OverlayPanel.Container}">
                                 <Setter Property="Visibility" Value="Visible"/>
                                 <Style.Triggers>
                                     <DataTrigger Binding="{Binding IsKeybindsActive}" Value="True">
@@ -154,24 +135,20 @@
                             </Style>
                         </Border.Style>
 
-                        <ContentPresenter>
-                            <ContentPresenter.ContentTemplate>
-                                <DataTemplate>
-                                    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
-                                        <TextBlock Text="Select a tool to edit its settings"
-                                                   Foreground="{DynamicResource Brush.TextDim}"
-                                                   FontStyle="Italic"
-                                                   TextAlignment="Center"/>
-                                    </StackPanel>
-                                </DataTemplate>
-                            </ContentPresenter.ContentTemplate>
-                        </ContentPresenter>
+                        <StackPanel>
+                            <TextBlock Text="Font Preview" Style="{DynamicResource OverlayText.Heading}"/>
+                            <TextBlock Text="{Binding FontSampleText}"
+                         TextWrapping="Wrap"
+                         Margin="0,6,0,0"
+                         FontFamily="{DynamicResource Overlay.FontFamily}"
+                         FontSize="{Binding FontPreviewSize}"/>
+                        </StackPanel>
                     </Border>
 
                     <!-- Single centered Map Switcher (Keybinds tab only) -->
                     <ContentControl HorizontalAlignment="Center"
-                                    VerticalAlignment="Center"
-                                    ContentTemplate="{StaticResource MapSwitcherTemplate}">
+                          VerticalAlignment="Center"
+                          ContentTemplate="{StaticResource MapSwitcherTemplate}">
                         <ContentControl.Style>
                             <Style TargetType="ContentControl">
                                 <Setter Property="Visibility" Value="Collapsed"/>
@@ -190,20 +167,99 @@
             <!-- Tools panel -->
             <Border Grid.Row="2" Style="{DynamicResource Card}" Margin="0,12,0,0" Padding="12">
                 <TabControl x:Name="BottomTabs"
-                            Background="Transparent"
-                            SelectionChanged="BottomTabs_SelectionChanged">
+                    Background="Transparent"
+                    SelectionChanged="BottomTabs_SelectionChanged">
                     <TabItem Header="General" Cursor="Hand">
-                        <StackPanel Margin="8">
+                        <StackPanel Margin="8" VerticalAlignment="Top" >
+
+                            <!-- Open Overlay -->
                             <Button Content="Open Overlay Window"
-                                    Command="{Binding OpenOverlay}"
-                                    Style="{StaticResource PrimaryButton}"
-                                    Width="220"
-                                    Cursor="Hand"/>
+                      Command="{Binding OpenOverlay}"
+                      Style="{StaticResource PrimaryButton}"
+                      Width="220"
+                      Cursor="Hand"/>
+
+                            <!-- Overlay background settings -->
+                            <TextBlock Text="Overlay Background" FontWeight="Bold" Margin="0,16,0,8"
+                         FontFamily="{DynamicResource Overlay.FontFamily}"/>
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <!-- Live swatch -->
+                                <Rectangle Width="32" Height="20"
+                           Stroke="{DynamicResource Brush.Border}"
+                           Fill="{DynamicResource Overlay.PanelBrush}"
+                           RadiusX="4" RadiusY="4"
+                           Margin="0,0,8,0"/>
+                                <!-- Hex -->
+                                <TextBlock Text="Hex" VerticalAlignment="Center" Margin="0,0,6,0"
+                           FontFamily="{DynamicResource Overlay.FontFamily}"/>
+                                <TextBox Width="110"
+                         Text="{Binding OverlayPanelColorHex, UpdateSourceTrigger=PropertyChanged}"
+                         ToolTip="Hex: #RRGGBB"
+                         Margin="0,0,12,0"/>
+                                <!-- Brightness (Value) -->
+                                <TextBlock Text="Brightness" VerticalAlignment="Center" Margin="0,0,6,0"
+                           FontFamily="{DynamicResource Overlay.FontFamily}"/>
+                                <Slider Width="120" Minimum="0" Maximum="1"
+                        Value="{Binding OverlayValue, UpdateSourceTrigger=PropertyChanged}"/>
+                                <!-- Alpha -->
+                                <TextBlock Text="Alpha" VerticalAlignment="Center" Margin="12,0,6,0"
+                           FontFamily="{DynamicResource Overlay.FontFamily}"/>
+                                <Slider Width="120" Minimum="0" Maximum="1"
+                        Value="{Binding OverlayPanelOpacity, UpdateSourceTrigger=PropertyChanged}"/>
+                                <TextBlock Text="{Binding OverlayPanelOpacity, StringFormat={}{0:P0}}"
+                           VerticalAlignment="Center" Margin="8,0,0,0"
+                           FontFamily="{DynamicResource Overlay.FontFamily}"/>
+                                <!-- Reset -->
+                                <Button Content="Reset" Command="{Binding ResetOverlayPanelToTheme}" Margin="12,0,0,0"/>
+                            </StackPanel>
+
+                            <!-- Color wheel -->
+                            <StackPanel Margin="0,8,0,0">
+                                <TextBlock Text="Pick Color" FontWeight="Bold" Margin="0,8,0,6"
+                           FontFamily="{DynamicResource Overlay.FontFamily}"/>
+                                <StackPanel Orientation="Horizontal">
+                                    <local:ColorWheel Width="180" Height="180"
+                                    Hue="{Binding OverlayHue, Mode=TwoWay}"
+                                    Saturation="{Binding OverlaySaturation, Mode=TwoWay}"/>
+                                    <StackPanel Margin="12,0,0,0" VerticalAlignment="Center">
+                                        <TextBlock Text="Hue" Margin="0,0,0,4" FontFamily="{DynamicResource Overlay.FontFamily}"/>
+                                        <Slider Width="180" Minimum="0" Maximum="360" Value="{Binding OverlayHue, Mode=TwoWay}"/>
+                                        <TextBlock Text="Saturation" Margin="0,12,0,4" FontFamily="{DynamicResource Overlay.FontFamily}"/>
+                                        <Slider Width="180" Minimum="0" Maximum="1" Value="{Binding OverlaySaturation, Mode=TwoWay}"/>
+                                        <TextBlock Text="Brightness" Margin="0,12,0,4" FontFamily="{DynamicResource Overlay.FontFamily}"/>
+                                        <Slider Width="180" Minimum="0" Maximum="1" Value="{Binding OverlayValue, Mode=TwoWay}"/>
+                                    </StackPanel>
+                                </StackPanel>
+                            </StackPanel>
+
+                            <!-- Fonts -->
+                            <TextBlock Text="Fonts" FontWeight="Bold" Margin="0,16,0,8"
+                         FontFamily="{DynamicResource Overlay.FontFamily}"/>
+                            <StackPanel Orientation="Horizontal">
+                                <ComboBox Width="300"
+                          ItemsSource="{Binding FontFamilies}"
+                          SelectedItem="{Binding SelectedFontFamily}">
+                                    <ComboBox.ItemTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding Source}" FontFamily="{Binding}"/>
+                                        </DataTemplate>
+                                    </ComboBox.ItemTemplate>
+                                </ComboBox>
+                                <TextBlock Text="Size" VerticalAlignment="Center" Margin="12,0,6,0"
+                           FontFamily="{DynamicResource Overlay.FontFamily}"/>
+                                <Slider Width="120" Minimum="10" Maximum="36" Value="{Binding FontPreviewSize, Mode=TwoWay}"/>
+                            </StackPanel>
+
+                            <TextBlock Text="Sample text (used in the center preview)" Margin="0,8,0,4"
+                         Foreground="{DynamicResource Brush.TextDim}"
+                         FontFamily="{DynamicResource Overlay.FontFamily}"/>
+                            <TextBox Text="{Binding FontSampleText, UpdateSourceTrigger=PropertyChanged}" />
                         </StackPanel>
                     </TabItem>
+
                     <TabItem Header="Keybinds" Cursor="Hand">
                         <StackPanel Margin="8">
-                            <!-- keybind content -->
+                            <!-- Configure keybinds here if needed -->
                         </StackPanel>
                     </TabItem>
                 </TabControl>
