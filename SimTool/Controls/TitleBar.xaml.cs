@@ -1,5 +1,4 @@
-﻿using SimTools.Views;
-using System.Windows;
+﻿using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
@@ -27,21 +26,22 @@ namespace SimTools.Controls
 
         private void DragArea_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
+            // Ignore drag if clicking on buttons
             if (IsInsideButtons(e.OriginalSource as DependencyObject)) return;
-            var w = Window.GetWindow(this);
-            if (w == null) return;
 
+            var window = Window.GetWindow(this);
+            if (window == null) return;
+
+            // Double-click to toggle maximize
             if (e.ClickCount == 2)
             {
-                // Toggle fake maximize
-                if (IsWorkAreaMaximized(w))
-                    w.WindowState = WindowState.Normal;
-                else
-                    WindowWorkAreaHelper.MaximizeToWorkArea(w);
+                window.WindowState = window.WindowState == WindowState.Maximized
+                    ? WindowState.Normal
+                    : WindowState.Maximized;
                 return;
             }
 
-            try { w.DragMove(); } catch { }
+            try { window.DragMove(); } catch { }
         }
 
         private void Min_Click(object sender, RoutedEventArgs e)
@@ -54,11 +54,7 @@ namespace SimTools.Controls
         {
             var w = Window.GetWindow(this);
             if (w == null) return;
-
-            if (IsWorkAreaMaximized(w))
-                w.WindowState = WindowState.Normal;
-            else
-                WindowWorkAreaHelper.MaximizeToWorkArea(w);
+            w.WindowState = (w.WindowState == WindowState.Maximized) ? WindowState.Normal : WindowState.Maximized;
         }
 
         private void Close_Click(object sender, RoutedEventArgs e)
@@ -66,8 +62,5 @@ namespace SimTools.Controls
             var w = Window.GetWindow(this);
             if (w != null) w.Close();
         }
-
-        private static bool IsWorkAreaMaximized(Window w) =>
-        w.WindowState == WindowState.Normal && (w.Left <= 1) && (w.Top <= 1);
     }
 }
