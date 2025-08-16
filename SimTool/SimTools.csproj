@@ -63,17 +63,26 @@
     <Compile Include="Controls\TitleBar.xaml.cs">
       <DependentUpon>TitleBar.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Helpers\KeybindHelpers.cs" />
+    <Compile Include="Helpers\KeybindUiHelpers.cs" />
     <Compile Include="Helpers\MinSizeHook.cs" />
+    <Compile Include="Helpers\ReflectionUtils.cs" />
     <Compile Include="Interop\RawInputNative.cs" />
+    <Compile Include="Models\DeviceBindingDescriptor.cs" />
     <Compile Include="Models\InputBindingResult.cs" />
     <Compile Include="Models\OverlayElement.cs" />
     <Compile Include="Services\AppState.cs" />
+    <Compile Include="Services\ButtonHighlightService.cs" />
+    <Compile Include="Services\DebouncedSaver.cs" />
     <Compile Include="Services\HotkeyService.cs" />
     <Compile Include="Services\InputCapture.cs" />
+    <Compile Include="Services\KeybindRehydrator.cs" />
+    <Compile Include="Services\MapHotkeyController.cs" />
     <Compile Include="Services\MediaService.cs" />
     <Compile Include="Services\NewsService.cs" />
     <Compile Include="Services\RawInputMonitor.cs" />
     <Compile Include="Services\StorageService.cs" />
+    <Compile Include="Services\VmCollectionBinder.cs" />
     <Compile Include="ViewModels\HomeViewModel.cs" />
     <Compile Include="ViewModels\KeybindsViewModel.cs" />
     <Compile Include="ViewModels\MainViewModel.cs" />
