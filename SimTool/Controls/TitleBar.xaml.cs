@@ -26,41 +26,27 @@ namespace SimTools.Controls
 
         private void DragArea_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
-            // Ignore drag if clicking on buttons
-            if (IsInsideButtons(e.OriginalSource as DependencyObject)) return;
-
-            var window = Window.GetWindow(this);
-            if (window == null) return;
-
-            // Double-click to toggle maximize
-            if (e.ClickCount == 2)
-            {
-                window.WindowState = window.WindowState == WindowState.Maximized
-                    ? WindowState.Normal
-                    : WindowState.Maximized;
-                return;
-            }
-
-            try { window.DragMove(); } catch { }
+            // Optional: only if you want to support dragging from a specific child element
+            // Not needed if you rely entirely on CaptionHeight.
+            if (e.ButtonState == MouseButtonState.Pressed)
+                Window.GetWindow(this)?.DragMove();
         }
 
+        // Buttons can keep toggling WindowState — with WindowChrome they’ll respect the taskbar.
         private void Min_Click(object sender, RoutedEventArgs e)
         {
-            var w = Window.GetWindow(this);
-            if (w != null) w.WindowState = WindowState.Minimized;
+            Window.GetWindow(this)!.WindowState = WindowState.Minimized;
         }
 
         private void Max_Click(object sender, RoutedEventArgs e)
         {
-            var w = Window.GetWindow(this);
-            if (w == null) return;
+            var w = Window.GetWindow(this)!;
             w.WindowState = (w.WindowState == WindowState.Maximized) ? WindowState.Normal : WindowState.Maximized;
         }
 
         private void Close_Click(object sender, RoutedEventArgs e)
         {
-            var w = Window.GetWindow(this);
-            if (w != null) w.Close();
+            Window.GetWindow(this)?.Close();
         }
     }
 }

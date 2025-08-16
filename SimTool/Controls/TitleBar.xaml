@@ -1,9 +1,13 @@
 ﻿<UserControl x:Class="SimTools.Controls.TitleBar"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
              Height="40">
+
+    <!-- Drag region acts as the window caption (draggable / double-click to maximize) -->
     <Grid x:Name="DragArea"
           Background="{DynamicResource Brush.Surface}"
+          shell:WindowChrome.IsHitTestVisibleInChrome="False"
           MouseLeftButtonDown="DragArea_MouseLeftButtonDown">
         <Grid.ColumnDefinitions>
             <ColumnDefinition/>
@@ -11,7 +15,9 @@
         </Grid.ColumnDefinitions>
 
         <!-- Title + subtitle -->
-        <StackPanel Orientation="Vertical" VerticalAlignment="Center" Margin="12,0,0,0">
+        <StackPanel Orientation="Vertical"
+                    VerticalAlignment="Center"
+                    Margin="12,0,0,0">
             <TextBlock Text="SimTools" FontWeight="SemiBold"/>
             <TextBlock Text="Your sim racing tool"
                        FontSize="11"
@@ -19,15 +25,21 @@
                        Margin="0,-2,0,0"/>
         </StackPanel>
 
-        <!-- Window buttons -->
-        <StackPanel x:Name="ButtonsPanel" Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,6,0">
+        <!-- Window buttons: must be interactive inside chrome -->
+        <StackPanel x:Name="ButtonsPanel"
+                    Grid.Column="1"
+                    Orientation="Horizontal"
+                    VerticalAlignment="Center"
+                    Margin="0,0,6,0"
+                    shell:WindowChrome.IsHitTestVisibleInChrome="True">
             <Button Content="—" Width="36" Height="26" Margin="6,0,0,0"
                     Click="Min_Click" ToolTip="Minimize"/>
             <Button Content="□" Width="36" Height="26" Margin="6,0,0,0"
                     Click="Max_Click" ToolTip="Maximize/Restore"/>
             <Button Content="✕" Width="36" Height="26" Margin="6,0,0,0"
                     Click="Close_Click" ToolTip="Close"
-                    Background="#CC2B2F33" BorderBrush="{DynamicResource Brush.Border}"/>
+                    Background="#CC2B2F33"
+                    BorderBrush="{DynamicResource Brush.Border}"/>
         </StackPanel>
     </Grid>
 </UserControl>
