@@ -5,8 +5,8 @@
     <UserControl.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
+                <!-- Keep Colors + Styles local if you prefer, but DO NOT re-merge OverlayTheme here -->
                 <ResourceDictionary Source="pack://application:,,,/Themes/Colors.xaml"/>
-                <ResourceDictionary Source="pack://application:,,,/Themes/OverlayTheme.xaml"/>
                 <ResourceDictionary Source="pack://application:,,,/Themes/Styles.xaml"/>
             </ResourceDictionary.MergedDictionaries>
 
@@ -15,7 +15,7 @@
                   ImageSource="pack://application:,,,/SimTool;component/Images/Asphalt.png"
                   Stretch="UniformToFill"/>
 
-            <!-- Reusable Map Switcher template (now fully themed via Overlay* resources) -->
+            <!-- Map Switcher template (uses app-wide DynamicResource styles/fonts) -->
             <DataTemplate x:Key="MapSwitcherTemplate">
                 <Border Style="{DynamicResource OverlayPanel.Container}">
                     <Grid>
@@ -123,7 +123,6 @@
                   HorizontalAlignment="Center"
                   VerticalAlignment="Center"
                   Padding="16" MinWidth="260" MinHeight="120">
-                        <!-- IMPORTANT: only ONE Style; base it on the overlay container style -->
                         <Border.Style>
                             <Style TargetType="Border" BasedOn="{StaticResource OverlayPanel.Container}">
                                 <Setter Property="Visibility" Value="Visible"/>
@@ -166,8 +165,7 @@
 
             <!-- Tools panel -->
             <Border Grid.Row="2" Style="{DynamicResource Card}" Margin="0,12,0,0" Padding="12">
-                <TabControl x:Name="BottomTabs"
-                    Background="Transparent"
+                <TabControl x:Name="BottomTabs" Background="Transparent"
                     SelectionChanged="BottomTabs_SelectionChanged">
                     <TabItem Header="General" Cursor="Hand">
                         <StackPanel Margin="8" VerticalAlignment="Top" >

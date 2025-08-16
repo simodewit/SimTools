@@ -1,19 +1,11 @@
 ﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
-    <!-- ========= Overlay Theme Resources ========= -->
-    <!-- Defaults: solid SurfaceAlt and Segoe UI. VM will overwrite at runtime. -->
-
-    <!-- Background brush used by all overlay panels -->
+    <!-- App-wide overlay resources (DynamicResource everywhere) -->
     <SolidColorBrush x:Key="Overlay.PanelBrush" Color="#1D2024"/>
-
-    <!-- Border brush (reuse your theme border) -->
     <SolidColorBrush x:Key="Overlay.BorderBrush" Color="{DynamicResource Color.Border}"/>
-
-    <!-- Global font family for overlay previews -->
     <FontFamily x:Key="Overlay.FontFamily">Segoe UI</FontFamily>
 
-    <!-- ========= Text Styles (unified across all previews) ========= -->
     <Style x:Key="OverlayText.Heading" TargetType="TextBlock">
         <Setter Property="FontFamily" Value="{DynamicResource Overlay.FontFamily}"/>
         <Setter Property="FontSize" Value="11"/>
@@ -40,7 +32,6 @@
         <Setter Property="Foreground" Value="{DynamicResource Brush.Text}"/>
     </Style>
 
-    <!-- ========= Panel Container Style ========= -->
     <Style x:Key="OverlayPanel.Container" TargetType="Border">
         <Setter Property="Background" Value="{DynamicResource Overlay.PanelBrush}"/>
         <Setter Property="BorderBrush" Value="{DynamicResource Brush.OverlayBorder}"/>
