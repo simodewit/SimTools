@@ -13,9 +13,7 @@ namespace SimTools.Views
             InitializeComponent();
         }
 
-        private OverlayEditorViewModel VM => DataContext as OverlayEditorViewModel;
-
-        // ===== No-op handlers kept so the current XAML compiles =====
+        private OverlayEditorViewModel VM { get { return DataContext as OverlayEditorViewModel; } }
 
         // Canvas: DragOver (no-op)
         private void Preview_DragOver(object sender, DragEventArgs e)
@@ -36,7 +34,7 @@ namespace SimTools.Views
             if (el == null) return;
 
             // Select the element so the centered settings panel can bind to it
-            VM?.SelectElement(el);
+            if (VM != null) VM.SelectElement(el);
         }
 
         // Item: MouseMove (no-op)
@@ -49,6 +47,16 @@ namespace SimTools.Views
         private void Element_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
         {
             // Element dragging disabled (legacy). Intentionally left blank.
+        }
+
+        // Bottom tabs: flip flag to control which centered panel is visible
+        private void BottomTabs_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            var tab = (sender as TabControl)?.SelectedItem as TabItem;
+            if (VM == null || tab == null) return;
+
+            var header = (tab.Header ?? "").ToString();
+            VM.IsKeybindsActive = string.Equals(header, "Keybinds", System.StringComparison.OrdinalIgnoreCase);
         }
     }
 }

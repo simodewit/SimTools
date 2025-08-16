@@ -11,8 +11,67 @@
 
             <!-- Asphalt background brush -->
             <ImageBrush x:Key="AsphaltBrush"
-                    ImageSource="pack://application:,,,/SimTool;component/Images/Asphalt.png"
-                    Stretch="UniformToFill"/>
+                        ImageSource="pack://application:,,,/SimTool;component/Images/Asphalt.png"
+                        Stretch="UniformToFill"/>
+
+            <!-- Reusable Map Switcher template (centered presenter uses this) -->
+            <DataTemplate x:Key="MapSwitcherTemplate">
+                <Border Background="#CC0D0F13" CornerRadius="8" Padding="10">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="8"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+
+                        <!-- Header -->
+                        <TextBlock Text="Map Switcher"
+                                   Foreground="{DynamicResource Brush.TextDim}"
+                                   FontSize="11" FontWeight="SemiBold"
+                                   Grid.Row="0"/>
+
+                        <!-- Above / Current / Below -->
+                        <StackPanel Grid.Row="1" Margin="0,6,0,0">
+                            <TextBlock Text="{Binding PrevMapName}"
+                                       FontSize="12"
+                                       Foreground="{DynamicResource Brush.TextDim}"/>
+                            <TextBlock Text="{Binding CurrentMapName}"
+                                       FontSize="20" FontWeight="Bold"/>
+                            <TextBlock Text="{Binding NextMapName}"
+                                       FontSize="12"
+                                       Foreground="{DynamicResource Brush.TextDim}"/>
+                        </StackPanel>
+
+                        <!-- Divider -->
+                        <Rectangle Grid.Row="2" Height="1" Fill="#35FFFFFF" Margin="0,8,0,8"/>
+
+                        <!-- Keybinds -->
+                        <StackPanel Grid.Row="4" Orientation="Horizontal">
+                            <StackPanel Margin="0,0,12,0">
+                                <TextBlock Text="Prev"
+                                           Foreground="{DynamicResource Brush.TextDim}"
+                                           FontSize="11"/>
+                                <Border Background="#22000000" CornerRadius="4" Padding="4,2">
+                                    <TextBlock Text="{Binding PrevMapKeyDisplay}"
+                                               FontFamily="Consolas" FontSize="12"/>
+                                </Border>
+                            </StackPanel>
+
+                            <StackPanel>
+                                <TextBlock Text="Next"
+                                           Foreground="{DynamicResource Brush.TextDim}"
+                                           FontSize="11"/>
+                                <Border Background="#22000000" CornerRadius="4" Padding="4,2">
+                                    <TextBlock Text="{Binding NextMapKeyDisplay}"
+                                               FontFamily="Consolas" FontSize="12"/>
+                                </Border>
+                            </StackPanel>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+            </DataTemplate>
         </ResourceDictionary>
     </UserControl.Resources>
 
@@ -30,27 +89,27 @@
                 <!-- bottom tabs -->
             </Grid.RowDefinitions>
 
-            <!-- Header (unchanged except your subtitle text) -->
+            <!-- Header -->
             <StackPanel Grid.Row="0" Margin="0,0,0,10">
                 <TextBlock Text="Overlay Editor" FontSize="20" FontWeight="Bold"/>
                 <TextBlock Text="Select any tool to see the preview and change the settings to your liking"
                            Foreground="{DynamicResource Brush.TextDim}" Margin="0,2,0,0"/>
             </StackPanel>
 
-            <!-- Preview: fixed 960x540, centered; never scales down, page scrolls instead -->
+            <!-- Preview: fixed 960x540, centered -->
             <Grid Grid.Row="1">
                 <Grid HorizontalAlignment="Center"
                       Width="960" Height="540"
                       ClipToBounds="True"
                       Background="{StaticResource AsphaltBrush}">
 
-                    <!-- Preview canvas + elements -->
+                    <!-- Preview canvas (elements collapsed for now so nothing shows at 0,0) -->
                     <Canvas x:Name="PreviewCanvas"
                             AllowDrop="True"
                             Background="#10000000"
                             DragOver="Preview_DragOver"
                             Drop="Preview_Drop">
-                        <ItemsControl ItemsSource="{Binding OverlayElements}">
+                        <ItemsControl ItemsSource="{Binding OverlayElements}" Visibility="Collapsed">
                             <ItemsControl.ItemsPanel>
                                 <ItemsPanelTemplate>
                                     <Canvas/>
@@ -74,7 +133,7 @@
                         </ItemsControl>
                     </Canvas>
 
-                    <!-- Centered settings panel (already themed darker) -->
+                    <!-- Standard centered settings panel (General tab only) -->
                     <Border x:Name="CenteredSettingsPanel"
                             HorizontalAlignment="Center"
                             VerticalAlignment="Center"
@@ -84,7 +143,18 @@
                             CornerRadius="10"
                             Padding="12"
                             MinWidth="120" MinHeight="120">
-                        <ContentPresenter Content="{Binding SelectedElement}">
+                        <Border.Style>
+                            <Style TargetType="Border">
+                                <Setter Property="Visibility" Value="Visible"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsKeybindsActive}" Value="True">
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Border.Style>
+
+                        <ContentPresenter>
                             <ContentPresenter.ContentTemplate>
                                 <DataTemplate>
                                     <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
@@ -98,12 +168,30 @@
                         </ContentPresenter>
                     </Border>
 
+                    <!-- Single centered Map Switcher (Keybinds tab only) -->
+                    <ContentControl HorizontalAlignment="Center"
+                                    VerticalAlignment="Center"
+                                    ContentTemplate="{StaticResource MapSwitcherTemplate}">
+                        <ContentControl.Style>
+                            <Style TargetType="ContentControl">
+                                <Setter Property="Visibility" Value="Collapsed"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsKeybindsActive}" Value="True">
+                                        <Setter Property="Visibility" Value="Visible"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </ContentControl.Style>
+                    </ContentControl>
+
                 </Grid>
             </Grid>
 
-            <!-- Tools panel (unchanged) -->
+            <!-- Tools panel -->
             <Border Grid.Row="2" Style="{DynamicResource Card}" Margin="0,12,0,0" Padding="12">
-                <TabControl Background="Transparent">
+                <TabControl x:Name="BottomTabs"
+                            Background="Transparent"
+                            SelectionChanged="BottomTabs_SelectionChanged">
                     <TabItem Header="General" Cursor="Hand">
                         <StackPanel Margin="8">
                             <Button Content="Open Overlay Window"
