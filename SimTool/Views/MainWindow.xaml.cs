@@ -1,7 +1,9 @@
-﻿using System;
+﻿using SimTools.Helpers;
+using System;
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Interop;
+using System.Windows.Media;
 
 namespace SimTools.Views
 {
@@ -24,37 +26,48 @@ namespace SimTools.Views
             const int WM_GETMINMAXINFO = 0x0024;
             if (msg == WM_GETMINMAXINFO)
             {
-                ApplyMaximizedWorkArea(hwnd, lParam);
-                handled = true;
+                ApplyMinSizeAndWorkArea(hwnd, lParam);
+                handled = true; // we fully handled it
             }
             return IntPtr.Zero;
         }
 
-        private static void ApplyMaximizedWorkArea(IntPtr hwnd, IntPtr lParam)
+        private void ApplyMinSizeAndWorkArea(IntPtr hwnd, IntPtr lParam)
         {
-            // Get monitor info (in device pixels)
+            // Get monitor info (device pixels)
             IntPtr hMon = MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST);
             var mi = new MONITORINFO { cbSize = Marshal.SizeOf<MONITORINFO>() };
             if (!GetMonitorInfo(hMon, ref mi)) return;
 
-            // MINMAXINFO also uses device pixels, so no DPI conversion needed here.
+            // Read existing MINMAXINFO (device pixels)
             MINMAXINFO mmi = Marshal.PtrToStructure<MINMAXINFO>(lParam);
 
-            // rcMonitor = whole monitor, rcWork = taskbar-safe work area
+            // ----- A) Work area for maximized size/position (keeps taskbar visible)
             RECT rcWork = mi.rcWork;
             RECT rcMon = mi.rcMonitor;
 
-            // Top-left offset of work area within the monitor
+            // top-left of work area relative to monitor
             mmi.ptMaxPosition.x = Math.Max(0, rcWork.Left - rcMon.Left);
             mmi.ptMaxPosition.y = Math.Max(0, rcWork.Top - rcMon.Top);
 
-            // Size of the work area
+            // size of the work area
             mmi.ptMaxSize.x = Math.Max(0, rcWork.Right - rcWork.Left);
             mmi.ptMaxSize.y = Math.Max(0, rcWork.Bottom - rcWork.Top);
 
-            // Optional: also clamp tracking size so dragging to edges behaves nicely
+            // optional: also clamp tracking max to work area
             mmi.ptMaxTrackSize = mmi.ptMaxSize;
 
+            // ----- B) Minimum track size from WPF MinWidth/MinHeight (convert to device pixels)
+            var src = HwndSource.FromHwnd(hwnd);
+            var m = src?.CompositionTarget?.TransformToDevice ?? Matrix.Identity; // DPI
+
+            int minW = (int)Math.Ceiling(this.MinWidth * m.M11);
+            int minH = (int)Math.Ceiling(this.MinHeight * m.M22);
+
+            if (minW > 0) mmi.ptMinTrackSize.x = Math.Max(mmi.ptMinTrackSize.x, minW);
+            if (minH > 0) mmi.ptMinTrackSize.y = Math.Max(mmi.ptMinTrackSize.y, minH);
+
+            // write back
             Marshal.StructureToPtr(mmi, lParam, fDeleteOld: false);
         }
 
@@ -90,5 +103,7 @@ namespace SimTools.Views
             public RECT rcWork;
             public int dwFlags;
         }
+
+
     }
 }

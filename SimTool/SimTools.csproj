@@ -62,6 +62,7 @@
     <Compile Include="Controls\TitleBar.xaml.cs">
       <DependentUpon>TitleBar.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Helpers\MinSizeHook.cs" />
     <Compile Include="Interop\RawInputNative.cs" />
     <Compile Include="Models\InputBindingResult.cs" />
     <Compile Include="Models\OverlayElement.cs" />

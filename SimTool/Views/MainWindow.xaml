@@ -6,7 +6,9 @@
         xmlns:vm="clr-namespace:SimTools.ViewModels"
         Title="SimTools" Height="720" Width="1200"
         WindowStyle="None" ResizeMode="CanResize" AllowsTransparency="False"
-        Background="{DynamicResource Brush.Background}">
+        Background="{DynamicResource Brush.Background}"
+        MinWidth="1250"
+        MinHeight="650">
 
     <!-- Remove native caption completely and use our custom TitleBar -->
     <shell:WindowChrome.WindowChrome>
