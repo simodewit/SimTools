@@ -21,6 +21,12 @@
     <!-- primary text -->
     <Color x:Key="Color.TextDim">#B9C0CC</Color>
     <!-- secondary text -->
+    
+    <!-- Semi-transparent overlay surfaces -->
+    <SolidColorBrush x:Key="Brush.OverlayPanel" Color="#AA1D2024"/>
+    <!-- darker translucent (based on SurfaceAlt) -->
+    <SolidColorBrush x:Key="Brush.OverlayBorder" Color="#662B3036"/>
+    <!-- semi-transparent border -->
 
     <!-- Accent switched to a soft emerald (not blue) -->
     <Color x:Key="Color.Accent">#4CC38A</Color>

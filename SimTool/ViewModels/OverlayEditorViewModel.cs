@@ -6,15 +6,30 @@ using System.Collections.ObjectModel;
 namespace SimTools.ViewModels
 {
     // ViewModel for the Overlay Editor.
-    // Holds overlay elements and opens the live OverlayWindow with this VM as DataContext.
-    // Exposes CurrentMapName, Refresh(), and AddElement(...) for the editor UI.
-
+    // - Holds overlay elements
+    // - Opens the live OverlayWindow with this VM as DataContext
+    // - Exposes CurrentMapName, Refresh()
+    // - Exposes SelectedElement for the centered settings panel
     public class OverlayEditorViewModel : ViewModelBase
     {
         public AppState State { get; private set; }
         public RelayCommand OpenOverlay { get; private set; }
 
         public ObservableCollection<OverlayElement> OverlayElements { get; private set; }
+
+        private OverlayElement _selectedElement;
+        public OverlayElement SelectedElement
+        {
+            get => _selectedElement;
+            set
+            {
+                if (_selectedElement != value)
+                {
+                    _selectedElement = value;
+                    Raise(nameof(SelectedElement));
+                }
+            }
+        }
 
         public OverlayEditorViewModel(AppState state)
         {
@@ -28,20 +43,21 @@ namespace SimTools.ViewModels
             });
         }
 
-        public string CurrentMapName
-        {
-            get { return State.CurrentMap != null ? State.CurrentMap.Name : "(no map)"; }
-        }
+        public string CurrentMapName => State.CurrentMap != null ? State.CurrentMap.Name : "(no map)";
 
-        public void Refresh()
-        {
-            Raise("CurrentMapName");
-        }
+        public void Refresh() => Raise(nameof(CurrentMapName));
 
+        // Still useful for programmatically adding elements (e.g., from menus/buttons later)
         public void AddElement(string type, double x, double y)
         {
             var el = new OverlayElement { Type = type, X = x, Y = y };
             OverlayElements.Add(el);
+            SelectedElement = el; // optional: auto-select when added
+        }
+
+        public void SelectElement(OverlayElement element)
+        {
+            SelectedElement = element;
         }
     }
 }

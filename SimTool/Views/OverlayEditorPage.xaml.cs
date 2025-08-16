@@ -8,85 +8,47 @@ namespace SimTools.Views
 {
     public partial class OverlayEditorPage : UserControl
     {
-        private bool _draggingExisting;
-        private Point _dragStart;
-        private OverlayElement _dragElement;
-
         public OverlayEditorPage()
         {
             InitializeComponent();
         }
 
-        private OverlayEditorViewModel VM
-        {
-            get { return DataContext as OverlayEditorViewModel; }
-        }
+        private OverlayEditorViewModel VM => DataContext as OverlayEditorViewModel;
 
-        // Drag a tool from the Tools list
-        private void Tool_PreviewMouseMove(object sender, MouseEventArgs e)
-        {
-            if (e.LeftButton == MouseButtonState.Pressed)
-            {
-                var b = sender as Border;
-                if (b != null && b.Child is TextBlock)
-                {
-                    var tb = (TextBlock)b.Child;
-                    var type = tb.Tag as string;
-                    if (!string.IsNullOrEmpty(type))
-                    {
-                        DragDrop.DoDragDrop(b, new DataObject("ToolKind", type), DragDropEffects.Copy);
-                    }
-                }
-            }
-        }
+        // ===== No-op handlers kept so the current XAML compiles =====
 
+        // Canvas: DragOver (no-op)
         private void Preview_DragOver(object sender, DragEventArgs e)
         {
-            if (e.Data.GetDataPresent("ToolKind"))
-            {
-                e.Effects = DragDropEffects.Copy;
-                e.Handled = true;
-            }
+            // Drag & drop disabled (legacy). Intentionally left blank.
         }
 
+        // Canvas: Drop (no-op)
         private void Preview_Drop(object sender, DragEventArgs e)
         {
-            if (VM == null) return;
-            if (e.Data.GetDataPresent("ToolKind"))
-            {
-                string type = e.Data.GetData("ToolKind") as string;
-                var p = e.GetPosition(PreviewCanvas);
-                VM.AddElement(type, p.X - 60, p.Y - 20); // drop with a slight offset
-            }
+            // Drag & drop disabled (legacy). Intentionally left blank.
         }
 
-        // Dragging existing elements inside the preview
+        // Item: MouseLeftButtonDown -> only selects the element now
         private void Element_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
             var el = (sender as FrameworkElement)?.DataContext as OverlayElement;
             if (el == null) return;
-            _draggingExisting = true;
-            _dragElement = el;
-            _dragStart = e.GetPosition(PreviewCanvas);
-            (sender as FrameworkElement).CaptureMouse();
+
+            // Select the element so the centered settings panel can bind to it
+            VM?.SelectElement(el);
         }
 
+        // Item: MouseMove (no-op)
         private void Element_MouseMove(object sender, MouseEventArgs e)
         {
-            if (!_draggingExisting || _dragElement == null) return;
-            var pos = e.GetPosition(PreviewCanvas);
-            var dx = pos.X - _dragStart.X;
-            var dy = pos.Y - _dragStart.Y;
-            _dragElement.X += dx;
-            _dragElement.Y += dy;
-            _dragStart = pos;
+            // Element dragging disabled (legacy). Intentionally left blank.
         }
 
+        // Item: MouseLeftButtonUp (no-op)
         private void Element_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
         {
-            _draggingExisting = false;
-            _dragElement = null;
-            (sender as FrameworkElement)?.ReleaseMouseCapture();
+            // Element dragging disabled (legacy). Intentionally left blank.
         }
     }
 }
