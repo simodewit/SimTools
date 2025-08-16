@@ -1,35 +1,68 @@
-﻿using System;
+﻿using System.Collections.Generic;
 using System.Windows.Input;
 
 namespace SimTools.Models
 {
-    // Represents a single keybinding.
-    // Stores key, modifiers, and device info.
-    // ToString() returns a readable label (e.g., "Ctrl + K", "Mouse: Left Button").
-
+    /// <summary>
+    /// Describes a single logical action and how it is triggered (physical input)
+    /// and what it emits (virtual output). Supports optional global blocking.
+    /// </summary>
     public class KeybindBinding
     {
-        public Guid Id { get; set; } = Guid.NewGuid();
-        public string Name { get; set; } = "New Action";
+        /// <summary>Display name shown in the UI (user-defined action name).</summary>
+        public string Name { get; set; }
 
-        // Keyboard binding fields
-        public Key Key { get; set; } = Key.None;
-        public ModifierKeys Modifiers { get; set; } = ModifierKeys.None;
+        /// <summary>Source device type label (e.g., "Keyboard", "Wheel", etc.).</summary>
+        public string Device { get; set; }
 
-        // Device metadata for display (e.g., "Keyboard: Ctrl+K", "Mouse: Left Button")
-        public string Device { get; set; }  // "Keyboard" / "Mouse" / "Gamepad" (future)
+        /// <summary>Source control label (e.g., "Ctrl + K", "Button 5").</summary>
         public string DeviceKey { get; set; }
+
+        /// <summary>Keyboard key (if using keyboard capture).</summary>
+        public Key Key { get; set; }
+
+        /// <summary>Keyboard modifiers (if using keyboard capture).</summary>
+        public ModifierKeys Modifiers { get; set; }
+
+        /// <summary>
+        /// Which virtual output to press when this binding fires
+        /// (mapped to a ViGEm Xbox 360 button in the service layer).
+        /// </summary>
+        public VirtualOutput Output { get; set; } = VirtualOutput.None;
+
+        /// <summary>
+        /// When true, swallow the original physical key globally (via low-level hook).
+        /// </summary>
+        public bool BlockOriginal { get; set; } = true;
 
         public override string ToString()
         {
-            // Prefer Device/DeviceKey if present
-            if (!string.IsNullOrEmpty(DeviceKey))
-            {
-                return string.IsNullOrEmpty(Device) ? DeviceKey : (Device + ": " + DeviceKey);
-            }
+            if (!string.IsNullOrWhiteSpace(Device) && !string.IsNullOrWhiteSpace(DeviceKey))
+                return $"{Device}: {DeviceKey}";
 
-            if (Key == Key.None && Modifiers == ModifierKeys.None) return "None";
-            return Modifiers == ModifierKeys.None ? Key.ToString() : (Modifiers + " + " + Key);
+            if (Key == Key.None && Modifiers == ModifierKeys.None)
+                return "None";
+
+            // Friendly label for keyboard hotkeys
+            var parts = new List<string>(4);
+            if (Modifiers.HasFlag(ModifierKeys.Control)) parts.Add("Ctrl");
+            if (Modifiers.HasFlag(ModifierKeys.Alt)) parts.Add("Alt");
+            if (Modifiers.HasFlag(ModifierKeys.Shift)) parts.Add("Shift");
+            if (Modifiers.HasFlag(ModifierKeys.Windows)) parts.Add("Win");
+
+            string keyName = Key switch
+            {
+                Key.Return => "Enter",
+                Key.Escape => "Esc",
+                Key.Prior => "PageUp",
+                Key.Next => "PageDown",
+                Key.OemPlus => "+",
+                Key.OemMinus => "-",
+                _ => Key.ToString()
+            };
+
+            parts.Add(keyName);
+            return string.Join(" + ", parts);
         }
     }
 }

@@ -1,0 +1,619 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Nefarius.Vicius.Abstractions</name>
+    </assembly>
+    <members>
+        <member name="T:Nefarius.Vicius.Abstractions.Converters.DateTimeOffsetConverter">
+            <summary>
+                <see cref="T:System.DateTimeOffset" /> to ISO 8601 (or custom formats) string (UTC) converter.
+            </summary>
+        </member>
+        <member name="M:Nefarius.Vicius.Abstractions.Converters.DateTimeOffsetConverter.#ctor(System.String)">
+            <inheritdoc />
+        </member>
+        <member name="M:Nefarius.Vicius.Abstractions.Converters.DateTimeOffsetConverter.Write(System.Text.Json.Utf8JsonWriter,System.DateTimeOffset,System.Text.Json.JsonSerializerOptions)">
+            <inheritdoc />
+        </member>
+        <member name="M:Nefarius.Vicius.Abstractions.Converters.DateTimeOffsetConverter.Read(System.Text.Json.Utf8JsonReader@,System.Type,System.Text.Json.JsonSerializerOptions)">
+            <inheritdoc />
+        </member>
+        <member name="T:Nefarius.Vicius.Abstractions.Models.ChecksumAlgorithm">
+            <summary>
+                The supported checksum/hashing algorithms.
+            </summary>
+        </member>
+        <member name="F:Nefarius.Vicius.Abstractions.Models.ChecksumAlgorithm.MD5">
+            <summary>
+                MD5.
+            </summary>
+        </member>
+        <member name="F:Nefarius.Vicius.Abstractions.Models.ChecksumAlgorithm.SHA1">
+            <summary>
+                SHA1.
+            </summary>
+        </member>
+        <member name="F:Nefarius.Vicius.Abstractions.Models.ChecksumAlgorithm.SHA256">
+            <summary>
+                SHA256.
+            </summary>
+        </member>
+        <member name="T:Nefarius.Vicius.Abstractions.Models.RegistryHive">
+            <summary>
+                The registry hive to search for keys/values under.
+            </summary>
+        </member>
+        <member name="F:Nefarius.Vicius.Abstractions.Models.RegistryHive.HKCU">
+            <summary>
+                HKEY_CURRENT_USER hive.
+            </summary>
+        </member>
+        <member name="F:Nefarius.Vicius.Abstractions.Models.RegistryHive.HKLM">
+            <summary>
+                HKEY_LOCAL_MACHINE hive.
+            </summary>
+        </member>
+        <member name="F:Nefarius.Vicius.Abstractions.Models.RegistryHive.HKCR">
+            <summary>
+                HKEY_CLASSES_ROOT hive.
+            </summary>
+        </member>
+        <member name="T:Nefarius.Vicius.Abstractions.Models.RegistryView">
+            <summary>
+                The alternate registry view to apply.
+            </summary>
+            <remarks>https://learn.microsoft.com/en-us/windows/win32/winprog64/accessing-an-alternate-registry-view</remarks>
+        </member>
+        <member name="F:Nefarius.Vicius.Abstractions.Models.RegistryView.Default">
+            <summary>
+                Default behavior (no flags set).
+            </summary>
+        </member>
+        <member name="F:Nefarius.Vicius.Abstractions.Models.RegistryView.WOW64_64KEY">
+            <summary>
+                Access a 64-bit key from either a 32-bit or 64-bit application.
+            </summary>
+        </member>
+        <member name="F:Nefarius.Vicius.Abstractions.Models.RegistryView.WOW64_32KEY">
+            <summary>
+                Access a 32-bit key from either a 32-bit or 64-bit application.
+            </summary>
+        </member>
+        <member name="T:Nefarius.Vicius.Abstractions.Models.VersionResource">
+            <summary>
+                Describes which version resource fixed-value to read.
+            </summary>
+        </member>
+        <member name="F:Nefarius.Vicius.Abstractions.Models.VersionResource.FILEVERSION">
+            <summary>
+                Binary version number for the file. The version consists of two 32-bit integers, defined by four 16-bit integers.
+                For example, "FILEVERSION 3,10,0,61" is translated into two doublewords: 0x0003000a and 0x0000003d, in that order.
+                Therefore, if version is defined by the DWORD values dw1 and dw2, they need to appear in the FILEVERSION statement
+                as follows: HIWORD(dw1), LOWORD(dw1), HIWORD(dw2), LOWORD(dw2).
+            </summary>
+        </member>
+        <member name="F:Nefarius.Vicius.Abstractions.Models.VersionResource.PRODUCTVERSION">
+            <summary>
+                Binary version number for the product with which the file is distributed. The version parameter is two 32-bit
+                integers, defined by four 16-bit integers. For more information about version, see the FILEVERSION description.
+            </summary>
+        </member>
+        <member name="T:Nefarius.Vicius.Abstractions.Models.ZipExtractFileDisposition">
+            <summary>
+                How to treat files when installing a .zip file.
+            </summary>
+        </member>
+        <member name="F:Nefarius.Vicius.Abstractions.Models.ZipExtractFileDisposition.CreateIfAbsent">
+            <summary>
+                Create the extracted file if it doesn't already exist locally.
+            </summary>
+        </member>
+        <member name="F:Nefarius.Vicius.Abstractions.Models.ZipExtractFileDisposition.CreateOrReplace">
+            <summary>
+                Create or replace a locally existing file with the extracted one of the same name. 
+            </summary>
+        </member>
+        <member name="F:Nefarius.Vicius.Abstractions.Models.ZipExtractFileDisposition.DeleteIfPresent">
+            <summary>
+                Delete the local file, if found.
+            </summary>
+        </member>
+        <member name="T:Nefarius.Vicius.Abstractions.Models.DownloadLocationConfig">
+            <summary>
+                Inja template details about the download location path.
+            </summary>
+        </member>
+        <member name="P:Nefarius.Vicius.Abstractions.Models.DownloadLocationConfig.Input">
+            <summary>
+                The absolute path or inja template.
+            </summary>
+        </member>
+        <member name="P:Nefarius.Vicius.Abstractions.Models.DownloadLocationConfig.Data">
+            <summary>
+                Optional inja template data.
+            </summary>
+        </member>
+        <member name="T:Nefarius.Vicius.Abstractions.Models.MergedConfig">
+            <summary>
+                The shared configuration that has been merged with local and remote parameters.
+            </summary>
+            <remarks>Keep in sync with <see cref="T:Nefarius.Vicius.Abstractions.Models.SharedConfig"/>.</remarks>
+        </member>
+        <member name="P:Nefarius.Vicius.Abstractions.Models.MergedConfig.WindowTitle">
+            <summary>
+                The process window title visible in the taskbar.
+            </summary>
+        </member>
+        <member name="P:Nefarius.Vicius.Abstractions.Models.MergedConfig.ProductName">
+            <summary>
+                The product name displayed in the UI and dialogs.
+            </summary>
+        </member>
+        <member name="P:Nefarius.Vicius.Abstractions.Models.MergedConfig.DetectionMethod">
+            <summary>
+                The implementation to use to detect the locally installed product version to compare release versions against.
+            </summary>
+        </member>
+        <member name="P:Nefarius.Vicius.Abstractions.Models.MergedConfig.Detection">
+            <summary>
+                The details of the selected <see cref="P:Nefarius.Vicius.Abstractions.Models.MergedConfig.DetectionMethod" />.
+            </summary>
+        </member>
+        <member name="P:Nefarius.Vicius.Abstractions.Models.MergedConfig.InstallationErrorUrl">
+            <summary>
+                URL pointing to a help article opening when an update error occurred.
+            </summary>
+        </member>
+        <member name="P:Nefarius.Vicius.Abstractions.Models.MergedConfig.DownloadLocation">
+            <summary>
+                The preferred setup download directory.
+            </summary>
+            <remarks>By default, a temporary directory of the current user is used.</remarks>
+        </member>
+        <member name="P:Nefarius.Vicius.Abstractions.Models.MergedConfig.RunAsTemporaryCopy">
+            <summary>
+                Gets or sets whether the updater should run as a temporary copy instead from the origin directory.
+            </summary>
+            <example>
+                This feature is useful when the updater is shipped with a product using Windows Installer, which detects open
+                processes that block an upgrade. Enabling this setting re-launches the updater process from a temporary copy so
+                on-the-fly upgrades in the origin directory become possible.
+            </example>
+        </member>
+        <member name="T:Nefarius.Vicius.Abstractions.Models.ProductVersionDetectionMethod">
+            <summary>
+                The detection method of the installed software to use on the client.
+            </summary>
+        </member>
+        <member name="F:Nefarius.Vicius.Abstractions.Models.ProductVersionDetectionMethod.RegistryValue">
+            <summary>
+                Performs checking a specified registry hive, key and value.
+            </summary>
+        </member>
+        <member name="F:Nefarius.Vicius.Abstractions.Models.ProductVersionDetectionMethod.FileVersion">
+            <summary>
+                Performs checking a specified file version resource.
+            </summary>
+        </member>
+        <member name="F:Nefarius.Vicius.Abstractions.Models.ProductVersionDetectionMethod.FileSize">
+            <summary>
+                Performs checking a specified file size for matching.
+            </summary>
+        </member>
+        <member name="F:Nefarius.Vicius.Abstractions.Models.ProductVersionDetectionMethod.FileChecksum">
+            <summary>
+                Calculates and compares the hash of a given file.
+            </summary>
+        </member>
+        <member name="F:Nefarius.Vicius.Abstractions.Models.ProductVersionDetectionMethod.CustomExpression">
+            <summary>
+                Custom inja expression.
+            </summary>
+        </member>
+        <member name="F:Nefarius.Vicius.Abstractions.Models.ProductVersionDetectionMethod.FixedVersion">
+            <summary>
+                A fixed version string.
+            </summary>
+        </member>
+        <member name="T:Nefarius.Vicius.Abstractions.Models.ProductVersionDetectionImplementation">
+            <summary>
+                Possible product version detection parameters.
+            </summary>
+        </member>
+        <member name="T:Nefarius.Vicius.Abstractions.Models.RegistryValueConfig">
+            <summary>
+                Queries a specific registry value and matches it against the selected <see cref="T:Nefarius.Vicius.Abstractions.Models.UpdateRelease" /> version.
+            </summary>
+        </member>
+        <member name="P:Nefarius.Vicius.Abstractions.Models.RegistryValueConfig.View">
+            <summary>
+                The alternate view.
+            </summary>
+        </member>
+        <member name="P:Nefarius.Vicius.Abstractions.Models.RegistryValueConfig.Hive">
+            <summary>
+                The hive.
+            </summary>
+        </member>
+        <member name="P:Nefarius.Vicius.Abstractions.Models.RegistryValueConfig.Key">
+            <summary>
+                The (sub-)key.
+            </summary>
+        </member>
+        <member name="P:Nefarius.Vicius.Abstractions.Models.RegistryValueConfig.Value">
+            <summary>
+                The value name.
+            </summary>
+        </member>
+        <member name="T:Nefarius.Vicius.Abstractions.Models.FileVersionConfig">
+            <summary>
+                Reads the version resource of the specified local file and matches it against the selected
+                <see cref="T:Nefarius.Vicius.Abstractions.Models.UpdateRelease" /> version.
+            </summary>
+        </member>
+        <member name="P:Nefarius.Vicius.Abstractions.Models.FileVersionConfig.Input">
+            <summary>
+                The absolute local path to the file to read or an inja template.
+            </summary>
+        </member>
+        <member name="P:Nefarius.Vicius.Abstractions.Models.FileVersionConfig.Statement">
+            <summary>
+                The <see cref="T:Nefarius.Vicius.Abstractions.Models.VersionResource" /> to read.
+            </summary>
+        </member>
+        <member name="P:Nefarius.Vicius.Abstractions.Models.FileVersionConfig.Data">
+            <summary>
+                Optional inja template data.
+            </summary>
+        </member>
+        <member name="T:Nefarius.Vicius.Abstractions.Models.FileSizeConfig">
+            <summary>
+                Compares the size of a given file against the provided value.
+            </summary>
+        </member>
+        <member name="P:Nefarius.Vicius.Abstractions.Models.FileSizeConfig.Input">
+            <summary>
+                The absolute local path to the file to read or an inja template.
+            </summary>
+        </member>
+        <member name="P:Nefarius.Vicius.Abstractions.Models.FileSizeConfig.Data">
+            <summary>
+                Optional inja template data.
+            </summary>
+        </member>
+        <member name="T:Nefarius.Vicius.Abstractions.Models.FileChecksumConfig">
+            <summary>
+                Calculates and compares the checksum/hash of a given file.
+            </summary>
+        </member>
+        <member name="P:Nefarius.Vicius.Abstractions.Models.FileChecksumConfig.Input">
+            <summary>
+                The absolute local path to the file to read or an inja template.
+            </summary>
+        </member>
+        <member name="P:Nefarius.Vicius.Abstractions.Models.FileChecksumConfig.Data">
+            <summary>
+                Optional inja template data.
+            </summary>
+        </member>
+        <member name="T:Nefarius.Vicius.Abstractions.Models.CustomExpressionConfig">
+            <summary>
+                A custom expression to evaluate.
+            </summary>
+        </member>
+        <member name="P:Nefarius.Vicius.Abstractions.Models.CustomExpressionConfig.Input">
+            <summary>
+                The inja template.
+            </summary>
+        </member>
+        <member name="P:Nefarius.Vicius.Abstractions.Models.CustomExpressionConfig.Data">
+            <summary>
+                Optional inja template data.
+            </summary>
+        </member>
+        <member name="T:Nefarius.Vicius.Abstractions.Models.FixedVersionConfig">
+            <summary>
+                A fixed version string.
+            </summary>
+        </member>
+        <member name="P:Nefarius.Vicius.Abstractions.Models.FixedVersionConfig.Version">
+            <summary>
+                The version string.
+            </summary>
+        </member>
+        <member name="T:Nefarius.Vicius.Abstractions.Models.SharedConfig">
+            <summary>
+                Parameters that might be provided by both the server and the local configuration.
+            </summary>
+            <remarks>Keep in sync with <see cref="T:Nefarius.Vicius.Abstractions.Models.MergedConfig"/>.</remarks>
+        </member>
+        <member name="P:Nefarius.Vicius.Abstractions.Models.SharedConfig.WindowTitle">
+            <summary>
+                The process window title visible in the taskbar.
+            </summary>
+        </member>
+        <member name="P:Nefarius.Vicius.Abstractions.Models.SharedConfig.ProductName">
+            <summary>
+                The product name displayed in the UI and dialogs.
+            </summary>
+        </member>
+        <member name="P:Nefarius.Vicius.Abstractions.Models.SharedConfig.DetectionMethod">
+            <summary>
+                The implementation to use to detect the locally installed product version to compare release versions against.
+            </summary>
+        </member>
+        <member name="P:Nefarius.Vicius.Abstractions.Models.SharedConfig.Detection">
+            <summary>
+                The details of the selected <see cref="P:Nefarius.Vicius.Abstractions.Models.SharedConfig.DetectionMethod" />.
+            </summary>
+        </member>
+        <member name="P:Nefarius.Vicius.Abstractions.Models.SharedConfig.InstallationErrorUrl">
+            <summary>
+                URL pointing to a help article opening when an update error occurred.
+            </summary>
+        </member>
+        <member name="P:Nefarius.Vicius.Abstractions.Models.SharedConfig.DownloadLocation">
+            <summary>
+                The preferred setup download directory.
+            </summary>
+            <remarks>By default, a temporary directory of the current user is used.</remarks>
+        </member>
+        <member name="P:Nefarius.Vicius.Abstractions.Models.SharedConfig.RunAsTemporaryCopy">
+            <summary>
+                Gets or sets whether the updater should run as a temporary copy instead from the origin directory.
+            </summary>
+            <example>
+                This feature is useful when the updater is shipped with a product using Windows Installer, which detects open
+                processes that block an upgrade. Enabling this setting re-launches the updater process from a temporary copy so
+                on-the-fly upgrades in the origin directory become possible.
+            </example>
+        </member>
+        <member name="T:Nefarius.Vicius.Abstractions.Models.SignatureComparisonPolicy">
+            <summary>
+                The policy to abide by when comparing signatures.
+            </summary>
+        </member>
+        <member name="F:Nefarius.Vicius.Abstractions.Models.SignatureComparisonPolicy.Relaxed">
+            <summary>
+                Allows the user to make the decision to continue when the remote setup signature doesn't match the expected value.
+                This is the default.
+            </summary>
+        </member>
+        <member name="F:Nefarius.Vicius.Abstractions.Models.SignatureComparisonPolicy.Strict">
+            <summary>
+                Fails with an error when the remote setup signature doesn't match the expected value.
+            </summary>
+            <remarks>
+                If <see cref="F:Nefarius.Vicius.Abstractions.Models.SignatureVerificationStrategy.FromUpdaterBinary" /> is configured and the updater binary is not
+                signed properly, applying updates will always fail with an error.
+            </remarks>
+        </member>
+        <member name="T:Nefarius.Vicius.Abstractions.Models.SignatureVerificationStrategy">
+            <summary>
+                The strategy on how to verify if the setup signature is trusted.
+            </summary>
+        </member>
+        <member name="F:Nefarius.Vicius.Abstractions.Models.SignatureVerificationStrategy.FromUpdaterBinary">
+            <summary>
+                Extract the signature information from the updater binary and use that info to validate the signed setup.
+            </summary>
+            <remarks>
+                If <see cref="F:Nefarius.Vicius.Abstractions.Models.SignatureComparisonPolicy.Strict" /> is configured and the updater binary is not signed properly,
+                applying updates will always fail with an error.
+            </remarks>
+        </member>
+        <member name="F:Nefarius.Vicius.Abstractions.Models.SignatureVerificationStrategy.FromConfiguration">
+            <summary>
+                Use the information provided in the <see cref="T:Nefarius.Vicius.Abstractions.Models.SharedConfig" /> to validate the signed setup.
+            </summary>
+        </member>
+        <member name="T:Nefarius.Vicius.Abstractions.Models.SignatureConfig">
+            <summary>
+                Authenticode signature details.
+            </summary>
+        </member>
+        <member name="P:Nefarius.Vicius.Abstractions.Models.SignatureConfig.IssuerName">
+            <summary>
+                The issuer name (CA display name).
+            </summary>
+        </member>
+        <member name="P:Nefarius.Vicius.Abstractions.Models.SignatureConfig.SubjectName">
+            <summary>
+                The subject name (e.g. friendly signer company name).
+            </summary>
+        </member>
+        <member name="P:Nefarius.Vicius.Abstractions.Models.SignatureConfig.SerialNumber">
+            <summary>
+                The signing certificate serial number as a hex-string. The format depends on the CA used.
+            </summary>
+        </member>
+        <member name="T:Nefarius.Vicius.Abstractions.Models.UpdateConfig">
+            <summary>
+                Update instance configuration. Parameters applying to the entire product/tenant.
+            </summary>
+        </member>
+        <member name="P:Nefarius.Vicius.Abstractions.Models.UpdateConfig.UpdatesDisabled">
+            <summary>
+                Updates are currently disabled, do not do anything, even if new versions are found.
+            </summary>
+        </member>
+        <member name="P:Nefarius.Vicius.Abstractions.Models.UpdateConfig.LatestVersion">
+            <summary>
+                The latest version of the updater binary.
+            </summary>
+        </member>
+        <member name="P:Nefarius.Vicius.Abstractions.Models.UpdateConfig.LatestUrl">
+            <summary>
+                The URL to the latest updater binary. Redirects are supported.
+            </summary>
+        </member>
+        <member name="P:Nefarius.Vicius.Abstractions.Models.UpdateConfig.EmergencyUrl">
+            <summary>
+                The emergency URL. See https://docs.nefarius.at/projects/Vicius/Emergency-Feature/
+            </summary>
+        </member>
+        <member name="P:Nefarius.Vicius.Abstractions.Models.UpdateConfig.ExitCode">
+            <summary>
+                Setup exit code parameters.
+            </summary>
+        </member>
+        <member name="P:Nefarius.Vicius.Abstractions.Models.UpdateConfig.HelpUrl">
+            <summary>
+                URL pointing to a help article opening when the user clicks the help button.
+            </summary>
+        </member>
+        <member name="P:Nefarius.Vicius.Abstractions.Models.UpdateConfig.ErrorFallbackUrl">
+            <summary>
+                URL pointing to a help article opening when the user was presented with an error dialog.
+            </summary>
+        </member>
+        <member name="T:Nefarius.Vicius.Abstractions.Models.ExitCodeCheck">
+            <summary>
+                Setup exit code parameters.
+            </summary>
+        </member>
+        <member name="P:Nefarius.Vicius.Abstractions.Models.ExitCodeCheck.SkipCheck">
+            <summary>
+                Ignore whatever exit code we got if true.
+            </summary>
+        </member>
+        <member name="P:Nefarius.Vicius.Abstractions.Models.ExitCodeCheck.SuccessCodes">
+            <summary>
+                One or more exit codes that signify success.
+            </summary>
+        </member>
+        <member name="T:Nefarius.Vicius.Abstractions.Models.ChecksumParameters">
+            <summary>
+                Parameters for checksum/hash calculation.
+            </summary>
+        </member>
+        <member name="P:Nefarius.Vicius.Abstractions.Models.ChecksumParameters.Checksum">
+            <summary>
+                The checksum/hash value to compare against.
+            </summary>
+        </member>
+        <member name="P:Nefarius.Vicius.Abstractions.Models.ChecksumParameters.ChecksumAlg">
+            <summary>
+                The algorithm to use to calculate the checksum/hash.
+            </summary>
+        </member>
+        <member name="T:Nefarius.Vicius.Abstractions.Models.UpdateRelease">
+            <summary>
+                Represents an update release.
+            </summary>
+        </member>
+        <member name="P:Nefarius.Vicius.Abstractions.Models.UpdateRelease.Name">
+            <summary>
+                Simple display name of the release.
+            </summary>
+        </member>
+        <member name="P:Nefarius.Vicius.Abstractions.Models.UpdateRelease.Version">
+            <summary>
+                Semantic version of the release.
+            </summary>
+        </member>
+        <member name="P:Nefarius.Vicius.Abstractions.Models.UpdateRelease.Summary">
+            <summary>
+                Summary/changelog/description of the release. Supports Markdown syntax.
+            </summary>
+        </member>
+        <member name="P:Nefarius.Vicius.Abstractions.Models.UpdateRelease.PublishedAt">
+            <summary>
+                The release publish timestamp.
+            </summary>
+            <remarks>
+                Releases are sorted on the client by descending <see cref="P:Nefarius.Vicius.Abstractions.Models.UpdateRelease.Version" />, even if the publish date doesn't match the
+                order of the release.
+            </remarks>
+        </member>
+        <member name="P:Nefarius.Vicius.Abstractions.Models.UpdateRelease.DownloadUrl">
+            <summary>
+                The URL to the new product setup. Redirects are supported.
+            </summary>
+        </member>
+        <member name="P:Nefarius.Vicius.Abstractions.Models.UpdateRelease.DownloadSize">
+            <summary>
+                Optional size (in bytes) of the download target. If this is not set, the UI will simply display "N/A" until the
+                actual download starts.
+            </summary>
+        </member>
+        <member name="P:Nefarius.Vicius.Abstractions.Models.UpdateRelease.LaunchArguments">
+            <summary>
+                Optional arguments to pass to the setup process.
+            </summary>
+        </member>
+        <member name="P:Nefarius.Vicius.Abstractions.Models.UpdateRelease.ExitCode">
+            <summary>
+                Setup exit code parameters.
+            </summary>
+            <remarks>You can use <see cref="P:Nefarius.Vicius.Abstractions.Models.UpdateConfig.ExitCode" /> instead to apply to all releases.</remarks>
+        </member>
+        <member name="P:Nefarius.Vicius.Abstractions.Models.UpdateRelease.Checksum">
+            <summary>
+                Optional checksum/hashing settings to perform after download.
+            </summary>
+            <remarks>
+                This simply hashes the file contents and compares them, there is no cryptographic signature validation
+                performed. It can be used to ensure that the file hasn't been corrupted in transit but doesn't say anything about
+                the authenticity or origin of the file.
+            </remarks>
+        </member>
+        <member name="P:Nefarius.Vicius.Abstractions.Models.UpdateRelease.Disabled">
+            <summary>
+                Skips/disables this release on the client if set.
+            </summary>
+        </member>
+        <member name="P:Nefarius.Vicius.Abstractions.Models.UpdateRelease.DetectionChecksum">
+            <summary>
+                The file hash to use in product detection. This can differ from <see cref="P:Nefarius.Vicius.Abstractions.Models.UpdateRelease.Checksum" />.
+            </summary>
+            <remarks>
+                This simply hashes the file contents and compares them, there is no cryptographic signature validation
+                performed. It can be used to ensure that the file hasn't been corrupted in transit but doesn't say anything about
+                the authenticity or origin of the file.
+            </remarks>
+        </member>
+        <member name="P:Nefarius.Vicius.Abstractions.Models.UpdateRelease.DetectionSize">
+            <summary>
+                The size value (in bytes) used in product detection. This can differ from <see cref="P:Nefarius.Vicius.Abstractions.Models.UpdateRelease.DownloadSize" />.
+            </summary>
+        </member>
+        <member name="P:Nefarius.Vicius.Abstractions.Models.UpdateRelease.DetectionVersion">
+            <summary>
+                The version used in product detection. This can differ from <see cref="P:Nefarius.Vicius.Abstractions.Models.UpdateRelease.Version" />.
+            </summary>
+        </member>
+        <member name="P:Nefarius.Vicius.Abstractions.Models.UpdateRelease.ZipExtractDefaultFileDisposition">
+            <summary>
+                Specifies how to handle files in a zip update, unless overriden via
+                <see cref="P:Nefarius.Vicius.Abstractions.Models.UpdateRelease.ZipExtractFileDispositionOverrides" />.
+            </summary>
+        </member>
+        <member name="P:Nefarius.Vicius.Abstractions.Models.UpdateRelease.ZipExtractFileDispositionOverrides">
+            <summary>
+                Overrides the behavior for specific files in a zip update. Trumps <see cref="P:Nefarius.Vicius.Abstractions.Models.UpdateRelease.ZipExtractDefaultFileDisposition" />
+                if set.
+            </summary>
+        </member>
+        <member name="T:Nefarius.Vicius.Abstractions.Models.UpdateResponse">
+            <summary>
+                An instance returned by the remote update API.
+            </summary>
+        </member>
+        <member name="P:Nefarius.Vicius.Abstractions.Models.UpdateResponse.Instance">
+            <summary>
+                Update instance configuration. Parameters applying to the entire product/tenant.
+            </summary>
+        </member>
+        <member name="P:Nefarius.Vicius.Abstractions.Models.UpdateResponse.Shared">
+            <summary>
+                Parameters that might be provided by both the server and the local configuration.
+            </summary>
+        </member>
+        <member name="P:Nefarius.Vicius.Abstractions.Models.UpdateResponse.Releases">
+            <summary>
+                The available update releases.
+            </summary>
+        </member>
+    </members>
+</doc>

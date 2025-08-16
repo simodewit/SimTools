@@ -21,8 +21,15 @@ namespace SimTools.Views
         private ButtonHighlightService _lights;
         private MapHotkeyController _hotkeys;
 
+        // NEW: safe game-mode pieces
+        private VirtualGamepadService _gamepad;
+        private GameModeGuard _guard;
+
         // Monitor from your InputCapture (may or may not fire on your setup)
         private IDisposable _inputMonitor;
+
+        // Tap duration for virtual button (ms) when we don't get release notifications.
+        private const int TapMs = 50;
 
         public KeybindsPage()
         {
@@ -32,7 +39,6 @@ namespace SimTools.Views
             DataContextChanged += OnDataContextChanged;
         }
 
-        // ---------- Lifecycle ----------
         private void OnLoaded(object sender, RoutedEventArgs e)
         {
             _lights = new ButtonHighlightService();
@@ -47,10 +53,9 @@ namespace SimTools.Views
             };
             _binder.Wire(DataContext);
 
-            // Initial rehydrate after UI renders
             Dispatcher.BeginInvoke(DispatcherPriority.Background, new Action(RehydrateVisibleButtons));
 
-            // Try global monitor
+            // Global input from your InputCapture (safe for games; no keyboard injection)
             var owner = Window.GetWindow(this);
             if (owner != null && _inputMonitor == null)
             {
@@ -58,8 +63,19 @@ namespace SimTools.Views
                 catch { /* monitor not available on some setups */ }
             }
 
-            // Fallback keyboard monitor (while app has focus)
+            // Keyboard fallback (only while app has focus) – for UI hints, not game routing
             InputManager.Current.PreProcessInput += OnPreProcessInput;
+
+            // NEW: start ViGEm controller + guard
+            _gamepad = new VirtualGamepadService();
+            _gamepad.TryStart();
+
+            _guard = new GameModeGuard { GameModeEnabled = true }; // Game Mode ON by default
+            _guard.StatusChanged += (suspended, exe) =>
+            {
+                // Optional: show a small banner/toast if suspended by a process.
+            };
+            _guard.Start();
         }
 
         private void OnUnloaded(object sender, RoutedEventArgs e)
@@ -77,6 +93,10 @@ namespace SimTools.Views
             _saver = null;
 
             _lights?.ClearAll();
+
+            try { _guard?.Dispose(); } catch { }
+            try { _gamepad?.Stop(); } catch { }
+            _guard = null; _gamepad = null;
         }
 
         private void OnDataContextChanged(object sender, DependencyPropertyChangedEventArgs e)
@@ -85,7 +105,6 @@ namespace SimTools.Views
             Dispatcher.BeginInvoke(DispatcherPriority.Background, new Action(RehydrateVisibleButtons));
         }
 
-        // ---------- Save ----------
         private void QueueSave() => _saver?.Queue();
 
         private void PerformSave()
@@ -93,7 +112,6 @@ namespace SimTools.Views
             var vm = DataContext;
             if (vm == null) return;
 
-            // Prefer SaveCommand; fall back to Save()
             var saveCmd = vm.GetType().GetProperty("SaveCommand", BindingFlags.Instance | BindingFlags.Public)?.GetValue(vm) as ICommand;
             if (saveCmd != null && saveCmd.CanExecute(null))
             { try { saveCmd.Execute(null); return; } catch { } }
@@ -102,7 +120,7 @@ namespace SimTools.Views
             if (saveMethod != null) { try { saveMethod.Invoke(vm, null); } catch { } }
         }
 
-        // ---------- Keyboard fallback (only while held) ----------
+        // ---------- Keyboard fallback (only while held; UI highlighting) ----------
         private void OnPreProcessInput(object sender, PreProcessInputEventArgs e)
         {
             if (!(e.StagingItem.Input is KeyEventArgs ke)) return;
@@ -121,10 +139,7 @@ namespace SimTools.Views
             }
             else if (ke.RoutedEvent == Keyboard.PreviewKeyUpEvent || ke.RoutedEvent == Keyboard.KeyUpEvent)
             {
-                // Turn off ALL highlights, including the general Next/Prev buttons.
                 _lights.ClearAll();
-
-                // (extra safety; harmless if already cleared)
                 _lights.Unhighlight(NextMapBtn);
                 _lights.Unhighlight(PrevMapBtn);
             }
@@ -192,36 +207,60 @@ namespace SimTools.Views
             QueueSave();
         }
 
-        // ---------- Global input (treat as a "press") ----------
+        // ---------- Global input callback ----------
         private void OnGlobalInput(InputBindingResult input)
         {
             if (input == null) return;
+
+            // UI highlighting (visual hint)
             HighlightMatches(input);
 
+            // Map switching via Next/Prev on any device
             if (!KeybindHelpers.IsTyping())
                 MaybeSwitchMapFrom(input);
+
+            // Game Mode: route 1:1 to ViGEm (no hooks, no SendInput)
+            TryRouteToVirtualTap(input);
         }
 
-        // ---------- Highlighting logic ----------
-        private void HighlightMatches(InputBindingResult input)
+        // Route this input to a single virtual button (tap), if bound in the current map.
+        private void TryRouteToVirtualTap(InputBindingResult input)
         {
+            if (_gamepad == null || !_guard?.ShouldOperateNow() == true) return;
+
             var items = (KeybindsList?.ItemsSource as IEnumerable) ?? Enumerable.Empty<object>();
-            foreach (var item in items)
+            foreach (var kb in items.OfType<KeybindBinding>())
             {
-                var container = KeybindsList.ItemContainerGenerator.ContainerFromItem(item) as DependencyObject;
-                if (container == null) continue;
+                if (kb == null || kb.Output == VirtualOutput.None) continue;
 
-                var btn = KeybindUiHelpers.FindVisualDescendants<Button>(container).FirstOrDefault(b =>
+                // Match on the binding's device + control label (case-insensitive)
+                if (string.Equals(kb.Device, input.DeviceType, StringComparison.OrdinalIgnoreCase) &&
+                    string.Equals(kb.DeviceKey, input.ControlLabel, StringComparison.OrdinalIgnoreCase))
                 {
-                    try { return Grid.GetColumn(b) == 1; } catch { return true; }
-                });
-
-                if (btn?.Tag is DeviceBindingDescriptor tag && DeviceBindingDescriptor.IsMatch(tag, input))
-                    _lights.Highlight(btn);
+                    TapVirtual(kb.Output, TapMs);
+                    break; // one input -> one output
+                }
             }
         }
 
-        // ---------- General settings assign ----------
+        private void TapVirtual(VirtualOutput output, int durationMs)
+        {
+            try
+            {
+                _gamepad?.SetButton(output, true);
+
+                var t = new DispatcherTimer(DispatcherPriority.Background) { Interval = TimeSpan.FromMilliseconds(durationMs) };
+                t.Tick += (s, e) =>
+                {
+                    try { _gamepad?.SetButton(output, false); } catch { }
+                    (s as DispatcherTimer)?.Stop();
+                };
+                t.Start();
+            }
+            catch { /* never throw on input path */ }
+        }
+
+        // ---------- General settings assign (unchanged) ----------
         private void NextMapAssign_Click(object sender, RoutedEventArgs e)
         {
             var owner = Window.GetWindow(this);
@@ -292,7 +331,6 @@ namespace SimTools.Views
             QueueSave();
         }
 
-        // ---------- Rehydrate on load ----------
         private void RehydrateVisibleButtons()
         {
             KeybindRehydrator.RehydrateRows(KeybindsList);
@@ -323,11 +361,9 @@ namespace SimTools.Views
                 else { PrevMapBtn.Tag = null; KeybindUiHelpers.SetButtonText(PrevMapBtn, "None"); }
             }
 
-            // Clear only row highlights (leave Next/Prev if active)
             _lights.ClearRowsExcept(NextMapBtn, PrevMapBtn);
         }
 
-        // ---------- Hotkey → VM switching ----------
         private void MaybeSwitchMapFrom(InputBindingResult input)
         {
             var nextTag = NextMapBtn?.Tag as DeviceBindingDescriptor;
@@ -366,17 +402,14 @@ namespace SimTools.Views
             }
         }
 
-        // ---------- Inline rename ----------
+        // Inline rename + enter-to-commit (unchanged from your version)
         private void RenameProfile_Click(object sender, RoutedEventArgs e)
             => BeginInlineRename(ProfilesList, "ProfileNameEditor", "ProfileNameText");
-
         private void RenameMap_Click(object sender, RoutedEventArgs e)
             => BeginInlineRename(MapsList, "MapNameEditor", "MapNameText");
-
         private void BeginInlineRename(ListBox listBox, string editorName, string textName)
         {
             if (listBox == null || listBox.SelectedItem == null) return;
-
             var container = listBox.ItemContainerGenerator.ContainerFromItem(listBox.SelectedItem) as DependencyObject;
             if (container == null) return;
 
@@ -390,29 +423,19 @@ namespace SimTools.Views
             editor.Focus();
             editor.SelectAll();
         }
-
         private void ProfileNameEditor_KeyDown(object sender, KeyEventArgs e)
-        {
-            if (e.Key == Key.Enter) { CommitAndCloseEditor(sender as TextBox); e.Handled = true; }
-        }
-
+        { if (e.Key == Key.Enter) { CommitAndCloseEditor(sender as TextBox); e.Handled = true; } }
         private void MapNameEditor_KeyDown(object sender, KeyEventArgs e)
-        {
-            if (e.Key == Key.Enter) { CommitAndCloseEditor(sender as TextBox); e.Handled = true; }
-        }
-
+        { if (e.Key == Key.Enter) { CommitAndCloseEditor(sender as TextBox); e.Handled = true; } }
         private void ProfileNameEditor_LostFocus(object sender, KeyboardFocusChangedEventArgs e)
             => CommitAndCloseEditor(sender as TextBox);
-
         private void MapNameEditor_LostFocus(object sender, KeyboardFocusChangedEventArgs e)
             => CommitAndCloseEditor(sender as TextBox);
-
         private void CommitAndCloseEditor(TextBox editor)
         {
             if (editor == null) return;
             editor.GetBindingExpression(TextBox.TextProperty)?.UpdateSource();
 
-            // Hide editor, show label
             var grid = editor.Parent as Grid;
             var label = grid?.Children.OfType<TextBlock>().FirstOrDefault();
             if (label != null)
@@ -424,18 +447,43 @@ namespace SimTools.Views
             Keyboard.ClearFocus();
             QueueSave();
         }
-
-        // Handles Enter-to-commit for the keybind name TextBox
         private void KeybindName_KeyDown(object sender, KeyEventArgs e)
         {
             if (e.Key == Key.Enter)
             {
-                (sender as TextBox)?
-                    .GetBindingExpression(TextBox.TextProperty)?
-                    .UpdateSource();
-
+                (sender as TextBox)?.GetBindingExpression(TextBox.TextProperty)?.UpdateSource();
                 Keyboard.ClearFocus();
                 e.Handled = true;
+            }
+        }
+
+        // Highlights the "Assign" button in any row whose binding matches the incoming input.
+        // Used for visual feedback when an input is detected.
+        private void HighlightMatches(InputBindingResult input)
+        {
+            var items = (KeybindsList?.ItemsSource as System.Collections.IEnumerable)
+                        ?? System.Linq.Enumerable.Empty<object>();
+
+            foreach (var item in items)
+            {
+                var container = KeybindsList.ItemContainerGenerator.ContainerFromItem(item) as System.Windows.DependencyObject;
+                if (container == null) continue;
+
+                // Find the Assign button in column 1 for this row
+                var btn = SimTools.Helpers.KeybindUiHelpers
+                    .FindVisualDescendants<System.Windows.Controls.Button>(container)
+                    .FirstOrDefault(b =>
+                    {
+                        try { return System.Windows.Controls.Grid.GetColumn(b) == 1; }
+                        catch { return true; }
+                    });
+
+                // During assignment/rehydration we store a DeviceBindingDescriptor in the Assign button's Tag
+                if (btn?.Tag is SimTools.Models.DeviceBindingDescriptor tag &&
+                    SimTools.Models.DeviceBindingDescriptor.IsMatch(tag, input))
+                {
+                    _lights?.Highlight(btn);
+                }
             }
         }
     }

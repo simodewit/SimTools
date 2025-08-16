@@ -171,7 +171,6 @@
                             <!-- NEW -->
                             <Button Style="{StaticResource ToolbarTextButton}" FontFamily="Segoe MDL2 Assets" FontSize="14" Content="&#xE8C8;" ToolTip="Duplicate profile" AutomationProperties.Name="Duplicate profile" Command="{Binding DuplicateProfile}" />
                         </StackPanel>
-
                     </Grid>
 
                     <ListBox x:Name="ProfilesList"
@@ -285,9 +284,17 @@
                                 <Grid Margin="0,4">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*" />
+                                        <!-- Action name -->
                                         <ColumnDefinition Width="*" />
+                                        <!-- Assign input -->
+                                        <ColumnDefinition Width="160" />
+                                        <!-- Output -->
                                         <ColumnDefinition Width="Auto"/>
+                                        <!-- Block -->
                                         <ColumnDefinition Width="Auto"/>
+                                        <!-- Clear -->
+                                        <ColumnDefinition Width="Auto"/>
+                                        <!-- Remove -->
                                     </Grid.ColumnDefinitions>
 
                                     <!-- Action name -->
@@ -309,7 +316,24 @@
                                         <TextBlock Text="{Binding}" TextTrimming="CharacterEllipsis" />
                                     </Button>
 
-                                    <Button Grid.Column="2"
+                                    <!-- NEW: virtual output (what we emit) -->
+                                    <ComboBox Grid.Column="2"
+                                              ItemsSource="{Binding DataContext.AvailableOutputs, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                              SelectedItem="{Binding Output, Mode=TwoWay}"
+                                              Height="32"
+                                              MinWidth="140"
+                                              VerticalAlignment="Center"/>
+
+                                    <!-- NEW: whether to block the real key -->
+                                    <CheckBox Grid.Column="3"
+                                              Margin="8,0,0,0"
+                                              IsChecked="{Binding BlockOriginal}"
+                                              VerticalAlignment="Center"
+                                              Content="Block"
+                                              ToolTip="Swallow the physical key globally"/>
+
+                                    <!-- Clear (E894) -->
+                                    <Button Grid.Column="4"
                                             Style="{StaticResource LinkAccentButton}"
                                             FontFamily="Segoe MDL2 Assets" FontSize="14"
                                             Content="&#xE894;"
@@ -319,7 +343,7 @@
                                             AutomationProperties.Name="Clear binding"
                                             VerticalAlignment="Center"/>
 
-                                    <Button Grid.Column="3"
+                                    <Button Grid.Column="5"
                                             Style="{StaticResource ToolbarTextButton}"
                                             FontFamily="Segoe MDL2 Assets" FontSize="14"
                                             Content="&#xE74D;"

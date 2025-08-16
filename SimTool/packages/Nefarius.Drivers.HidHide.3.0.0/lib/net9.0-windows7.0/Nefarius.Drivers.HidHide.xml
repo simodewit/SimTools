@@ -1,0 +1,1007 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Nefarius.Drivers.HidHide</name>
+    </assembly>
+    <members>
+        <member name="T:Nefarius.Drivers.HidHide.Exceptions.HidHideException">
+            <summary>
+                Describes a HidHide API exception.
+            </summary>
+        </member>
+        <member name="P:Nefarius.Drivers.HidHide.Exceptions.HidHideException.NativeErrorCode">
+            <summary>
+                Gets the native Win32 error code of the failed operation.
+            </summary>
+        </member>
+        <member name="P:Nefarius.Drivers.HidHide.Exceptions.HidHideException.NativeErrorMessage">
+            <summary>
+                Gets the error message related to <see cref="P:Nefarius.Drivers.HidHide.Exceptions.HidHideException.NativeErrorCode" />.
+            </summary>
+        </member>
+        <member name="P:Nefarius.Drivers.HidHide.Exceptions.HidHideException.Message">
+            <inheritdoc />
+        </member>
+        <member name="T:Nefarius.Drivers.HidHide.Exceptions.HidHideDriverAccessFailedException">
+            <summary>
+                Failed to open a handle to the driver. Make sure no other process is using the API at the same time.
+            </summary>
+        </member>
+        <member name="T:Nefarius.Drivers.HidHide.Exceptions.HidHideDriverNotFoundException">
+            <summary>
+                Failed to locate the driver. Make sure HidHide is installed and not in a faulty state.
+            </summary>
+        </member>
+        <member name="T:Nefarius.Drivers.HidHide.Exceptions.HidHideBufferOverflowException">
+            <summary>
+                Buffer size exceeded the maximum allowed characters.
+            </summary>
+        </member>
+        <member name="T:Nefarius.Drivers.HidHide.Exceptions.HidHideRequestFailedException">
+            <summary>
+                Request failed. Check the 'NativeErrorCode' and 'NativeErrorMessage' property for more details.
+            </summary>
+        </member>
+        <member name="T:Nefarius.Drivers.HidHide.Exceptions.HidHideDetectionFailedException">
+            <summary>
+                Interface lookup failed. Check the 'NativeErrorCode' and 'NativeErrorMessage' property for more details.
+            </summary>
+        </member>
+        <member name="P:Nefarius.Drivers.HidHide.Exceptions.HidHideDetectionFailedException.LastResult">
+            <summary>
+                The <see cref="T:Windows.Win32.Devices.DeviceAndDriverInstallation.CONFIGRET" /> of the failing call.
+            </summary>
+        </member>
+        <member name="T:Nefarius.Drivers.HidHide.Exceptions.HidHideServerExceptions">
+            <summary>
+                Describes a HidHide CDN server exception.
+            </summary>
+        </member>
+        <member name="M:Nefarius.Drivers.HidHide.Exceptions.HidHideServerExceptions.#ctor">
+            <inheritdoc />
+        </member>
+        <member name="T:Nefarius.Drivers.HidHide.Exceptions.UpdateResponseMissingException">
+            <summary>
+                Update response object missing, couldn't be deserialized or server error. Check
+                <see cref="P:System.Exception.InnerException" /> for details.
+            </summary>
+        </member>
+        <member name="T:Nefarius.Drivers.HidHide.Exceptions.MissingReleasesException">
+            <summary>
+                Server didn't supply any release information.
+            </summary>
+        </member>
+        <member name="T:Nefarius.Drivers.HidHide.Exceptions.DownloadLocationMissingException">
+            <summary>
+                Download location URL wasn't set for the selected release.
+            </summary>
+        </member>
+        <member name="T:Nefarius.Drivers.HidHide.Exceptions.MalformedUrlException">
+            <summary>
+                The supplied URL was ill formatted.
+            </summary>
+        </member>
+        <member name="T:Nefarius.Drivers.HidHide.HidHideControlService">
+            <summary>
+                Provides a managed wrapper for communicating with HidHide driver.
+            </summary>
+        </member>
+        <member name="M:Nefarius.Drivers.HidHide.HidHideControlService.#ctor(Microsoft.Extensions.Logging.ILoggerFactory)">
+            <summary>
+                Creates a new instance of <see cref="T:Nefarius.Drivers.HidHide.HidHideControlService" /> that is DI-aware.
+            </summary>
+            <param name="loggerFactory">Injects a logging factory.</param>
+        </member>
+        <member name="M:Nefarius.Drivers.HidHide.HidHideControlService.#ctor">
+            <summary>
+                Creates a new instance of <see cref="T:Nefarius.Drivers.HidHide.HidHideControlService" /> that is not DI-aware.
+            </summary>
+            <remarks>
+                If the caller uses a dependency injection framework, do not instantiate this class directly. Use
+                <see cref="M:Nefarius.Drivers.HidHide.ServiceCollectionExtensions.AddHidHide(Microsoft.Extensions.DependencyInjection.IServiceCollection,System.Action{Nefarius.Drivers.HidHide.HidHideServiceOptions},System.Action{Microsoft.Extensions.DependencyInjection.IHttpClientBuilder})" /> instead.
+            </remarks>
+        </member>
+        <member name="P:Nefarius.Drivers.HidHide.HidHideControlService.DeviceInterface">
+            <summary>
+                Interface GUID to enumerate HidHide devices.
+            </summary>
+        </member>
+        <member name="P:Nefarius.Drivers.HidHide.HidHideControlService.HardwareId">
+            <summary>
+                Hardware ID of the root-enumerated software node the driver attaches to.
+            </summary>
+        </member>
+        <member name="P:Nefarius.Drivers.HidHide.HidHideControlService.IsActive">
+            <inheritdoc />
+        </member>
+        <member name="P:Nefarius.Drivers.HidHide.HidHideControlService.IsInstalled">
+            <inheritdoc />
+        </member>
+        <member name="P:Nefarius.Drivers.HidHide.HidHideControlService.IsDriverNodePresent">
+            <inheritdoc />
+        </member>
+        <member name="P:Nefarius.Drivers.HidHide.HidHideControlService.IsOperational">
+            <inheritdoc />
+        </member>
+        <member name="P:Nefarius.Drivers.HidHide.HidHideControlService.LocalDriverVersion">
+            <inheritdoc />
+        </member>
+        <member name="P:Nefarius.Drivers.HidHide.HidHideControlService.IsAppListInverted">
+            <inheritdoc />
+        </member>
+        <member name="P:Nefarius.Drivers.HidHide.HidHideControlService.BlockedInstanceIds">
+            <inheritdoc />
+        </member>
+        <member name="P:Nefarius.Drivers.HidHide.HidHideControlService.ApplicationPaths">
+            <inheritdoc />
+        </member>
+        <member name="M:Nefarius.Drivers.HidHide.HidHideControlService.AddBlockedInstanceId(System.String)">
+            <inheritdoc />
+        </member>
+        <member name="M:Nefarius.Drivers.HidHide.HidHideControlService.RemoveBlockedInstanceId(System.String)">
+            <inheritdoc />
+        </member>
+        <member name="M:Nefarius.Drivers.HidHide.HidHideControlService.ClearBlockedInstancesList">
+            <inheritdoc />
+        </member>
+        <member name="M:Nefarius.Drivers.HidHide.HidHideControlService.AddApplicationPath(System.String,System.Boolean)">
+            <inheritdoc />
+        </member>
+        <member name="M:Nefarius.Drivers.HidHide.HidHideControlService.RemoveApplicationPath(System.String)">
+            <inheritdoc />
+        </member>
+        <member name="M:Nefarius.Drivers.HidHide.HidHideControlService.ClearApplicationsList">
+            <inheritdoc />
+        </member>
+        <member name="T:Nefarius.Drivers.HidHide.HidHideServiceOptions">
+            <summary>
+                Optional options for HidHide service registration.
+            </summary>
+        </member>
+        <member name="P:Nefarius.Drivers.HidHide.HidHideServiceOptions.OSArchitecture">
+            <summary>
+                The processor/machine architecture to report to the CDN server.
+            </summary>
+        </member>
+        <member name="T:Nefarius.Drivers.HidHide.HidHideSetupProvider">
+            <summary>
+                Service to locate the latest HidHide setup resources, update information etc.
+            </summary>
+        </member>
+        <member name="M:Nefarius.Drivers.HidHide.HidHideSetupProvider.#ctor(System.Net.Http.HttpClient)">
+            <summary>
+                Creates new instance of HidHide Setup Provider.
+            </summary>
+        </member>
+        <member name="M:Nefarius.Drivers.HidHide.HidHideSetupProvider.GetUpdateInformationAsync(System.Threading.CancellationToken)">
+            <summary>
+                Fetches the <see cref="T:Nefarius.Vicius.Abstractions.Models.UpdateResponse" /> from the HidHide CDN server.
+            </summary>
+            <exception cref="T:System.OperationCanceledException">
+                The cancellation token was canceled. This exception is stored into the
+                returned task.
+            </exception>
+        </member>
+        <member name="M:Nefarius.Drivers.HidHide.HidHideSetupProvider.GetLatestDownloadUrlAsync(System.Threading.CancellationToken)">
+            <summary>
+                Fetches the latest setup download URL.
+            </summary>
+            <exception cref="T:Nefarius.Drivers.HidHide.Exceptions.UpdateResponseMissingException">
+                Server didn't respond with a proper reply, see
+                <see cref="P:System.Exception.InnerException" /> for details.
+            </exception>
+            <exception cref="T:Nefarius.Drivers.HidHide.Exceptions.MissingReleasesException">Mandatory releases collection was empty.</exception>
+            <exception cref="T:Nefarius.Drivers.HidHide.Exceptions.DownloadLocationMissingException">Mandatory release download location was missing.</exception>
+            <exception cref="T:Nefarius.Drivers.HidHide.Exceptions.MalformedUrlException">Provided download URL was malformed.</exception>
+        </member>
+        <member name="M:Nefarius.Drivers.HidHide.HidHideSetupProvider.GetLatestVersionAsync(System.Threading.CancellationToken)">
+            <summary>
+                Fetches the latest available version.
+            </summary>
+            <exception cref="T:Nefarius.Drivers.HidHide.Exceptions.UpdateResponseMissingException">
+                Server didn't respond with a proper reply, see
+                <see cref="P:System.Exception.InnerException" /> for details.
+            </exception>
+            <exception cref="T:Nefarius.Drivers.HidHide.Exceptions.MissingReleasesException">Mandatory releases collection was empty.</exception>
+        </member>
+        <member name="M:Nefarius.Drivers.HidHide.HidHideSetupProvider.GetLatestReleaseAsync(System.Threading.CancellationToken)">
+            <summary>
+                Fetches the latest available release.
+            </summary>
+            <param name="ct">Optional <see cref="T:System.Threading.CancellationToken" />.</param>
+            <returns> The latest <see cref="T:Nefarius.Vicius.Abstractions.Models.UpdateRelease" /> available.</returns>
+            <exception cref="T:Nefarius.Drivers.HidHide.Exceptions.UpdateResponseMissingException">
+                Server didn't respond with a proper reply, see
+                <see cref="P:System.Exception.InnerException" /> for details.
+            </exception>
+            <exception cref="T:Nefarius.Drivers.HidHide.Exceptions.MissingReleasesException">Mandatory releases collection was empty.</exception>
+        </member>
+        <member name="M:Nefarius.Drivers.HidHide.HidHideSetupProvider.DownloadLatestReleaseAsync(System.Threading.CancellationToken)">
+            <summary>
+                Downloads the setup asset of the most recent <see cref="T:Nefarius.Vicius.Abstractions.Models.UpdateRelease" />.
+            </summary>
+            <param name="ct">Optional <see cref="T:System.Threading.CancellationToken" />.</param>
+            <returns>A <see cref="T:System.Net.Http.HttpResponseMessage" />.</returns>
+            <exception cref="T:Nefarius.Drivers.HidHide.Exceptions.UpdateResponseMissingException">
+                Server didn't respond with a proper reply, see
+                <see cref="P:System.Exception.InnerException" /> for details.
+            </exception>
+            <exception cref="T:Nefarius.Drivers.HidHide.Exceptions.MissingReleasesException">Mandatory releases collection was empty.</exception>
+            <exception cref="T:System.Net.Http.HttpRequestException">Server communication error occurred.</exception>
+        </member>
+        <member name="M:Nefarius.Drivers.HidHide.HidHideSetupProvider.DownloadReleaseAsync(Nefarius.Vicius.Abstractions.Models.UpdateRelease,System.Threading.CancellationToken)">
+            <summary>
+                Downloads the setup asset of the provided <see cref="T:Nefarius.Vicius.Abstractions.Models.UpdateRelease" />.
+            </summary>
+            <param name="release">The <see cref="T:Nefarius.Vicius.Abstractions.Models.UpdateRelease" /> who's asset setup should be downloaded.</param>
+            <param name="ct">Optional <see cref="T:System.Threading.CancellationToken" />.</param>
+            <returns><see cref="T:System.Net.Http.HttpResponseMessage" /> on success.</returns>
+            <exception cref="T:System.Net.Http.HttpRequestException">Server communication error occurred.</exception>
+        </member>
+        <member name="T:Nefarius.Drivers.HidHide.IHidHideControlService">
+            <summary>
+                Provides a managed wrapper for communicating with HidHide driver.
+            </summary>
+        </member>
+        <member name="P:Nefarius.Drivers.HidHide.IHidHideControlService.IsActive">
+            <summary>
+                Gets or sets whether global device hiding is currently active or not.
+            </summary>
+            <exception cref="T:Nefarius.Drivers.HidHide.Exceptions.HidHideRequestFailedException">
+                Driver communication has failed. See
+                <see cref="P:Nefarius.Drivers.HidHide.Exceptions.HidHideException.NativeErrorCode" /> and <see cref="P:Nefarius.Drivers.HidHide.Exceptions.HidHideException.NativeErrorMessage" /> for details.
+            </exception>
+        </member>
+        <member name="P:Nefarius.Drivers.HidHide.IHidHideControlService.IsInstalled">
+            <summary>
+                Gets whether the driver is present and operable.
+            </summary>
+            <exception cref="T:Nefarius.Drivers.HidHide.Exceptions.HidHideDetectionFailedException">
+                Driver lookup has failed. See <see cref="P:Nefarius.Drivers.HidHide.Exceptions.HidHideException.NativeErrorCode" /> and
+                <see cref="P:Nefarius.Drivers.HidHide.Exceptions.HidHideException.NativeErrorMessage" /> for details.
+            </exception>
+        </member>
+        <member name="P:Nefarius.Drivers.HidHide.IHidHideControlService.IsDriverNodePresent">
+            <summary>
+                Gets whether the virtual root-enumerated software device the driver attaches to is present on the system.
+            </summary>
+            <exception cref="T:Nefarius.Utilities.DeviceManagement.Exceptions.ConfigManagerException">An unexpected enumeration error occurred.</exception>
+        </member>
+        <member name="P:Nefarius.Drivers.HidHide.IHidHideControlService.IsOperational">
+            <summary>
+                Gets whether the driver node is present and operational (has its device interface exposed).
+            </summary>
+            <exception cref="T:Nefarius.Drivers.HidHide.Exceptions.HidHideDetectionFailedException">
+                Driver lookup has failed. See <see cref="P:Nefarius.Drivers.HidHide.Exceptions.HidHideException.NativeErrorCode" /> and
+                <see cref="P:Nefarius.Drivers.HidHide.Exceptions.HidHideException.NativeErrorMessage" /> for details.
+            </exception>
+            <exception cref="T:Nefarius.Utilities.DeviceManagement.Exceptions.ConfigManagerException">An unexpected enumeration error occurred.</exception>
+        </member>
+        <member name="P:Nefarius.Drivers.HidHide.IHidHideControlService.LocalDriverVersion">
+            <summary>
+                Gets the local driver binary version.
+            </summary>
+            <exception cref="T:Nefarius.Utilities.DeviceManagement.Exceptions.ConfigManagerException">An unexpected enumeration error occurred.</exception>
+            <exception cref="T:Nefarius.Drivers.HidHide.Exceptions.HidHideDriverNotFoundException">
+                Failed to locate the driver. Make sure HidHide is installed and not in a
+                faulty state.
+            </exception>
+        </member>
+        <member name="P:Nefarius.Drivers.HidHide.IHidHideControlService.IsAppListInverted">
+            <summary>
+                Gets or sets whether the application list is inverted (from block all/allow specific to allow all/block specific).
+            </summary>
+            <remarks>
+                The default behavior of the application list is to block all processes by default and only treat listed paths
+                as exempted.
+            </remarks>
+            <exception cref="T:Nefarius.Drivers.HidHide.Exceptions.HidHideRequestFailedException">
+                Driver communication has failed. See
+                <see cref="P:Nefarius.Drivers.HidHide.Exceptions.HidHideException.NativeErrorCode" /> and <see cref="P:Nefarius.Drivers.HidHide.Exceptions.HidHideException.NativeErrorMessage" /> for details.
+            </exception>
+        </member>
+        <member name="P:Nefarius.Drivers.HidHide.IHidHideControlService.BlockedInstanceIds">
+            <summary>
+                Returns list of currently blocked instance IDs.
+            </summary>
+            <exception cref="T:Nefarius.Drivers.HidHide.Exceptions.HidHideDriverAccessFailedException">
+                Failed to open a handle to the driver.
+                Make sure no other process is using the API at the same time.
+            </exception>
+            <exception cref="T:Nefarius.Drivers.HidHide.Exceptions.HidHideDriverNotFoundException">
+                Failed to locate the driver. Make sure HidHide is installed and not in a
+                faulty state.
+            </exception>
+            <exception cref="T:Nefarius.Drivers.HidHide.Exceptions.HidHideRequestFailedException">
+                Driver communication has failed. See
+                <see cref="P:Nefarius.Drivers.HidHide.Exceptions.HidHideException.NativeErrorCode" /> and <see cref="P:Nefarius.Drivers.HidHide.Exceptions.HidHideException.NativeErrorMessage" /> for details.
+            </exception>
+            <exception cref="T:Nefarius.Drivers.HidHide.Exceptions.HidHideBufferOverflowException">
+                Buffer size exceeded the maximum allowed characters. It happens when the list
+                grew out of supported bounds.
+            </exception>
+        </member>
+        <member name="P:Nefarius.Drivers.HidHide.IHidHideControlService.ApplicationPaths">
+            <summary>
+                Returns list of currently allowed (or blocked, see <see cref="P:Nefarius.Drivers.HidHide.IHidHideControlService.IsAppListInverted" />) application paths.
+            </summary>
+            <exception cref="T:Nefarius.Drivers.HidHide.Exceptions.HidHideDriverAccessFailedException">
+                Failed to open a handle to the driver.
+                Make sure no other process is using the API at the same time.
+            </exception>
+            <exception cref="T:Nefarius.Drivers.HidHide.Exceptions.HidHideDriverNotFoundException">
+                Failed to locate the driver. Make sure HidHide is installed and not in a
+                faulty state.
+            </exception>
+            <exception cref="T:Nefarius.Drivers.HidHide.Exceptions.HidHideRequestFailedException">
+                Driver communication has failed. See
+                <see cref="P:Nefarius.Drivers.HidHide.Exceptions.HidHideException.NativeErrorCode" /> and <see cref="P:Nefarius.Drivers.HidHide.Exceptions.HidHideException.NativeErrorMessage" /> for details.
+            </exception>
+            <exception cref="T:Nefarius.Drivers.HidHide.Exceptions.HidHideBufferOverflowException">
+                Buffer size exceeded the maximum allowed characters. It happens when the list
+                grew out of supported bounds.
+            </exception>
+        </member>
+        <member name="M:Nefarius.Drivers.HidHide.IHidHideControlService.AddBlockedInstanceId(System.String)">
+            <summary>
+                Submit a new instance to block.
+            </summary>
+            <remarks>
+                To get the instance ID from e.g. a symbolic link (device path) you can use this companion library:
+                https://github.com/nefarius/Nefarius.Utilities.DeviceManagement
+            </remarks>
+            <param name="instanceId">The Instance ID to block.</param>
+            <exception cref="T:Nefarius.Drivers.HidHide.Exceptions.HidHideDriverAccessFailedException">
+                Failed to open a handle to the driver.
+                Make sure no other process is using the API at the same time.
+            </exception>
+            <exception cref="T:Nefarius.Drivers.HidHide.Exceptions.HidHideDriverNotFoundException">
+                Failed to locate the driver. Make sure HidHide is installed and not in a
+                faulty state.
+            </exception>
+            <exception cref="T:Nefarius.Drivers.HidHide.Exceptions.HidHideRequestFailedException">
+                Driver communication has failed. See
+                <see cref="P:Nefarius.Drivers.HidHide.Exceptions.HidHideException.NativeErrorCode" /> and <see cref="P:Nefarius.Drivers.HidHide.Exceptions.HidHideException.NativeErrorMessage" /> for details.
+            </exception>
+            <exception cref="T:Nefarius.Drivers.HidHide.Exceptions.HidHideBufferOverflowException">
+                Buffer size exceeded the maximum allowed characters. It happens when the list
+                grew out of supported bounds.
+            </exception>
+        </member>
+        <member name="M:Nefarius.Drivers.HidHide.IHidHideControlService.RemoveBlockedInstanceId(System.String)">
+            <summary>
+                Remove an instance from being blocked.
+            </summary>
+            <remarks>
+                To get the instance ID from e.g. a symbolic link (device path) you can use this companion library:
+                https://github.com/nefarius/Nefarius.Utilities.DeviceManagement
+            </remarks>
+            <param name="instanceId">The Instance ID to unblock.</param>
+            <exception cref="T:Nefarius.Drivers.HidHide.Exceptions.HidHideDriverAccessFailedException">
+                Failed to open a handle to the driver.
+                Make sure no other process is using the API at the same time.
+            </exception>
+            <exception cref="T:Nefarius.Drivers.HidHide.Exceptions.HidHideDriverNotFoundException">
+                Failed to locate the driver. Make sure HidHide is installed and not in a
+                faulty state.
+            </exception>
+            <exception cref="T:Nefarius.Drivers.HidHide.Exceptions.HidHideRequestFailedException">
+                Driver communication has failed. See
+                <see cref="P:Nefarius.Drivers.HidHide.Exceptions.HidHideException.NativeErrorCode" /> and <see cref="P:Nefarius.Drivers.HidHide.Exceptions.HidHideException.NativeErrorMessage" /> for details.
+            </exception>
+            <exception cref="T:Nefarius.Drivers.HidHide.Exceptions.HidHideBufferOverflowException">
+                Buffer size exceeded the maximum allowed characters. It happens when the list
+                grew out of supported bounds.
+            </exception>
+        </member>
+        <member name="M:Nefarius.Drivers.HidHide.IHidHideControlService.ClearBlockedInstancesList">
+            <summary>
+                Empties the device instances list. Useful if <see cref="M:Nefarius.Drivers.HidHide.IHidHideControlService.AddBlockedInstanceId(System.String)" /> or
+                <see cref="P:Nefarius.Drivers.HidHide.IHidHideControlService.BlockedInstanceIds" /> throw exceptions due to nonexistent entries.
+            </summary>
+            <remarks>
+                Be very conservative in using this call, you might accidentally undo settings different apps have put in
+                place.
+            </remarks>
+            <exception cref="T:Nefarius.Drivers.HidHide.Exceptions.HidHideDriverAccessFailedException">
+                Failed to open a handle to the driver.
+                Make sure no other process is using the API at the same time.
+            </exception>
+            <exception cref="T:Nefarius.Drivers.HidHide.Exceptions.HidHideDriverNotFoundException">
+                Failed to locate the driver. Make sure HidHide is installed and not in a
+                faulty state.
+            </exception>
+            <exception cref="T:Nefarius.Drivers.HidHide.Exceptions.HidHideRequestFailedException">
+                Driver communication has failed. See
+                <see cref="P:Nefarius.Drivers.HidHide.Exceptions.HidHideException.NativeErrorCode" /> and <see cref="P:Nefarius.Drivers.HidHide.Exceptions.HidHideException.NativeErrorMessage" /> for details.
+            </exception>
+            <exception cref="T:Nefarius.Drivers.HidHide.Exceptions.HidHideBufferOverflowException">
+                Buffer size exceeded the maximum allowed characters. It happens when the list
+                grew out of supported bounds.
+            </exception>
+        </member>
+        <member name="M:Nefarius.Drivers.HidHide.IHidHideControlService.AddApplicationPath(System.String,System.Boolean)">
+            <summary>
+                Submit a new application to allow (or deny if the inverse flag is set).
+            </summary>
+            <remarks>Use the common local path notation (e.g. "C:\Windows\System32\rundll32.exe").</remarks>
+            <param name="path">The absolute application path to allow.</param>
+            <param name="throwIfInvalid">Throws exception if an invalid (nonexistent) file path is supplied.</param>
+            <exception cref="T:Nefarius.Drivers.HidHide.Exceptions.HidHideDriverAccessFailedException">
+                Failed to open a handle to the driver.
+                Make sure no other process is using the API at the same time.
+            </exception>
+            <exception cref="T:Nefarius.Drivers.HidHide.Exceptions.HidHideDriverNotFoundException">
+                Failed to locate the driver.
+                Make sure HidHide is installed and not in a
+                faulty state.
+            </exception>
+            <exception cref="T:Nefarius.Drivers.HidHide.Exceptions.HidHideRequestFailedException">
+                Driver communication has failed.
+                See
+                <see cref="P:Nefarius.Drivers.HidHide.Exceptions.HidHideException.NativeErrorCode" /> and <see cref="P:Nefarius.Drivers.HidHide.Exceptions.HidHideException.NativeErrorMessage" /> for details.
+            </exception>
+            <exception cref="T:Nefarius.Drivers.HidHide.Exceptions.HidHideBufferOverflowException">
+                Buffer size exceeded the maximum allowed characters.
+                It happens when the list
+                grew out of supported bounds.
+            </exception>
+            <exception cref="T:System.IO.FileNotFoundException">
+                <paramref name="throwIfInvalid" /> was set and the supplied file
+                <paramref name="path" /> wasn't found.
+            </exception>
+        </member>
+        <member name="M:Nefarius.Drivers.HidHide.IHidHideControlService.RemoveApplicationPath(System.String)">
+            <summary>
+                Revokes an applications exemption.
+            </summary>
+            <remarks>Use the common local path notation (e.g. "C:\Windows\System32\rundll32.exe").</remarks>
+            <param name="path">The absolute application path to revoke.</param>
+            <exception cref="T:Nefarius.Drivers.HidHide.Exceptions.HidHideDriverAccessFailedException">
+                Failed to open a handle to the driver. Make sure no other process is
+                using the API at the same time.
+            </exception>
+            <exception cref="T:Nefarius.Drivers.HidHide.Exceptions.HidHideDriverNotFoundException">
+                Failed to locate the driver. Make sure HidHide is installed and not in a
+                faulty state.
+            </exception>
+            <exception cref="T:Nefarius.Drivers.HidHide.Exceptions.HidHideRequestFailedException">
+                Driver communication has failed. See
+                <see cref="P:Nefarius.Drivers.HidHide.Exceptions.HidHideException.NativeErrorCode" /> and <see cref="P:Nefarius.Drivers.HidHide.Exceptions.HidHideException.NativeErrorMessage" /> for details.
+            </exception>
+            <exception cref="T:Nefarius.Drivers.HidHide.Exceptions.HidHideBufferOverflowException">
+                Buffer size exceeded the maximum allowed characters. It happens when the list
+                grew out of supported bounds.
+            </exception>
+        </member>
+        <member name="M:Nefarius.Drivers.HidHide.IHidHideControlService.ClearApplicationsList">
+            <summary>
+                Empties the application list. Useful if <see cref="M:Nefarius.Drivers.HidHide.IHidHideControlService.AddApplicationPath(System.String,System.Boolean)" /> or <see cref="P:Nefarius.Drivers.HidHide.IHidHideControlService.ApplicationPaths" /> throw
+                exceptions due to nonexistent entries.
+            </summary>
+            <remarks>
+                Be very conservative in using this call, you might accidentally undo settings different apps have put in
+                place.
+            </remarks>
+            <exception cref="T:Nefarius.Drivers.HidHide.Exceptions.HidHideDriverAccessFailedException">
+                Failed to open a handle to the driver. Make sure no other process is
+                using the API at the same time.
+            </exception>
+            <exception cref="T:Nefarius.Drivers.HidHide.Exceptions.HidHideDriverNotFoundException">
+                Failed to locate the driver. Make sure HidHide is installed and not in a
+                faulty state.
+            </exception>
+            <exception cref="T:Nefarius.Drivers.HidHide.Exceptions.HidHideRequestFailedException">
+                Driver communication has failed. See
+                <see cref="P:Nefarius.Drivers.HidHide.Exceptions.HidHideException.NativeErrorCode" /> and <see cref="P:Nefarius.Drivers.HidHide.Exceptions.HidHideException.NativeErrorMessage" /> for details.
+            </exception>
+            <exception cref="T:Nefarius.Drivers.HidHide.Exceptions.HidHideBufferOverflowException">
+                Buffer size exceeded the maximum allowed characters. It happens when the list
+                grew out of supported bounds.
+            </exception>
+        </member>
+        <member name="T:Nefarius.Drivers.HidHide.ServiceCollectionExtensions">
+            <summary>
+                Service collection extension methods.
+            </summary>
+        </member>
+        <member name="M:Nefarius.Drivers.HidHide.ServiceCollectionExtensions.AddHidHide(Microsoft.Extensions.DependencyInjection.IServiceCollection,System.Action{Nefarius.Drivers.HidHide.HidHideServiceOptions},System.Action{Microsoft.Extensions.DependencyInjection.IHttpClientBuilder})">
+            <summary>
+                Registers <see cref="T:Nefarius.Drivers.HidHide.HidHideControlService" /> and <see cref="T:Nefarius.Drivers.HidHide.HidHideSetupProvider"/> with DI.
+            </summary>
+            <param name="services">The <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection" /> to modify.</param>
+            <param name="options">Optional options to customize the registered HidHide services.</param>
+            <param name="builder">
+                Optional <see cref="T:Microsoft.Extensions.DependencyInjection.IHttpClientBuilder" /> to e.g., add resiliency policies or further customize
+                the named HTTP client.
+            </param>
+        </member>
+        <member name="T:Nefarius.Drivers.HidHide.Util.MultiSzHelper">
+            <summary>
+                String manipulation helper methods.
+            </summary>
+        </member>
+        <member name="M:Nefarius.Drivers.HidHide.Util.MultiSzHelper.StringArrayToMultiSzPointer(System.Collections.Generic.IEnumerable{System.String},System.Int32@)">
+            <summary>
+                Converts an array of <see cref="T:System.String" /> into a double-null-terminated multi-byte character memory block.
+            </summary>
+            <param name="instances">Source array of strings.</param>
+            <param name="length">The length of the resulting byte array.</param>
+            <returns>The allocated memory buffer.</returns>
+        </member>
+        <member name="M:Nefarius.Drivers.HidHide.Util.MultiSzHelper.MultiSzPointerToStringArray(System.IntPtr,System.Int32)">
+            <summary>
+                Converts a double-null-terminated multi-byte character memory block into a string array.
+            </summary>
+            <param name="buffer">The memory buffer.</param>
+            <param name="length">The size in bytes of the memory buffer.</param>
+            <returns>The extracted string array.</returns>
+        </member>
+        <member name="M:Nefarius.Drivers.HidHide.Util.SafeFileHandleExtensions.HaltAndCatchFireOnError(Microsoft.Win32.SafeHandles.SafeFileHandle)">
+            <summary>
+                Throws an exception on invalid handle state.
+            </summary>
+            <param name="handle">The handle to test.</param>
+            <exception cref="T:Nefarius.Drivers.HidHide.Exceptions.HidHideDriverAccessFailedException"></exception>
+            <exception cref="T:Nefarius.Drivers.HidHide.Exceptions.HidHideDriverNotFoundException"></exception>
+        </member>
+        <member name="T:Nefarius.Drivers.HidHide.Util.VolumeHelper">
+            <summary>
+                Path manipulation and volume helper methods.
+            </summary>
+        </member>
+        <member name="M:Nefarius.Drivers.HidHide.Util.VolumeHelper.GetVolumeMappings">
+            <summary>
+                Curates and returns a collection of volume to path mappings.
+            </summary>
+            <returns>A collection of <see cref="T:Nefarius.Drivers.HidHide.Util.VolumeHelper.VolumeMeta" />.</returns>
+        </member>
+        <member name="M:Nefarius.Drivers.HidHide.Util.VolumeHelper.IsPathReparsePoint(System.IO.FileSystemInfo)">
+            <summary>
+                Checks if a path is a junction point.
+            </summary>
+            <param name="di">A <see cref="T:System.IO.FileSystemInfo" /> instance.</param>
+            <returns>True if it's a junction, false otherwise.</returns>
+        </member>
+        <member name="M:Nefarius.Drivers.HidHide.Util.VolumeHelper.NormalizePath(System.String)">
+            <summary>
+                Helper to make paths comparable.
+            </summary>
+            <param name="path">The source path.</param>
+            <returns>The normalized path.</returns>
+        </member>
+        <member name="M:Nefarius.Drivers.HidHide.Util.VolumeHelper.DosDevicePathToPath(System.String,System.Boolean)">
+            <summary>
+                Translates a "DOS device" path to user-land path.
+            </summary>
+            <param name="devicePath">The DOS device path to convert.</param>
+            <param name="throwOnError">Throw exception on any sort of parsing error if true, false returns empty string.</param>
+            <returns>The user-land path.</returns>
+        </member>
+        <member name="M:Nefarius.Drivers.HidHide.Util.VolumeHelper.PathToDosDevicePath(System.String,System.Boolean)">
+            <summary>
+                Translates a user-land file path to "DOS device" path.
+            </summary>
+            <param name="path">The file path in normal namespace format.</param>
+            <param name="throwOnError">Throw exception on any sort of parsing error if true, false returns empty string.</param>
+            <returns>The device namespace path (DOS device).</returns>
+        </member>
+        <member name="T:Windows.Win32.Foundation.PCWSTR">
+            <summary>
+            A pointer to a null-terminated, constant character string.
+            </summary>
+        </member>
+        <member name="F:Windows.Win32.Foundation.PCWSTR.Value">
+            <summary>
+            A pointer to the first character in the string. The content should be considered readonly, as it was typed as constant in the SDK.
+            </summary>
+        </member>
+        <member name="P:Windows.Win32.Foundation.PCWSTR.Length">
+            <summary>
+            Gets the number of characters up to the first null character (exclusive).
+            </summary>
+        </member>
+        <member name="M:Windows.Win32.Foundation.PCWSTR.ToString">
+            <summary>
+            Returns a <see langword="string"/> with a copy of this character array, up to the first null character (exclusive).
+            </summary>
+            <returns>A <see langword="string"/>, or <see langword="null"/> if <see cref="F:Windows.Win32.Foundation.PCWSTR.Value"/> is <see langword="null"/>.</returns>
+        </member>
+        <member name="M:Windows.Win32.Foundation.PCWSTR.AsSpan">
+            <summary>
+            Returns a span of the characters in this string, up to the first null character (exclusive).
+            </summary>
+        </member>
+        <member name="T:Windows.Win32.Foundation.PCZZWSTR">
+            <summary>
+            A pointer to a constant, empty-string terminated list of null-terminated strings that uses UTF-16 encoding.
+            </summary>
+        </member>
+        <member name="F:Windows.Win32.Foundation.PCZZWSTR.Value">
+            <summary>
+            A pointer to the first character in the string. The content should be considered readonly, as it was typed as constant in the SDK.
+            </summary>
+        </member>
+        <member name="P:Windows.Win32.Foundation.PCZZWSTR.Length">
+            <summary>
+            Gets the number of characters in this null-terminated string list, excluding the final null terminator.
+            </summary>
+        </member>
+        <member name="M:Windows.Win32.Foundation.PCZZWSTR.ToString">
+            <summary>
+            Returns a <see langword="string"/> with a copy of this character array.
+            </summary>
+            <returns>A <see langword="string"/>, or <see langword="null"/> if <see cref="F:Windows.Win32.Foundation.PCZZWSTR.Value"/> is <see langword="null"/>.</returns>
+        </member>
+        <member name="M:Windows.Win32.Foundation.PCZZWSTR.AsSpan">
+            <summary>
+            Returns a span of the characters in this string.
+            </summary>
+        </member>
+        <member name="M:Windows.Win32.Foundation.PWSTR.ToString">
+            <inheritdoc cref="M:Windows.Win32.Foundation.PCWSTR.ToString"/>
+        </member>
+        <member name="P:Windows.Win32.Foundation.PWSTR.Length">
+            <inheritdoc cref="P:Windows.Win32.Foundation.PCWSTR.Length"/>
+        </member>
+        <member name="M:Windows.Win32.Foundation.PWSTR.AsSpan">
+            <summary>
+            Returns a span of the characters in this string, up to the first null character (exclusive).
+            </summary>
+        </member>
+        <member name="T:Windows.Win32.Foundation.PZZWSTR">
+            <summary>
+            A pointer to an empty-string terminated list of null-terminated strings that uses UTF-16 encoding.
+            </summary>
+        </member>
+        <member name="F:Windows.Win32.Foundation.PZZWSTR.Value">
+            <summary>
+            A pointer to the first character in the string.
+            </summary>
+        </member>
+        <member name="P:Windows.Win32.Foundation.PZZWSTR.Length">
+            <inheritdoc cref="P:Windows.Win32.Foundation.PCZZWSTR.Length"/>
+        </member>
+        <member name="M:Windows.Win32.Foundation.PZZWSTR.ToString">
+            <inheritdoc cref="M:Windows.Win32.Foundation.PCZZWSTR.ToString"/>
+        </member>
+        <member name="M:Windows.Win32.Foundation.PZZWSTR.AsSpan">
+            <summary>
+            Returns a span of the characters in this string.
+            </summary>
+        </member>
+        <member name="T:Windows.Win32.FindVolumeCloseSafeHandle">
+            <summary>
+            Represents a Win32 handle that can be closed with <see cref="M:Windows.Win32.PInvoke.FindVolumeClose(Windows.Win32.Foundation.HANDLE)"/>.
+            </summary>
+        </member>
+        <member name="T:Windows.Win32.PInvoke">
+            <content>
+            Contains extern methods from "CFGMGR32.dll".
+            </content>
+            <content>
+            Contains extern methods from "KERNEL32.dll".
+            </content>
+        </member>
+        <member name="M:Windows.Win32.PInvoke.CM_Get_Device_Interface_List(System.Guid@,Windows.Win32.Foundation.PWSTR,Windows.Win32.Foundation.PZZWSTR,System.UInt32,Windows.Win32.Devices.DeviceAndDriverInstallation.CM_GET_DEVICE_INTERFACE_LIST_FLAGS)">
+            <inheritdoc cref="M:Windows.Win32.PInvoke.CM_Get_Device_Interface_List(System.Guid*,Windows.Win32.Foundation.PWSTR,Windows.Win32.Foundation.PZZWSTR,System.UInt32,Windows.Win32.Devices.DeviceAndDriverInstallation.CM_GET_DEVICE_INTERFACE_LIST_FLAGS)"/>
+        </member>
+        <member name="M:Windows.Win32.PInvoke.CM_Get_Device_Interface_List(System.Guid*,Windows.Win32.Foundation.PWSTR,Windows.Win32.Foundation.PZZWSTR,System.UInt32,Windows.Win32.Devices.DeviceAndDriverInstallation.CM_GET_DEVICE_INTERFACE_LIST_FLAGS)">
+            <summary>The CM_Get_Device_Interface_List function retrieves a list of device interface instances that belong to a specified device interface class. (Unicode)</summary>
+            <param name="InterfaceClassGuid">Supplies a GUID that identifies a device interface class.</param>
+            <param name="pDeviceID">Caller-supplied pointer to a NULL-terminated string that represents a <a href="https://docs.microsoft.com/windows-hardware/drivers/install/device-instance-ids">device instance ID</a>. If specified, the function retrieves device interfaces that are supported by the device for the specified class. If this value is <b>NULL</b>, or if it points to a zero-length string, the function retrieves all interfaces that belong to the specified class.</param>
+            <param name="Buffer">Caller-supplied pointer to a buffer that receives multiple, NULL-terminated Unicode strings, each representing the symbolic link name of an interface instance.</param>
+            <param name="BufferLen">Caller-supplied value that specifies the length, in characters, of the buffer pointed to by <i>Buffer</i>. Call <a href="https://docs.microsoft.com/windows/desktop/api/cfgmgr32/nf-cfgmgr32-cm_get_device_interface_list_sizea">CM_Get_Device_Interface_List_Size</a> to determine the required buffer size.</param>
+            <param name="ulFlags">Contains one of the following caller-supplied flags:</param>
+            <returns>
+            <para>If the operation succeeds, the function returns CR_SUCCESS. Otherwise, it returns one of the error codes with the CR_ prefix as defined in <i>Cfgmgr32.h</i>. The following table includes some of the more common error codes that this function might return. </para>
+            <para>This doc was truncated.</para>
+            </returns>
+            <remarks>Between calling <a href="https://docs.microsoft.com/windows/desktop/api/cfgmgr32/nf-cfgmgr32-cm_get_device_interface_list_sizea">CM_Get_Device_Interface_List_Size</a> to get the size of the list and calling <b>CM_Get_Device_Interface_List</b> to get the list, a new device interface can be added to the system causing the size returned to no longer be valid.  Callers should be robust to that condition and retry getting the size and the list if <b>CM_Get_Device_Interface_List</b> returns <b>CR_BUFFER_SMALL</b>.</remarks>
+        </member>
+        <member name="M:Windows.Win32.PInvoke.CM_Get_Device_Interface_List_Size(System.UInt32@,System.Guid@,Windows.Win32.Foundation.PWSTR,Windows.Win32.Devices.DeviceAndDriverInstallation.CM_GET_DEVICE_INTERFACE_LIST_FLAGS)">
+            <inheritdoc cref="M:Windows.Win32.PInvoke.CM_Get_Device_Interface_List_Size(System.UInt32*,System.Guid*,Windows.Win32.Foundation.PWSTR,Windows.Win32.Devices.DeviceAndDriverInstallation.CM_GET_DEVICE_INTERFACE_LIST_FLAGS)"/>
+        </member>
+        <member name="M:Windows.Win32.PInvoke.CM_Get_Device_Interface_List_Size(System.UInt32*,System.Guid*,Windows.Win32.Foundation.PWSTR,Windows.Win32.Devices.DeviceAndDriverInstallation.CM_GET_DEVICE_INTERFACE_LIST_FLAGS)">
+            <summary>The CM_Get_Device_Interface_List_Size function retrieves the buffer size that must be passed to the CM_Get_Device_Interface_List function. (Unicode)</summary>
+            <param name="pulLen">
+            <para>Caller-supplied pointer to a location that receives the required length, in characters, of a buffer to hold the multiple Unicode strings that will be returned by <b>CM_Get_Device_Interface_List</b>.</para>
+            <para><see href="https://learn.microsoft.com/windows/win32/api/cfgmgr32/nf-cfgmgr32-cm_get_device_interface_list_sizew#parameters">Read more on docs.microsoft.com</see>.</para>
+            </param>
+            <param name="InterfaceClassGuid">
+            <para>Supplies a GUID that identifies a <a href="https://docs.microsoft.com/windows-hardware/drivers/install/overview-of-device-interface-classes">device interface class</a>.</para>
+            <para><see href="https://learn.microsoft.com/windows/win32/api/cfgmgr32/nf-cfgmgr32-cm_get_device_interface_list_sizew#parameters">Read more on docs.microsoft.com</see>.</para>
+            </param>
+            <param name="pDeviceID">
+            <para>Caller-supplied pointer to a NULL-terminated string that represents a <a href="https://docs.microsoft.com/windows-hardware/drivers/install/device-instance-ids">device instance ID</a>. If specified, the function retrieves the length of symbolic link names for the device interfaces that are supported by the device, for the specified class. If this value is <b>NULL</b>, or if it points to a zero-length string, the function retrieves the length of symbolic link names for all interfaces that belong to the specified class.</para>
+            <para><see href="https://learn.microsoft.com/windows/win32/api/cfgmgr32/nf-cfgmgr32-cm_get_device_interface_list_sizew#parameters">Read more on docs.microsoft.com</see>.</para>
+            </param>
+            <param name="ulFlags">
+            <para>Contains one of the following caller-supplied flags: </para>
+            <para>This doc was truncated.</para>
+            <para><see href="https://learn.microsoft.com/windows/win32/api/cfgmgr32/nf-cfgmgr32-cm_get_device_interface_list_sizew#parameters">Read more on docs.microsoft.com</see>.</para>
+            </param>
+            <returns>
+            <para>If the operation succeeds, the function returns <b>CR_SUCCESS</b>. Otherwise, it returns one of the error codes with the <b>CR_</b> prefix as defined in Cfgmgr32.h.</para>
+            </returns>
+            <remarks>
+            <para>> [!NOTE] > The cfgmgr32.h header defines CM_Get_Device_Interface_List_Size as an alias which automatically selects the ANSI or Unicode version of this function based on the definition of the UNICODE preprocessor constant. Mixing usage of the encoding-neutral alias with code that not encoding-neutral can lead to mismatches that result in compilation or runtime errors. For more information, see [Conventions for Function Prototypes](/windows/win32/intl/conventions-for-function-prototypes).</para>
+            <para><see href="https://learn.microsoft.com/windows/win32/api/cfgmgr32/nf-cfgmgr32-cm_get_device_interface_list_sizew#">Read more on docs.microsoft.com</see>.</para>
+            </remarks>
+        </member>
+        <member name="M:Windows.Win32.PInvoke.CloseHandle(Windows.Win32.Foundation.HANDLE)">
+            <summary>Closes an open object handle.</summary>
+            <param name="hObject">A valid handle to an open object.</param>
+            <returns>
+            <para>If the function succeeds, the return value is nonzero. If the function fails, the return value is zero. To get extended error information, call <a href="https://docs.microsoft.com/windows/desktop/api/errhandlingapi/nf-errhandlingapi-getlasterror">GetLastError</a>. If the application is running under a debugger,  the function will throw an exception if it receives either a  handle value that is not valid  or a pseudo-handle value. This can happen if you close a handle twice, or if you  call <b>CloseHandle</b> on a handle returned by the <a href="https://docs.microsoft.com/windows/desktop/api/fileapi/nf-fileapi-findfirstfilea">FindFirstFile</a> function instead of calling the <a href="https://docs.microsoft.com/windows/desktop/api/fileapi/nf-fileapi-findclose">FindClose</a> function.</para>
+            </returns>
+            <remarks>
+            <para>The <b>CloseHandle</b> function closes handles to the following objects: </para>
+            <para>This doc was truncated.</para>
+            <para><see href="https://learn.microsoft.com/windows/win32/api/handleapi/nf-handleapi-closehandle#">Read more on docs.microsoft.com</see>.</para>
+            </remarks>
+        </member>
+        <member name="M:Windows.Win32.PInvoke.CreateFile(System.String,System.UInt32,Windows.Win32.Storage.FileSystem.FILE_SHARE_MODE,System.Nullable{Windows.Win32.Security.SECURITY_ATTRIBUTES},Windows.Win32.Storage.FileSystem.FILE_CREATION_DISPOSITION,Windows.Win32.Storage.FileSystem.FILE_FLAGS_AND_ATTRIBUTES,System.Runtime.InteropServices.SafeHandle)">
+            <inheritdoc cref="M:Windows.Win32.PInvoke.CreateFile(Windows.Win32.Foundation.PCWSTR,System.UInt32,Windows.Win32.Storage.FileSystem.FILE_SHARE_MODE,Windows.Win32.Security.SECURITY_ATTRIBUTES*,Windows.Win32.Storage.FileSystem.FILE_CREATION_DISPOSITION,Windows.Win32.Storage.FileSystem.FILE_FLAGS_AND_ATTRIBUTES,Windows.Win32.Foundation.HANDLE)"/>
+        </member>
+        <member name="M:Windows.Win32.PInvoke.CreateFile(Windows.Win32.Foundation.PCWSTR,System.UInt32,Windows.Win32.Storage.FileSystem.FILE_SHARE_MODE,Windows.Win32.Security.SECURITY_ATTRIBUTES*,Windows.Win32.Storage.FileSystem.FILE_CREATION_DISPOSITION,Windows.Win32.Storage.FileSystem.FILE_FLAGS_AND_ATTRIBUTES,Windows.Win32.Foundation.HANDLE)">
+            <summary>Creates or opens a file or I/O device. The most commonly used I/O devices are as follows:\_file, file stream, directory, physical disk, volume, console buffer, tape drive, communications resource, mailslot, and pipe. (Unicode)</summary>
+            <param name="lpFileName">
+            <para>The name of the file or device to be created or opened. You may use either forward slashes (/) or backslashes (\\) in this name. In the ANSI version of this function, the name is limited to <b>MAX_PATH</b> characters. To extend this limit to 32,767 wide characters, use this Unicode version of the function and prepend "\\\\?\\" to the path. For more information, see <a href="https://docs.microsoft.com/windows/desktop/FileIO/naming-a-file">Naming Files, Paths, and Namespaces</a>. For information on special device names, see <a href="https://docs.microsoft.com/windows/desktop/FileIO/defining-an-ms-dos-device-name">Defining an MS-DOS Device Name</a>. To create a file stream, specify the name of the file, a colon, and then the name of the stream. For more information, see <a href="https://docs.microsoft.com/windows/desktop/FileIO/file-streams">File Streams</a>. <div class="alert"><b>Tip</b>  Starting with Windows 10, version 1607, for the unicode version of this function (<b>CreateFileW</b>), you can opt-in to remove the <b>MAX_PATH</b> limitation without prepending "\\?\". See the "Maximum Path Length Limitation" section of <a href="https://docs.microsoft.com/windows/desktop/FileIO/naming-a-file">Naming Files, Paths, and Namespaces</a> for details.</div> <div> </div></para>
+            <para><see href="https://learn.microsoft.com/windows/win32/api/fileapi/nf-fileapi-createfilew#parameters">Read more on docs.microsoft.com</see>.</para>
+            </param>
+            <param name="dwDesiredAccess">
+            <para>The requested access to the file or device, which can be summarized as read, write, both or neither zero). The most commonly used values are <b>GENERIC_READ</b>, <b>GENERIC_WRITE</b>, or both (<c>GENERIC_READ | GENERIC_WRITE</c>). For more information, see <a href="https://docs.microsoft.com/windows/desktop/SecAuthZ/generic-access-rights">Generic Access Rights</a>, <a href="https://docs.microsoft.com/windows/desktop/FileIO/file-security-and-access-rights">File Security and Access Rights</a>, <a href="https://docs.microsoft.com/windows/desktop/FileIO/file-access-rights-constants">File Access Rights Constants</a>, and <a href="https://docs.microsoft.com/windows/desktop/SecAuthZ/access-mask">ACCESS_MASK</a>. If this parameter is zero, the application can query certain metadata such as file, directory, or device attributes without accessing that file or device, even if <b>GENERIC_READ</b> access would have been denied. You cannot request an access mode that conflicts with the sharing mode that is specified by the <i>dwShareMode</i> parameter in an open request that already has an open handle. For more information, see the Remarks section of this topic and <a href="https://docs.microsoft.com/windows/desktop/FileIO/creating-and-opening-files">Creating and Opening Files</a>.</para>
+            <para><see href="https://learn.microsoft.com/windows/win32/api/fileapi/nf-fileapi-createfilew#parameters">Read more on docs.microsoft.com</see>.</para>
+            </param>
+            <param name="dwShareMode">
+            <para>The requested sharing mode of the file or device, which can be read, write, both, delete, all of these, or none (refer to the following table). Access requests to attributes or extended attributes are not affected by this flag. If this parameter is zero and <b>CreateFile</b> succeeds, the file or device cannot be shared and cannot be opened again until the handle to the file or device is closed. For more information, see the Remarks section. You cannot request a sharing mode that conflicts with the access mode that is specified in an existing request that has an open handle. <b>CreateFile</b> would fail and the <a href="https://docs.microsoft.com/windows/desktop/api/errhandlingapi/nf-errhandlingapi-getlasterror">GetLastError</a> function would return <b>ERROR_SHARING_VIOLATION</b>. To enable a process to share a file or device while another process has the file or device open, use a</para>
+            <para><see href="https://learn.microsoft.com/windows/win32/api/fileapi/nf-fileapi-createfilew#parameters">Read more on docs.microsoft.com</see>.</para>
+            </param>
+            <param name="lpSecurityAttributes">
+            <para>A pointer to a <a href="https://docs.microsoft.com/previous-versions/windows/desktop/legacy/aa379560(v=vs.85)">SECURITY_ATTRIBUTES</a> structure that contains two separate but related data members: an optional security descriptor, and a Boolean value that determines whether the returned handle can be inherited by child processes. This parameter can be <b>NULL</b>. If this parameter is <b>NULL</b>, the handle returned by <b>CreateFile</b> cannot be inherited by any child processes the application may create and the file or device associated with the returned handle gets a default security descriptor. The <b>lpSecurityDescriptor</b> member of the structure specifies a <a href="https://docs.microsoft.com/windows/desktop/api/winnt/ns-winnt-security_descriptor">SECURITY_DESCRIPTOR</a> for a file or device. If this member is <b>NULL</b>, the file or device associated with the returned handle is assigned a default security descriptor. <b>CreateFile</b> ignores the <b>lpSecurityDescriptor</b> member when opening an existing file or device, but continues to use the <b>bInheritHandle</b> member. The <b>bInheritHandle</b> member of the structure specifies whether the returned handle can be inherited. For more information, see the Remarks section.</para>
+            <para><see href="https://learn.microsoft.com/windows/win32/api/fileapi/nf-fileapi-createfilew#parameters">Read more on docs.microsoft.com</see>.</para>
+            </param>
+            <param name="dwCreationDisposition">
+            <para>An action to take on a file or device that exists or does not exist. For devices other than files, this parameter is usually set to <b>OPEN_EXISTING</b>. For more information, see the Remarks section.</para>
+            <para><see href="https://learn.microsoft.com/windows/win32/api/fileapi/nf-fileapi-createfilew#parameters">Read more on docs.microsoft.com</see>.</para>
+            </param>
+            <param name="dwFlagsAndAttributes">
+            <para>The file or device attributes and flags, <b>FILE_ATTRIBUTE_NORMAL</b> being the most common default value for files. This parameter can include any combination of the available file attributes (<b>FILE_ATTRIBUTE_*</b>). All other file attributes override <b>FILE_ATTRIBUTE_NORMAL</b>. This parameter can also contain combinations of flags (<b>FILE_FLAG_*</b>) for control of file or device caching behavior, access modes, and other special-purpose flags. These combine with any <b>FILE_ATTRIBUTE_*</b> values. This parameter can also contain Security Quality of Service (SQOS) information by specifying the <b>SECURITY_SQOS_PRESENT</b> flag. Additional SQOS-related flags information is presented in the table following the attributes and flags tables. <div class="alert"><b>Note</b>  When <b>CreateFile</b> opens an existing file, it generally combines the file flags with the file attributes of the existing file, and ignores any file attributes supplied as part of <i>dwFlagsAndAttributes</i>. Special cases are detailed in <a href="https://docs.microsoft.com/windows/desktop/FileIO/creating-and-opening-files">Creating and Opening Files</a>.</div> <div> </div> Some of the following file attributes and flags may only apply to files and not necessarily all other types of devices that <b>CreateFile</b> can open. For additional information, see the Remarks section of this topic and <a href="https://docs.microsoft.com/windows/desktop/FileIO/creating-and-opening-files">Creating and Opening Files</a>. For more advanced access to file attributes, see <a href="https://docs.microsoft.com/windows/desktop/api/fileapi/nf-fileapi-setfileattributesa">SetFileAttributes</a>. For a complete list of all file attributes with their values and descriptions, see <a href="https://docs.microsoft.com/windows/desktop/FileIO/file-attribute-constants">File Attribute Constants</a>. </para>
+            <para>This doc was truncated.</para>
+            <para><see href="https://learn.microsoft.com/windows/win32/api/fileapi/nf-fileapi-createfilew#parameters">Read more on docs.microsoft.com</see>.</para>
+            </param>
+            <param name="hTemplateFile">
+            <para>A valid handle to a template file with the <b>GENERIC_READ</b> access right. The template file supplies file attributes and extended attributes for the file that is being created. This parameter can be <b>NULL</b>. When opening an existing file, <b>CreateFile</b> ignores this parameter. When opening a new encrypted file, the file inherits the discretionary access control list from its parent directory. For additional information, see <a href="https://docs.microsoft.com/windows/desktop/FileIO/file-encryption">File Encryption</a>.</para>
+            <para><see href="https://learn.microsoft.com/windows/win32/api/fileapi/nf-fileapi-createfilew#parameters">Read more on docs.microsoft.com</see>.</para>
+            </param>
+            <returns>
+            <para>If the function succeeds, the return value is an open handle to the specified file, device, named pipe, or mail slot. If the function fails, the return value is <b>INVALID_HANDLE_VALUE</b>. To get extended error information, call <a href="https://docs.microsoft.com/windows/desktop/api/errhandlingapi/nf-errhandlingapi-getlasterror">GetLastError</a>.</para>
+            </returns>
+            <remarks>
+            <para><b>CreateFile</b> was originally developed specifically for file interaction but has since been expanded and enhanced to include most other types of I/O devices and mechanisms available to Windows developers. This section attempts to cover the varied issues developers may experience when using <b>CreateFile</b> in different contexts and with different I/O types. The text attempts to use the word <i>file</i> only when referring specifically to data stored in an actual file on a file system. However, some uses of <i>file</i> may be referring more generally to an I/O object that supports file-like mechanisms. This liberal use of the term <i>file</i> is particularly prevalent in constant names and parameter names because of the previously mentioned historical reasons. When an application is finished using the object handle returned by <b>CreateFile</b>, use the <a href="https://docs.microsoft.com/windows/desktop/api/handleapi/nf-handleapi-closehandle">CloseHandle</a> function to close the handle. This not only frees up system resources, but can have wider influence on things like sharing the file or device and committing data to disk. Specifics are noted within this topic as appropriate. <b>Windows Server 2003 and Windows XP:  </b>A sharing violation occurs if an attempt is made to open a file or directory for deletion on a remote computer when the value of the <i>dwDesiredAccess</i> parameter is the <b>DELETE</b> access flag (0x00010000) <b>OR</b>'ed with any other access flag, and the remote file or directory has not been opened with <b>FILE_SHARE_DELETE</b>. To avoid the sharing violation in this scenario, open the remote file or directory with the <b>DELETE</b> access right only, or call <a href="https://docs.microsoft.com/windows/desktop/api/fileapi/nf-fileapi-deletefilea">DeleteFile</a> without first opening the file or directory for deletion. Some file systems, such as the NTFS file system, support compression or encryption for individual files and directories. On volumes that have a mounted file system with this support, a new file inherits the compression and encryption attributes of its directory. You cannot use <b>CreateFile</b> to control compression, decompression, or decryption on a file or directory. For more information, see <a href="https://docs.microsoft.com/windows/desktop/FileIO/creating-and-opening-files">Creating and Opening Files</a>, <a href="https://docs.microsoft.com/windows/desktop/FileIO/file-compression-and-decompression">File Compression and Decompression</a>, and <a href="https://docs.microsoft.com/windows/desktop/FileIO/file-encryption">File Encryption</a>. <b>Windows Server 2003 and Windows XP:  </b>For backward compatibility purposes, <b>CreateFile</b> does not apply inheritance rules when you specify a security descriptor in <i>lpSecurityAttributes</i>. To support inheritance, functions that later query the security descriptor of this file may heuristically determine and report that inheritance is in effect. For more information, see <a href="https://docs.microsoft.com/windows/desktop/SecAuthZ/automatic-propagation-of-inheritable-aces">Automatic Propagation of Inheritable ACEs</a>. As stated previously, if the <i>lpSecurityAttributes</i> parameter is <b>NULL</b>, the handle returned by <b>CreateFile</b> cannot be inherited by any child processes your application may create. The following information regarding this parameter also applies: </para>
+            <para>This doc was truncated.</para>
+            <para><see href="https://learn.microsoft.com/windows/win32/api/fileapi/nf-fileapi-createfilew#">Read more on docs.microsoft.com</see>.</para>
+            </remarks>
+        </member>
+        <member name="M:Windows.Win32.PInvoke.DeviceIoControl(System.Runtime.InteropServices.SafeHandle,System.UInt32,System.Void*,System.UInt32,System.Void*,System.UInt32,System.UInt32*,System.Threading.NativeOverlapped*)">
+            <inheritdoc cref="M:Windows.Win32.PInvoke.DeviceIoControl(Windows.Win32.Foundation.HANDLE,System.UInt32,System.Void*,System.UInt32,System.Void*,System.UInt32,System.UInt32*,System.Threading.NativeOverlapped*)"/>
+        </member>
+        <member name="M:Windows.Win32.PInvoke.DeviceIoControl(Windows.Win32.Foundation.HANDLE,System.UInt32,System.Void*,System.UInt32,System.Void*,System.UInt32,System.UInt32*,System.Threading.NativeOverlapped*)">
+            <summary>Sends a control code directly to a specified device driver, causing the corresponding device to perform the corresponding operation.</summary>
+            <param name="hDevice">
+            <para>A handle to the device on which the operation is to be performed. The device is typically a volume, directory, file, or stream. To retrieve a device handle, use the <a href="https://docs.microsoft.com/windows/desktop/api/fileapi/nf-fileapi-createfilea">CreateFile</a> function. For more information, see Remarks.</para>
+            <para><see href="https://learn.microsoft.com/windows/win32/api/ioapiset/nf-ioapiset-deviceiocontrol#parameters">Read more on docs.microsoft.com</see>.</para>
+            </param>
+            <param name="dwIoControlCode">
+            <para>The control code for the operation. This value identifies the specific operation to be performed and the type of device on which to perform it. For a list of the control codes, see Remarks. The documentation for each control code provides usage details for the <i>lpInBuffer</i>, <i>nInBufferSize</i>, <i>lpOutBuffer</i>, and <i>nOutBufferSize</i> parameters.</para>
+            <para><see href="https://learn.microsoft.com/windows/win32/api/ioapiset/nf-ioapiset-deviceiocontrol#parameters">Read more on docs.microsoft.com</see>.</para>
+            </param>
+            <param name="lpInBuffer">
+            <para>A pointer to the input buffer that contains the data required to perform the operation. The format of this data depends on the value of the <i>dwIoControlCode</i> parameter. This parameter can be <b>NULL</b> if <i>dwIoControlCode</i> specifies an operation that does not require input data.</para>
+            <para><see href="https://learn.microsoft.com/windows/win32/api/ioapiset/nf-ioapiset-deviceiocontrol#parameters">Read more on docs.microsoft.com</see>.</para>
+            </param>
+            <param name="nInBufferSize">The size of the input buffer, in bytes.</param>
+            <param name="lpOutBuffer">
+            <para>A pointer to the output buffer that is to receive the data returned by the operation. The format of this data depends on the value of the <i>dwIoControlCode</i> parameter. This parameter can be <b>NULL</b> if <i>dwIoControlCode</i> specifies an operation that does not return data.</para>
+            <para><see href="https://learn.microsoft.com/windows/win32/api/ioapiset/nf-ioapiset-deviceiocontrol#parameters">Read more on docs.microsoft.com</see>.</para>
+            </param>
+            <param name="nOutBufferSize">The size of the output buffer, in bytes.</param>
+            <param name="lpBytesReturned">
+            <para>A pointer to a variable that receives the size of the data stored in the output buffer, in bytes. If the output buffer is too small to receive any data,  the call fails, <a href="https://docs.microsoft.com/windows/desktop/api/errhandlingapi/nf-errhandlingapi-getlasterror">GetLastError</a> returns <b>ERROR_INSUFFICIENT_BUFFER</b>, and <i>lpBytesReturned</i> is zero. If the output buffer is too small to hold all of the data but can hold some entries, some drivers will return as much data as fits. In this case, the call fails, <a href="https://docs.microsoft.com/windows/desktop/api/errhandlingapi/nf-errhandlingapi-getlasterror">GetLastError</a> returns <b>ERROR_MORE_DATA</b>, and <i>lpBytesReturned</i> indicates the amount of data received. Your application should call <b>DeviceIoControl</b> again with the same operation, specifying a new starting point. If <i>lpOverlapped</i> is <b>NULL</b>, <i>lpBytesReturned</i> cannot be <b>NULL</b>. Even when an operation returns no output data and <i>lpOutBuffer</i> is <b>NULL</b>, <b>DeviceIoControl</b> makes use of <i>lpBytesReturned</i>. After such an operation, the value of <i>lpBytesReturned</i> is meaningless. If <i>lpOverlapped</i> is not <b>NULL</b>, <i>lpBytesReturned</i> can be <b>NULL</b>. If this parameter is not <b>NULL</b> and the operation returns data, <i>lpBytesReturned</i> is meaningless until the overlapped operation has completed. To retrieve the number of bytes returned, call <a href="https://docs.microsoft.com/windows/desktop/api/ioapiset/nf-ioapiset-getoverlappedresult">GetOverlappedResult</a>. If <i>hDevice</i> is associated with an I/O completion port, you can retrieve the number of bytes returned by calling <a href="https://docs.microsoft.com/windows/desktop/api/ioapiset/nf-ioapiset-getqueuedcompletionstatus">GetQueuedCompletionStatus</a>.</para>
+            <para><see href="https://learn.microsoft.com/windows/win32/api/ioapiset/nf-ioapiset-deviceiocontrol#parameters">Read more on docs.microsoft.com</see>.</para>
+            </param>
+            <param name="lpOverlapped">
+            <para>A pointer to an <a href="https://docs.microsoft.com/windows/desktop/api/minwinbase/ns-minwinbase-overlapped">OVERLAPPED</a> structure. If <i>hDevice</i> was opened without specifying <b>FILE_FLAG_OVERLAPPED</b>, <i>lpOverlapped</i> is ignored. If <i>hDevice</i> was opened with the <b>FILE_FLAG_OVERLAPPED</b> flag, the operation is performed as an overlapped (asynchronous) operation. In this case, <i>lpOverlapped</i> must point to a valid <a href="https://docs.microsoft.com/windows/desktop/api/minwinbase/ns-minwinbase-overlapped">OVERLAPPED</a> structure that contains a handle to an event object. Otherwise, the function fails in unpredictable ways. For overlapped operations, <b>DeviceIoControl</b> returns immediately, and the event object is signaled when the operation has been completed. Otherwise, the function does not return until the operation has been completed or an error occurs.</para>
+            <para><see href="https://learn.microsoft.com/windows/win32/api/ioapiset/nf-ioapiset-deviceiocontrol#parameters">Read more on docs.microsoft.com</see>.</para>
+            </param>
+            <returns>
+            <para>If the operation completes successfully, the return value is nonzero (TRUE). If the operation fails or is pending, the return value is zero. To get extended error information, call <a href="https://docs.microsoft.com/windows/desktop/api/errhandlingapi/nf-errhandlingapi-getlasterror">GetLastError</a>.</para>
+            </returns>
+            <remarks>
+            <para>To retrieve a handle to the device, you must call the <a href="https://docs.microsoft.com/windows/desktop/api/fileapi/nf-fileapi-createfilea">CreateFile</a> function with either the name of a device or the name of the driver associated with a device. To specify a device name, use the following format: \\\\.&#92;<i>DeviceName</i> <b>DeviceIoControl</b> can accept a handle to a specific device. For example, to open a handle to the logical drive A: with <a href="https://docs.microsoft.com/windows/desktop/api/fileapi/nf-fileapi-createfilea">CreateFile</a>, specify \\\\.\a:. Alternatively, you can use the names \\\\.\PhysicalDrive0, \\\\.\PhysicalDrive1, and so on, to open handles to the physical drives on a system. You should specify the <b>FILE_SHARE_READ</b> and <b>FILE_SHARE_WRITE</b> access flags when calling <a href="https://docs.microsoft.com/windows/desktop/api/fileapi/nf-fileapi-createfilea">CreateFile</a> to open a handle to a device driver. However, when you open a communications resource, such as a serial port, you must specify exclusive access. Use the other <b>CreateFile</b> parameters as follows when opening a device handle: </para>
+            <para>This doc was truncated.</para>
+            <para><see href="https://learn.microsoft.com/windows/win32/api/ioapiset/nf-ioapiset-deviceiocontrol#">Read more on docs.microsoft.com</see>.</para>
+            </remarks>
+        </member>
+        <member name="M:Windows.Win32.PInvoke.GetVolumePathNamesForVolumeName(System.String,Windows.Win32.Foundation.PZZWSTR,System.UInt32,System.UInt32@)">
+            <inheritdoc cref="M:Windows.Win32.PInvoke.GetVolumePathNamesForVolumeName(Windows.Win32.Foundation.PCWSTR,Windows.Win32.Foundation.PZZWSTR,System.UInt32,System.UInt32*)"/>
+        </member>
+        <member name="M:Windows.Win32.PInvoke.GetVolumePathNamesForVolumeName(Windows.Win32.Foundation.PCWSTR,Windows.Win32.Foundation.PZZWSTR,System.UInt32,System.UInt32*)">
+            <summary>Retrieves a list of drive letters and mounted folder paths for the specified volume. (GetVolumePathNamesForVolumeNameW)</summary>
+            <param name="lpszVolumeName">
+            <para>A volume <b>GUID</b> path for the volume. A volume <b>GUID</b> path is of the form "\\\\?\\Volume{<i>xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx</i>}\\".</para>
+            <para><see href="https://learn.microsoft.com/windows/win32/api/fileapi/nf-fileapi-getvolumepathnamesforvolumenamew#parameters">Read more on docs.microsoft.com</see>.</para>
+            </param>
+            <param name="lpszVolumePathNames">
+            <para>A pointer to a buffer that receives the list of drive letters and mounted folder paths. The list is an array of null-terminated strings terminated by an additional <b>NULL</b> character. If the buffer is not large enough to hold the complete list, the buffer holds as much of the list as possible.</para>
+            <para><see href="https://learn.microsoft.com/windows/win32/api/fileapi/nf-fileapi-getvolumepathnamesforvolumenamew#parameters">Read more on docs.microsoft.com</see>.</para>
+            </param>
+            <param name="cchBufferLength">
+            <para>The length of the <i>lpszVolumePathNames</i> buffer, in <b>TCHARs</b>, including all <b>NULL</b> characters.</para>
+            <para><see href="https://learn.microsoft.com/windows/win32/api/fileapi/nf-fileapi-getvolumepathnamesforvolumenamew#parameters">Read more on docs.microsoft.com</see>.</para>
+            </param>
+            <param name="lpcchReturnLength">
+            <para>If the call is successful, this parameter is the number of <b>TCHARs</b> copied to the <i>lpszVolumePathNames</i> buffer. Otherwise, this parameter is the size of the buffer required to hold the complete list, in <b>TCHARs</b>.</para>
+            <para><see href="https://learn.microsoft.com/windows/win32/api/fileapi/nf-fileapi-getvolumepathnamesforvolumenamew#parameters">Read more on docs.microsoft.com</see>.</para>
+            </param>
+            <returns>
+            <para>If the function succeeds, the return value is nonzero. If the function fails, the return value is zero. To get extended error information, call <a href="https://docs.microsoft.com/windows/desktop/api/errhandlingapi/nf-errhandlingapi-getlasterror">GetLastError</a>. If the buffer is not large enough to hold the complete list, the error code is <b>ERROR_MORE_DATA</b> and the <i>lpcchReturnLength</i> parameter receives the required buffer size.</para>
+            </returns>
+            <remarks>
+            <para>In Windows 8 and Windows Server 2012, this function is supported by the following technologies. </para>
+            <para>This doc was truncated.</para>
+            <para><see href="https://learn.microsoft.com/windows/win32/api/fileapi/nf-fileapi-getvolumepathnamesforvolumenamew#">Read more on docs.microsoft.com</see>.</para>
+            </remarks>
+        </member>
+        <member name="M:Windows.Win32.PInvoke.FindVolumeClose(System.Runtime.InteropServices.SafeHandle)">
+            <inheritdoc cref="M:Windows.Win32.PInvoke.FindVolumeClose(Windows.Win32.Foundation.HANDLE)"/>
+        </member>
+        <member name="M:Windows.Win32.PInvoke.FindVolumeClose(Windows.Win32.Foundation.HANDLE)">
+            <summary>Closes the specified volume search handle.</summary>
+            <param name="hFindVolume">
+            <para>The volume search handle to be closed. This handle must have been previously opened by the <a href="https://docs.microsoft.com/windows/desktop/api/fileapi/nf-fileapi-findfirstvolumew">FindFirstVolume</a> function.</para>
+            <para><see href="https://learn.microsoft.com/windows/win32/api/fileapi/nf-fileapi-findvolumeclose#parameters">Read more on docs.microsoft.com</see>.</para>
+            </param>
+            <returns>
+            <para>If the function succeeds, the return value is nonzero. If the function fails, the return value is zero. To get extended error information, call <a href="https://docs.microsoft.com/windows/desktop/api/errhandlingapi/nf-errhandlingapi-getlasterror">GetLastError</a>.</para>
+            </returns>
+            <remarks>
+            <para>After the <b>FindVolumeClose</b> function is called, the handle <i>hFindVolume</i> cannot be used in subsequent calls to either <a href="https://docs.microsoft.com/windows/desktop/api/fileapi/nf-fileapi-findnextvolumew">FindNextVolume</a> or <b>FindVolumeClose</b>. In Windows 8 and Windows Server 2012, this function is supported by the following technologies. </para>
+            <para>This doc was truncated.</para>
+            <para><see href="https://learn.microsoft.com/windows/win32/api/fileapi/nf-fileapi-findvolumeclose#">Read more on docs.microsoft.com</see>.</para>
+            </remarks>
+        </member>
+        <member name="M:Windows.Win32.PInvoke.FindFirstVolume(System.Span{System.Char})">
+            <inheritdoc cref="M:Windows.Win32.PInvoke.FindFirstVolume(Windows.Win32.Foundation.PWSTR,System.UInt32)"/>
+        </member>
+        <member name="M:Windows.Win32.PInvoke.FindFirstVolume(Windows.Win32.Foundation.PWSTR,System.UInt32)">
+            <summary>Retrieves the name of a volume on a computer. (FindFirstVolumeW)</summary>
+            <param name="lpszVolumeName">
+            <para>A pointer to a buffer that receives a null-terminated string that specifies a volume <b>GUID</b> path for the first volume that is found.</para>
+            <para><see href="https://learn.microsoft.com/windows/win32/api/fileapi/nf-fileapi-findfirstvolumew#parameters">Read more on docs.microsoft.com</see>.</para>
+            </param>
+            <param name="cchBufferLength">
+            <para>The length of the buffer to receive the volume <b>GUID</b> path, in <b>TCHARs</b>.</para>
+            <para><see href="https://learn.microsoft.com/windows/win32/api/fileapi/nf-fileapi-findfirstvolumew#parameters">Read more on docs.microsoft.com</see>.</para>
+            </param>
+            <returns>
+            <para>If the function succeeds, the return value is a search handle used in a subsequent call to the <a href="https://docs.microsoft.com/windows/desktop/api/fileapi/nf-fileapi-findnextvolumew">FindNextVolume</a> and <a href="https://docs.microsoft.com/windows/desktop/api/fileapi/nf-fileapi-findvolumeclose">FindVolumeClose</a> functions. If the function fails to find any volumes, the return value is the <b>INVALID_HANDLE_VALUE</b> error code. To get extended error information, call <a href="https://docs.microsoft.com/windows/desktop/api/errhandlingapi/nf-errhandlingapi-getlasterror">GetLastError</a>.</para>
+            </returns>
+            <remarks>
+            <para>The <b>FindFirstVolume</b> function opens a volume search handle and returns information about the first volume found on a computer. After the search handle is established, you can use the <a href="https://docs.microsoft.com/windows/desktop/api/fileapi/nf-fileapi-findnextvolumew">FindNextVolume</a> function to search for other volumes. When the search handle is no longer needed, close it by using the <a href="https://docs.microsoft.com/windows/desktop/api/fileapi/nf-fileapi-findvolumeclose">FindVolumeClose</a> function. You should not assume any correlation between the order of the volumes that are returned by these functions and the order of the volumes that are on the computer. In particular, do not assume any correlation between volume order and drive letters as assigned by the BIOS (if any) or the Disk Administrator. In Windows 8 and Windows Server 2012, this function is supported by the following technologies. </para>
+            <para>This doc was truncated.</para>
+            <para><see href="https://learn.microsoft.com/windows/win32/api/fileapi/nf-fileapi-findfirstvolumew#">Read more on docs.microsoft.com</see>.</para>
+            </remarks>
+        </member>
+        <member name="M:Windows.Win32.PInvoke.FindNextVolume(Windows.Win32.Foundation.HANDLE,System.Span{System.Char})">
+            <inheritdoc cref="M:Windows.Win32.PInvoke.FindNextVolume(Windows.Win32.Foundation.HANDLE,Windows.Win32.Foundation.PWSTR,System.UInt32)"/>
+        </member>
+        <member name="M:Windows.Win32.PInvoke.FindNextVolume(Windows.Win32.Foundation.HANDLE,Windows.Win32.Foundation.PWSTR,System.UInt32)">
+            <summary>Continues a volume search started by a call to the FindFirstVolume function. (FindNextVolumeW)</summary>
+            <param name="hFindVolume">
+            <para>The volume search handle returned by a previous call to the <a href="https://docs.microsoft.com/windows/desktop/api/fileapi/nf-fileapi-findfirstvolumew">FindFirstVolume</a> function.</para>
+            <para><see href="https://learn.microsoft.com/windows/win32/api/fileapi/nf-fileapi-findnextvolumew#parameters">Read more on docs.microsoft.com</see>.</para>
+            </param>
+            <param name="lpszVolumeName">A pointer to a string that receives the volume <b>GUID</b> path that is found.</param>
+            <param name="cchBufferLength">
+            <para>The length of the buffer that receives the volume <b>GUID</b> path, in <b>TCHARs</b>.</para>
+            <para><see href="https://learn.microsoft.com/windows/win32/api/fileapi/nf-fileapi-findnextvolumew#parameters">Read more on docs.microsoft.com</see>.</para>
+            </param>
+            <returns>
+            <para>If the function succeeds, the return value is nonzero. If the function fails, the return value is zero. To get extended error information, call <a href="https://docs.microsoft.com/windows/desktop/api/errhandlingapi/nf-errhandlingapi-getlasterror">GetLastError</a>. If no matching files can be found, the <b>GetLastError</b> function returns the <b>ERROR_NO_MORE_FILES</b> error code. In that case, close the search with the <a href="https://docs.microsoft.com/windows/desktop/api/fileapi/nf-fileapi-findvolumeclose">FindVolumeClose</a> function.</para>
+            </returns>
+            <remarks>
+            <para>After the search handle is established by calling <a href="https://docs.microsoft.com/windows/desktop/api/fileapi/nf-fileapi-findfirstvolumew">FindFirstVolume</a>, you can use the <b>FindNextVolume</b> function to search for other volumes. You should not assume any correlation between the order of the volumes that are returned by these functions and the order of the volumes that are on the computer. In particular, do not assume any correlation between volume order and drive letters as assigned by the BIOS (if any) or the Disk Administrator. In Windows 8 and Windows Server 2012, this function is supported by the following technologies. </para>
+            <para>This doc was truncated.</para>
+            <para><see href="https://learn.microsoft.com/windows/win32/api/fileapi/nf-fileapi-findnextvolumew#">Read more on docs.microsoft.com</see>.</para>
+            </remarks>
+        </member>
+        <member name="M:Windows.Win32.PInvoke.QueryDosDevice(System.String,System.Span{System.Char})">
+            <inheritdoc cref="M:Windows.Win32.PInvoke.QueryDosDevice(Windows.Win32.Foundation.PCWSTR,Windows.Win32.Foundation.PWSTR,System.UInt32)"/>
+        </member>
+        <member name="M:Windows.Win32.PInvoke.QueryDosDevice(Windows.Win32.Foundation.PCWSTR,Windows.Win32.Foundation.PWSTR,System.UInt32)">
+            <summary>Retrieves information about MS-DOS device names. (QueryDosDeviceW)</summary>
+            <param name="lpDeviceName">
+            <para>An MS-DOS device name string specifying the target of the query. The device name cannot have a trailing backslash; for example, use "C:", not "C:\\". This parameter can be <b>NULL</b>. In that case, the <b>QueryDosDevice</b> function will store a list of all existing MS-DOS device names into the buffer pointed to by <i>lpTargetPath</i>.</para>
+            <para><see href="https://learn.microsoft.com/windows/win32/api/fileapi/nf-fileapi-querydosdevicew#parameters">Read more on docs.microsoft.com</see>.</para>
+            </param>
+            <param name="lpTargetPath">
+            <para>A pointer to a buffer that will receive the result of the query. The function fills this buffer with one or more null-terminated strings. The final null-terminated string is followed by an additional <b>NULL</b>. If <i>lpDeviceName</i> is non-<b>NULL</b>, the function retrieves information about the particular MS-DOS device specified by <i>lpDeviceName</i>. The first null-terminated string stored into the buffer is the current mapping for the device. The other null-terminated strings represent undeleted prior mappings for the device. If <i>lpDeviceName</i> is <b>NULL</b>, the function retrieves a list of all existing MS-DOS device names. Each null-terminated string stored into the buffer is the name of an existing MS-DOS device, for example, \Device\HarddiskVolume1 or \Device\Floppy0.</para>
+            <para><see href="https://learn.microsoft.com/windows/win32/api/fileapi/nf-fileapi-querydosdevicew#parameters">Read more on docs.microsoft.com</see>.</para>
+            </param>
+            <param name="ucchMax">
+            <para>The maximum number of <b>TCHARs</b> that can be stored into the buffer pointed to by <i>lpTargetPath</i>.</para>
+            <para><see href="https://learn.microsoft.com/windows/win32/api/fileapi/nf-fileapi-querydosdevicew#parameters">Read more on docs.microsoft.com</see>.</para>
+            </param>
+            <returns>
+            <para>If the function succeeds, the return value is the number of <b>TCHARs</b> stored into the buffer pointed to by <i>lpTargetPath</i>. If the function fails, the return value is zero. To get extended error information, call <a href="https://docs.microsoft.com/windows/desktop/api/errhandlingapi/nf-errhandlingapi-getlasterror">GetLastError</a>. If the buffer is too small, the function fails and the last error code is <b>ERROR_INSUFFICIENT_BUFFER</b>.</para>
+            </returns>
+            <remarks>
+            <para>The <a href="https://docs.microsoft.com/windows/desktop/api/fileapi/nf-fileapi-definedosdevicew">DefineDosDevice</a> function enables an application to create and modify the junctions used to implement the MS-DOS device namespace. <b>Windows Server 2003 and Windows XP:  </b><b>QueryDosDevice</b> first searches the Local MS-DOS Device namespace for the specified device name. If the device name is not found, the function will then search the Global MS-DOS Device namespace. When all existing MS-DOS device names are queried, the list of device names that are returned is dependent on whether it is running in the "LocalSystem" context. If so, only the device names included in the Global MS-DOS Device namespace will be returned. If not, a concatenation of the device names in the Global and Local MS-DOS Device namespaces will be returned. If a device name exists in both namespaces, <b>QueryDosDevice</b> will return the entry in the Local MS-DOS Device namespace. For more information on the Global and Local MS-DOS Device namespaces and changes to the accessibility of MS-DOS device names, see <a href="https://docs.microsoft.com/windows/desktop/FileIO/defining-an-ms-dos-device-name">Defining an MS DOS Device Name</a>. In Windows 8 and Windows Server 2012, this function is supported by the following technologies. </para>
+            <para>This doc was truncated.</para>
+            <para><see href="https://learn.microsoft.com/windows/win32/api/fileapi/nf-fileapi-querydosdevicew#">Read more on docs.microsoft.com</see>.</para>
+            </remarks>
+        </member>
+        <member name="M:Windows.Win32.PInvoke.FormatMessage(Windows.Win32.System.Diagnostics.Debug.FORMAT_MESSAGE_OPTIONS,System.Void*,System.UInt32,System.UInt32,System.Span{System.Char},System.UInt32,System.SByte**)">
+            <inheritdoc cref="M:Windows.Win32.PInvoke.FormatMessage(Windows.Win32.System.Diagnostics.Debug.FORMAT_MESSAGE_OPTIONS,System.Void*,System.UInt32,System.UInt32,Windows.Win32.Foundation.PWSTR,System.UInt32,System.SByte**)"/>
+        </member>
+        <member name="M:Windows.Win32.PInvoke.FormatMessage(Windows.Win32.System.Diagnostics.Debug.FORMAT_MESSAGE_OPTIONS,System.Void*,System.UInt32,System.UInt32,Windows.Win32.Foundation.PWSTR,System.UInt32,System.SByte**)">
+            <summary>The FormatMessageW (Unicode) function (winbase.h) formats a message string.</summary>
+            <param name="dwFlags">
+            <para>The formatting options, and how to interpret the <i>lpSource</i> parameter. The low-order byte of <i>dwFlags</i> specifies how the function handles line breaks in the output buffer. The low-order byte can also specify the maximum width of a formatted output line.</para>
+            <para><see href="https://learn.microsoft.com/windows/win32/api/winbase/nf-winbase-formatmessagew#parameters">Read more on docs.microsoft.com</see>.</para>
+            </param>
+            <param name="lpSource">
+            <para>The location of the message definition. The type of this parameter depends upon the settings in the <i>dwFlags</i> parameter. </para>
+            <para>This doc was truncated.</para>
+            <para><see href="https://learn.microsoft.com/windows/win32/api/winbase/nf-winbase-formatmessagew#parameters">Read more on docs.microsoft.com</see>.</para>
+            </param>
+            <param name="dwMessageId">
+            <para>The message identifier for the requested message. This parameter is ignored if <i>dwFlags</i> includes <b>FORMAT_MESSAGE_FROM_STRING</b>.</para>
+            <para><see href="https://learn.microsoft.com/windows/win32/api/winbase/nf-winbase-formatmessagew#parameters">Read more on docs.microsoft.com</see>.</para>
+            </param>
+            <param name="dwLanguageId">
+            <para>The <a href="https://docs.microsoft.com/windows/desktop/Intl/language-identifiers">language identifier</a> for the requested message. This parameter is ignored if <i>dwFlags</i> includes <b>FORMAT_MESSAGE_FROM_STRING</b>. If you pass a specific <b>LANGID</b> in this parameter, <b>FormatMessage</b> will return a message for that <b>LANGID</b> only. If the function cannot find a message for that <b>LANGID</b>, it sets Last-Error to <b>ERROR_RESOURCE_LANG_NOT_FOUND</b>. If you pass in zero, <b>FormatMessage</b> looks for a message for <b>LANGIDs</b> in the following order: </para>
+            <para>This doc was truncated.</para>
+            <para><see href="https://learn.microsoft.com/windows/win32/api/winbase/nf-winbase-formatmessagew#parameters">Read more on docs.microsoft.com</see>.</para>
+            </param>
+            <param name="lpBuffer">
+            <para>A pointer to a buffer that receives the null-terminated string that specifies the formatted message. If <i>dwFlags</i> includes <b>FORMAT_MESSAGE_ALLOCATE_BUFFER</b>, the function allocates a buffer using the <a href="https://docs.microsoft.com/windows/desktop/api/winbase/nf-winbase-localalloc">LocalAlloc</a> function, and places the pointer to the buffer at the address specified in <i>lpBuffer</i>. This buffer cannot be larger than 64K bytes.</para>
+            <para><see href="https://learn.microsoft.com/windows/win32/api/winbase/nf-winbase-formatmessagew#parameters">Read more on docs.microsoft.com</see>.</para>
+            </param>
+            <param name="nSize">
+            <para>If the <b>FORMAT_MESSAGE_ALLOCATE_BUFFER</b> flag is not set, this parameter specifies the size of the output buffer, in <b>TCHARs</b>. If <b>FORMAT_MESSAGE_ALLOCATE_BUFFER</b> is set, this parameter specifies the minimum number of <b>TCHARs</b> to allocate for an output buffer. The output buffer cannot be larger than 64K bytes.</para>
+            <para><see href="https://learn.microsoft.com/windows/win32/api/winbase/nf-winbase-formatmessagew#parameters">Read more on docs.microsoft.com</see>.</para>
+            </param>
+            <param name="Arguments">
+            <para>An array of values that are used as insert values in the formatted message. A %1 in the format string indicates the first value in the <i>Arguments</i> array; a %2 indicates the second argument; and so on. The interpretation of each value depends on the formatting information associated with the insert in the message definition. The default is to treat each value as a pointer to a null-terminated string. By default, the <i>Arguments</i> parameter is of type <b>va_list*</b>, which is a language- and implementation-specific data type for describing a variable number of arguments. The state of the <b>va_list</b> argument is undefined upon return from the function. To use the <b>va_list</b> again, destroy the variable argument list pointer using <b>va_end</b> and reinitialize it with <b>va_start</b>. If you do not have a pointer of type <b>va_list*</b>, then specify the <b>FORMAT_MESSAGE_ARGUMENT_ARRAY</b> flag and pass a pointer to an array of <b>DWORD_PTR</b> values; those values are input to the message formatted as the insert values. Each insert must have a corresponding element in the array.</para>
+            <para><see href="https://learn.microsoft.com/windows/win32/api/winbase/nf-winbase-formatmessagew#parameters">Read more on docs.microsoft.com</see>.</para>
+            </param>
+            <returns>
+            <para>If the function succeeds, the return value is the number of <b>TCHARs</b> stored in the output buffer, excluding the terminating null character. If the function fails, the return value is zero. To get extended error information, call <a href="https://docs.microsoft.com/windows/desktop/api/errhandlingapi/nf-errhandlingapi-getlasterror">GetLastError</a>.</para>
+            </returns>
+            <remarks>
+            <para>Within the message text, several escape sequences are supported for dynamically formatting the message. These escape sequences and their meanings are shown in the following tables. All escape sequences start with the percent character (%). </para>
+            <para>This doc was truncated.</para>
+            <para><see href="https://learn.microsoft.com/windows/win32/api/winbase/nf-winbase-formatmessagew#">Read more on docs.microsoft.com</see>.</para>
+            </remarks>
+        </member>
+        <member name="T:Windows.Win32.Security.SECURITY_ATTRIBUTES">
+            <summary>The SECURITY_ATTRIBUTES structure contains the security descriptor for an object and specifies whether the handle retrieved by specifying this structure is inheritable.</summary>
+            <remarks></remarks>
+        </member>
+        <member name="F:Windows.Win32.Security.SECURITY_ATTRIBUTES.nLength">
+            <summary>The size, in bytes, of this structure. Set this value to the size of the **SECURITY\_ATTRIBUTES** structure.</summary>
+        </member>
+        <member name="F:Windows.Win32.Security.SECURITY_ATTRIBUTES.lpSecurityDescriptor">
+            <summary>
+            <para>A pointer to a [**SECURITY\_DESCRIPTOR**](../winnt/ns-winnt-security_descriptor.md) structure that controls access to the object. If the value of this member is **NULL**, the object is assigned the default security descriptor associated with the [*access token*](/windows/win32/secauthz/access-tokens) of the calling process. This is not the same as granting access to everyone by assigning a **NULL** [*discretionary access control list*](/windows/win32/secauthz/dacls-and-aces) (DACL). By default, the default DACL in the access token of a process allows access only to the user represented by the access token. For information about creating a security descriptor, see [Creating a Security Descriptor](/windows/win32/secauthz/creating-a-security-descriptor-for-a-new-object-in-c--).</para>
+            <para><see href="https://learn.microsoft.com/windows/win32/api/wtypesbase/ns-wtypesbase-security_attributes#members">Read more on docs.microsoft.com</see>.</para>
+            </summary>
+        </member>
+        <member name="F:Windows.Win32.Security.SECURITY_ATTRIBUTES.bInheritHandle">
+            <summary>A Boolean value that specifies whether the returned handle is inherited when a new process is created. If this member is **TRUE**, the new process inherits the handle.</summary>
+        </member>
+    </members>
+</doc>

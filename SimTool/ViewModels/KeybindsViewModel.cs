@@ -9,11 +9,6 @@ using SimTools.Services;
 
 namespace SimTools.ViewModels
 {
-    // ViewModel for the Keybinds page.
-    // Binds profiles/maps/keybinds from AppState and saves via StorageService.
-    // Exposes add/remove/save commands and selection properties.
-    // AssignKey() captures a keyboard hotkey and updates the binding; supports NextMap/PrevMap.
-
     public class KeybindsViewModel : ViewModelBase
     {
         public AppState State { get; private set; }
@@ -54,6 +49,11 @@ namespace SimTools.ViewModels
             get { return SelectedMap != null ? SelectedMap.Keybinds : new ObservableCollection<KeybindBinding>(); }
         }
 
+        // Expose the available virtual outputs for the ComboBox
+        public IReadOnlyList<VirtualOutput> AvailableOutputs { get; } =
+            Enum.GetValues(typeof(VirtualOutput)).Cast<VirtualOutput>()
+                .Where(v => v != VirtualOutput.None).ToList();
+
         public RelayCommand AddProfile { get; private set; }
         public RelayCommand RemoveProfile { get; private set; }
         public RelayCommand AddMap { get; private set; }
@@ -61,22 +61,17 @@ namespace SimTools.ViewModels
         public RelayCommand AddKeybind { get; private set; }
         public RelayCommand RemoveKeybind { get; private set; }
 
-        // What KeybindsPage looks for:
-        public ICommand SaveCommand { get; private set; }   // exact name matters
-        public void Save() => _storage.Save(Profiles);      // method fallback
+        public ICommand SaveCommand { get; private set; }
+        public void Save() => _storage.Save(Profiles);
 
-        // NEW: Commands the view will call when hotkeys fire
         public ICommand NextMapCommand { get; private set; }
         public ICommand PrevMapCommand { get; private set; }
 
-        // Optional: if no profile-level storage exists, the page can store/retrieve on the VM
-        // (KeybindsPage uses reflection for NextMapDevice/NextMapDeviceKey/etc.)
         public string NextMapDevice { get; set; }
         public string NextMapDeviceKey { get; set; }
         public string PrevMapDevice { get; set; }
         public string PrevMapDeviceKey { get; set; }
 
-        // General settings hotkeys (persist these in your models if you want them saved too)
         public KeybindBinding NextMapHotkey { get; private set; } = new KeybindBinding { Name = "Next Map" };
         public KeybindBinding PrevMapHotkey { get; private set; } = new KeybindBinding { Name = "Previous Map" };
 
@@ -131,7 +126,8 @@ namespace SimTools.ViewModels
             {
                 if (SelectedMap != null)
                 {
-                    SelectedMap.Keybinds.Add(new KeybindBinding { Name = "New Action" });
+                    // Default to blocking the original key; user can change Output later
+                    SelectedMap.Keybinds.Add(new KeybindBinding { Name = "New Action", BlockOriginal = true });
                     _storage.Save(Profiles);
                 }
             });
@@ -147,7 +143,6 @@ namespace SimTools.ViewModels
 
             SaveCommand = new RelayCommand(_ => Save(), _ => true);
 
-            // NEW: VM commands the view triggers when hotkeys fire
             NextMapCommand = new RelayCommand(_ => NextMap(), _ => true);
             PrevMapCommand = new RelayCommand(_ => PrevMap(), _ => true);
 
@@ -156,7 +151,6 @@ namespace SimTools.ViewModels
                 if (SelectedProfile == null) return;
 
                 var copy = CloneProfile(SelectedProfile);
-                // Give it a friendly copy name
                 copy.Name = MakeCopyName(SelectedProfile.Name, Profiles.Select(p => p.Name));
 
                 Profiles.Add(copy);
@@ -177,24 +171,19 @@ namespace SimTools.ViewModels
             });
         }
 
-        /// <summary>
-        /// Assigns a keyboard hotkey to a KeybindBinding using your existing model fields only.
-        /// Also sets Device/DeviceKey so it round-trips and matches global input after restart.
-        /// </summary>
         public void AssignKey(System.Windows.Input.KeyEventArgs e, KeybindBinding binding)
         {
             if (binding == null || e == null) return;
 
-            var cap = HotkeyService.Capture(e); // your existing capture
-            if (cap.Key == Key.None)
+            var cap = HotkeyService.Capture(e);
+            if (cap.Key == System.Windows.Input.Key.None)
                 return;
 
             binding.Modifiers = cap.Modifiers;
             binding.Key = cap.Key;
 
-            // Populate device metadata used by the UI/global matching and saved to disk
             binding.Device = "Keyboard";
-            binding.DeviceKey = FormatHotkey(binding.Modifiers, binding.Key); // e.g., "Ctrl + Shift + P"
+            binding.DeviceKey = FormatHotkey(binding.Modifiers, binding.Key);
 
             Raise("Keybinds");
             _storage.Save(Profiles);
@@ -219,25 +208,24 @@ namespace SimTools.ViewModels
         }
 
         // ---- Helpers ----
-        private static string FormatHotkey(ModifierKeys mods, Key key)
+        private static string FormatHotkey(ModifierKeys mods, System.Windows.Input.Key key)
         {
-            if (key == Key.None && mods == ModifierKeys.None) return "None";
+            if (key == System.Windows.Input.Key.None && mods == ModifierKeys.None) return "None";
 
-            var parts = new System.Collections.Generic.List<string>(4);
+            var parts = new List<string>(4);
             if (mods.HasFlag(ModifierKeys.Control)) parts.Add("Ctrl");
             if (mods.HasFlag(ModifierKeys.Alt)) parts.Add("Alt");
             if (mods.HasFlag(ModifierKeys.Shift)) parts.Add("Shift");
             if (mods.HasFlag(ModifierKeys.Windows)) parts.Add("Win");
 
-            // Friendly key names for a few common cases; fall back to enum name
             string keyName = key switch
             {
-                Key.Return => "Enter",
-                Key.Escape => "Esc",
-                Key.Prior => "PageUp",
-                Key.Next => "PageDown",
-                Key.OemPlus => "+",
-                Key.OemMinus => "-",
+                System.Windows.Input.Key.Return => "Enter",
+                System.Windows.Input.Key.Escape => "Esc",
+                System.Windows.Input.Key.Prior => "PageUp",
+                System.Windows.Input.Key.Next => "PageDown",
+                System.Windows.Input.Key.OemPlus => "+",
+                System.Windows.Input.Key.OemMinus => "-",
                 _ => key.ToString()
             };
 
@@ -248,9 +236,8 @@ namespace SimTools.ViewModels
         private static string MakeCopyName(string baseName, IEnumerable<string> existingNames)
         {
             if (string.IsNullOrWhiteSpace(baseName)) baseName = "Copy";
-            var set = new System.Collections.Generic.HashSet<string>(existingNames ?? Enumerable.Empty<string>(), StringComparer.OrdinalIgnoreCase);
+            var set = new HashSet<string>(existingNames ?? Enumerable.Empty<string>(), StringComparer.OrdinalIgnoreCase);
 
-            // Try "Name - Copy", then "Name - Copy (2)", "(3)", etc.
             string candidate = $"{baseName} - Copy";
             if (!set.Contains(candidate)) return candidate;
 
@@ -266,11 +253,9 @@ namespace SimTools.ViewModels
         private static Profile CloneProfile(Profile src)
         {
             var p = new Profile { Name = src?.Name };
-
             if (src?.Maps != null)
                 foreach (var m in src.Maps) p.Maps.Add(CloneMap(m));
 
-            // Carry general hotkeys if the Profile model exposes them
             CopyStringIfExists(src, p, "NextMapDevice");
             CopyStringIfExists(src, p, "NextMapDeviceKey");
             CopyStringIfExists(src, p, "PrevMapDevice");
@@ -279,35 +264,26 @@ namespace SimTools.ViewModels
             return p;
         }
 
-
         private static KeybindMap CloneMap(KeybindMap src)
         {
-            var m = new KeybindMap
-            {
-                Name = src?.Name
-            };
-
+            var m = new KeybindMap { Name = src?.Name };
             if (src?.Keybinds != null)
-            {
-                foreach (var kb in src.Keybinds)
-                    m.Keybinds.Add(CloneBinding(kb));
-            }
-
+                foreach (var kb in src.Keybinds) m.Keybinds.Add(CloneBinding(kb));
             return m;
         }
 
         private static KeybindBinding CloneBinding(KeybindBinding src)
         {
             if (src == null) return new KeybindBinding();
-
             return new KeybindBinding
             {
                 Name = src.Name,
                 Device = src.Device,
                 DeviceKey = src.DeviceKey,
                 Key = src.Key,
-                Modifiers = src.Modifiers
-                // copy any other fields you may have added to KeybindBinding
+                Modifiers = src.Modifiers,
+                Output = src.Output,
+                BlockOriginal = src.BlockOriginal
             };
         }
 
