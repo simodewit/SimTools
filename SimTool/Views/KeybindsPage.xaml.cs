@@ -25,6 +25,9 @@ namespace SimTools.Views
         private VirtualGamepadService _gamepad;
         private GameModeGuard _guard;
 
+        // NEW: global keyboard blocker (for BlockOriginal)
+        private InputBlockerService _blocker;
+
         // Monitor from your InputCapture (may or may not fire on your setup)
         private IDisposable _inputMonitor;
 
@@ -76,6 +79,10 @@ namespace SimTools.Views
                 // Optional: show a small banner/toast if suspended by a process.
             };
             _guard.Start();
+
+            // NEW: start low-level keyboard blocker (uses BlockOriginal on bindings)
+            _blocker = new InputBlockerService(ShouldBlockKey);
+            try { _blocker.Start(); } catch { /* hook can fail if not elevated; never throw */ }
         }
 
         private void OnUnloaded(object sender, RoutedEventArgs e)
@@ -96,7 +103,8 @@ namespace SimTools.Views
 
             try { _guard?.Dispose(); } catch { }
             try { _gamepad?.Stop(); } catch { }
-            _guard = null; _gamepad = null;
+            try { _blocker?.Dispose(); } catch { }
+            _guard = null; _gamepad = null; _blocker = null;
         }
 
         private void OnDataContextChanged(object sender, DependencyPropertyChangedEventArgs e)
@@ -136,7 +144,8 @@ namespace SimTools.Views
 
                 if (!ke.IsRepeat && !KeybindHelpers.IsTyping())
                 {
-                    //MaybeSwitchMapFrom(synthetic);
+                    // Map switching disabled here (handled elsewhere)
+                    // MaybeSwitchMapFrom(synthetic);
                 }
             }
             else if (ke.RoutedEvent == Keyboard.PreviewKeyUpEvent || ke.RoutedEvent == Keyboard.KeyUpEvent)
@@ -217,9 +226,9 @@ namespace SimTools.Views
             // UI highlighting (visual hint)
             HighlightMatches(input);
 
-            // Map switching via Next/Prev on any device
-            if (!KeybindHelpers.IsTyping())
-                MaybeSwitchMapFrom(input);
+            // Map switching disabled here (handled elsewhere)
+            // if (!KeybindHelpers.IsTyping())
+            //     MaybeSwitchMapFrom(input);
 
             // Game Mode: route 1:1 to ViGEm (no hooks, no SendInput)
             TryRouteToVirtualTap(input);
@@ -404,7 +413,6 @@ namespace SimTools.Views
             }
         }
 
-        // Inline rename + enter-to-commit (unchanged from your version)
         private void RenameProfile_Click(object sender, RoutedEventArgs e)
             => BeginInlineRename(ProfilesList, "ProfileNameEditor", "ProfileNameText");
         private void RenameMap_Click(object sender, RoutedEventArgs e)
@@ -486,6 +494,58 @@ namespace SimTools.Views
                 {
                     _lights?.Highlight(btn);
                 }
+            }
+        }
+
+        // --------- NEW: Blocker predicate (decides whether to swallow a key) ---------
+        // Return true => BLOCK the original key globally.
+        private bool ShouldBlockKey(Key key, ModifierKeys mods, bool isDown)
+        {
+            // Respect GameModeGuard suspension
+            if (_guard?.ShouldOperateNow() == false) return false;
+
+            // Don't interfere while typing in text inputs
+            if (KeybindHelpers.IsTyping()) return false;
+
+            // Current map rows
+            var items = (KeybindsList?.ItemsSource as IEnumerable) ?? Enumerable.Empty<object>();
+
+            // Build labels the same way as your UI does
+            string fullLabel = KeybindHelpers.BuildKeyboardLabel(mods, key); // e.g., "Ctrl + W"
+            string keyOnlyLabel = KeyToSimpleLabel(key);                      // e.g., "W" or "Enter"
+
+            var match = items
+                .OfType<KeybindBinding>()
+                .FirstOrDefault(kb =>
+                    kb != null &&
+                    kb.BlockOriginal &&
+                    string.Equals(kb.Device, "Keyboard", StringComparison.OrdinalIgnoreCase) &&
+                    !string.IsNullOrWhiteSpace(kb.DeviceKey) &&
+                    (
+                        string.Equals(kb.DeviceKey, fullLabel, StringComparison.OrdinalIgnoreCase) ||
+                        string.Equals(kb.DeviceKey, keyOnlyLabel, StringComparison.OrdinalIgnoreCase)
+                    )
+                );
+
+            // If we found a binding that wants to block, swallow both down & up
+            return match != null;
+        }
+
+        // Mirror of your key label formatting to match older DeviceKey strings
+        private static string KeyToSimpleLabel(Key key)
+        {
+            if (key >= Key.F1 && key <= Key.F24) return key.ToString();
+            if (key >= Key.NumPad0 && key <= Key.NumPad9) return "Num" + (key - Key.NumPad0);
+            switch (key)
+            {
+                case Key.Space: return "Space";
+                case Key.Return: return "Enter";
+                case Key.Escape: return "Esc";
+                case Key.Prior: return "PageUp";
+                case Key.Next: return "PageDown";
+                case Key.OemPlus: return "+";
+                case Key.OemMinus: return "-";
+                default: return key.ToString();
             }
         }
     }
