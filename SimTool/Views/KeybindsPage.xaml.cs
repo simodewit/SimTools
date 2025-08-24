@@ -135,7 +135,9 @@ namespace SimTools.Views
                 HighlightMatches(synthetic);
 
                 if (!ke.IsRepeat && !KeybindHelpers.IsTyping())
-                    MaybeSwitchMapFrom(synthetic);
+                {
+                    //MaybeSwitchMapFrom(synthetic);
+                }
             }
             else if (ke.RoutedEvent == Keyboard.PreviewKeyUpEvent || ke.RoutedEvent == Keyboard.KeyUpEvent)
             {
