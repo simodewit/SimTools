@@ -22,8 +22,6 @@
                 <Button.Template>
                     <ControlTemplate TargetType="Button">
                         <Grid>
-                            <Border x:Name="Sel" Width="3" HorizontalAlignment="Left" Visibility="Collapsed"
-                                    CornerRadius="2" Background="{DynamicResource Brush.Accent}"/>
                             <Border x:Name="Bg" Background="{TemplateBinding Background}" CornerRadius="6">
                                 <TextBlock Text="Home" Margin="12,2,8,2"/>
                             </Border>
@@ -39,7 +37,6 @@
                             </Trigger>
                             <DataTrigger Binding="{Binding DataContext.SelectedPage, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                          Value="{x:Static vm:Page.Home}">
-                                <Setter TargetName="Sel" Property="Visibility" Value="Visible"/>
                                 <!-- brighter selection -->
                                 <Setter TargetName="Bg" Property="Background" Value="#2F343B"/>
                                 <Setter Property="Foreground" Value="{DynamicResource Brush.Text}"/>
@@ -55,8 +52,6 @@
                 <Button.Template>
                     <ControlTemplate TargetType="Button">
                         <Grid>
-                            <Border x:Name="Sel" Width="3" HorizontalAlignment="Left" Visibility="Collapsed"
-                                    CornerRadius="2" Background="{DynamicResource Brush.Accent}"/>
                             <Border x:Name="Bg" Background="{TemplateBinding Background}" CornerRadius="6">
                                 <TextBlock Text="Keybinds" Margin="12,2,8,2"/>
                             </Border>
@@ -72,7 +67,6 @@
                             </Trigger>
                             <DataTrigger Binding="{Binding DataContext.SelectedPage, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                          Value="{x:Static vm:Page.Keybinds}">
-                                <Setter TargetName="Sel" Property="Visibility" Value="Visible"/>
                                 <Setter TargetName="Bg" Property="Background" Value="#2F343B"/>
                                 <Setter Property="Foreground" Value="{DynamicResource Brush.Text}"/>
                                 <Setter Property="FontWeight" Value="SemiBold"/>
@@ -87,8 +81,6 @@
                 <Button.Template>
                     <ControlTemplate TargetType="Button">
                         <Grid>
-                            <Border x:Name="Sel" Width="3" HorizontalAlignment="Left" Visibility="Collapsed"
-                                    CornerRadius="2" Background="{DynamicResource Brush.Accent}"/>
                             <Border x:Name="Bg" Background="{TemplateBinding Background}" CornerRadius="6">
                                 <TextBlock Text="Overlay Editor" Margin="12,2,8,2"/>
                             </Border>
@@ -104,7 +96,6 @@
                             </Trigger>
                             <DataTrigger Binding="{Binding DataContext.SelectedPage, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                          Value="{x:Static vm:Page.Overlay}">
-                                <Setter TargetName="Sel" Property="Visibility" Value="Visible"/>
                                 <Setter TargetName="Bg" Property="Background" Value="#2F343B"/>
                                 <Setter Property="Foreground" Value="{DynamicResource Brush.Text}"/>
                                 <Setter Property="FontWeight" Value="SemiBold"/>
