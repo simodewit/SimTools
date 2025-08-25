@@ -131,6 +131,7 @@
     <Compile Include="Models\DeviceBindingDescriptor.cs" />
     <Compile Include="Models\InputBindingResult.cs" />
     <Compile Include="Models\OverlayElement.cs" />
+    <Compile Include="Models\VirtualOutputExtensions.cs" />
     <Compile Include="Services\AppState.cs" />
     <Compile Include="Services\ButtonHighlightService.cs" />
     <Compile Include="Services\DebouncedSaver.cs" />
@@ -140,13 +141,16 @@
     <Compile Include="Services\InputBlockerService.cs" />
     <Compile Include="Services\InputCapture.cs" />
     <Compile Include="Services\KeybindRehydrator.cs" />
+    <Compile Include="Services\KeyboardOutputService.cs" />
     <Compile Include="Services\MapHotkeyController.cs" />
     <Compile Include="Services\MediaService.cs" />
     <Compile Include="Services\NewsService.cs" />
+    <Compile Include="Services\OutputRouter.cs" />
     <Compile Include="Services\RawInputMonitor.cs" />
+    <Compile Include="Services\RuntimeInputEngine.cs" />
     <Compile Include="Services\StorageService.cs" />
     <Compile Include="Models\VirtualOutput.cs" />
-    <Compile Include="Services\VirtualGamepadService.cs" />
+    <Compile Include="Services\VirtualJoystickService.cs" />
     <Compile Include="Services\VmCollectionBinder.cs" />
     <Compile Include="ViewModels\HomeViewModel.cs" />
     <Compile Include="ViewModels\KeybindsViewModel.cs" />

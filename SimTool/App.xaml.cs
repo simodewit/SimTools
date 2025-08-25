@@ -1,8 +1,8 @@
-﻿using System;       // for StringComparison
-using System.Linq;  // if you use e.Args.Any(...)
-using SimTools.Services; // so we can write DriverBootstrap directly
-using SimTools.Views;
+﻿using System;
+using System.Linq;
 using System.Windows;
+using SimTools.Services;
+using SimTools.Views;
 
 namespace SimTools
 {
@@ -12,14 +12,35 @@ namespace SimTools
         {
             base.OnStartup(e);
 
-            if (e.Args != null && e.Args.Any(a => string.Equals(a, "--postinstall", StringComparison.OrdinalIgnoreCase)))
+            // Handle post-install whitelisting explicitly (HidHide)
+            if(e?.Args != null && e.Args.Any(a =>
+                    string.Equals(a, "--postinstall", StringComparison.OrdinalIgnoreCase)))
             {
                 try
                 {
-                    if (DriverBootstrap.IsHidHideInstalled())
+                    if(DriverBootstrap.IsHidHideInstalled())
                         DriverBootstrap.EnsureHidHideWhitelist();
                 }
-                catch { /* ignore */ }
+                catch
+                {
+                    // Swallow — whitelisting is best-effort and can also be done from settings
+                }
+            }
+            else
+            {
+                // Non-blocking bootstrap (e.g., vJoy + HidHide detection/installation + whitelisting)
+                // Runs after the dispatcher is pumping so the UI comes up immediately.
+                Dispatcher.BeginInvoke(new Action(async () =>
+                {
+                    try
+                    {
+                        await DriverBootstrap.EnsureAllAsync();
+                    }
+                    catch
+                    {
+                        // Best-effort; show continues even if drivers aren't ready yet
+                    }
+                }));
             }
 
             new MainWindow().Show();
