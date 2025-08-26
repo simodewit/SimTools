@@ -1,92 +1,99 @@
-﻿// Services/DriverBootstrap.cs
-using System;
+﻿using System;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
-using Microsoft.Win32;
+using Microsoft.Win32;   // Registry
 
 #if HIDHIDE_API
-using Nefarius.Drivers.HidHide; // if you keep the NuGet + define
+using Nefarius.Drivers.HidHide; // optional, only if you add the NuGet and define HIDHIDE_API
 #endif
 
 namespace SimTools.Services
 {
     /// <summary>
-    /// Detect/install vJoy + HidHide from local "Drivers" folder and optionally whitelist our EXE in HidHide.
+    /// Minimal bootstrap: detect/install ViGEm + HidHide from a local "Drivers" folder.
+    /// Supports MSI or EXE installers. Optional HidHide whitelist via HIDHIDE_API.
     /// </summary>
     public static class DriverBootstrap
     {
         private const string DriversFolderRelative = "Drivers";
 
+        /// <summary>
+        /// Call once (startup or when enabling Game Mode).
+        /// Prompts and installs missing components from Drivers\*, then whitelists app in HidHide (if present).
+        /// </summary>
         public static async Task EnsureAllAsync()
         {
-            // 1) vJoy (required)
-            if(!IsVJoyInstalled())
+            // 1) ViGEm (required)
+            if (!IsViGEmInstalled())
             {
-                if(!PromptYes("SimTools needs the vJoy driver (one-time install). Install now?"))
+                if (!PromptYes("SimTools needs the ViGEm Bus driver (one-time install). Install now?"))
                     return;
 
-                if(!await TryInstallFromFolderAsync(forVJoy: true))
+                if (!await TryInstallFromFolderAsync(forViGEm: true))
                 {
-                    MessageBox.Show("vJoy install didn’t complete. You can retry from Settings.", "SimTools",
+                    MessageBox.Show("ViGEm install didn’t complete. You can retry from Settings.", "SimTools",
                         MessageBoxButton.OK, MessageBoxImage.Warning);
                     return;
                 }
 
-                if(!IsVJoyInstalled())
+                if (!IsViGEmInstalled())
                 {
-                    MessageBox.Show("vJoy still not available after install. Please reboot or install manually.",
+                    MessageBox.Show("ViGEm still not available after install. Please reboot or install manually.",
                         "SimTools", MessageBoxButton.OK, MessageBoxImage.Warning);
                     return;
                 }
             }
 
             // 2) HidHide (optional but recommended)
-            if(!IsHidHideInstalled())
+            if (!IsHidHideInstalled())
             {
-                if(PromptYes("Install HidHide to prevent double inputs (hide real devices from games)?"))
+                if (PromptYes("Install HidHide to prevent double inputs (hide real devices from games)?"))
                 {
-                    await TryInstallFromFolderAsync(forVJoy: false);
-                    await Task.Delay(800);
+                    await TryInstallFromFolderAsync(forViGEm: false);
+                    await Task.Delay(800); // let the service initialize
                 }
             }
 
             // 3) Whitelist our EXE in HidHide (if present)
-            if(IsHidHideInstalled())
+            if (IsHidHideInstalled())
             {
                 try { EnsureHidHideWhitelist(); }
                 catch { OpenHidHideConfig(); }
             }
         }
 
+        // ---- Convenience wrappers (so your App.xaml.cs compiles) ----
         public static bool IsHidHideInstalled() => IsServiceInstalled("HidHide");
-        public static bool IsVJoyInstalled() => IsServiceInstalled("vjoy");  // vJoy service name
+        public static bool IsViGEmInstalled() => IsServiceInstalled("ViGEmBus");
 
+        // ---- Detection via Registry (no System.ServiceProcess reference needed) ----
         public static bool IsServiceInstalled(string name)
         {
-            using(var key = Registry.LocalMachine.OpenSubKey(@"SYSTEM\CurrentControlSet\Services\" + name))
+            using (var key = Registry.LocalMachine.OpenSubKey(@"SYSTEM\CurrentControlSet\Services\" + name))
                 return key != null;
         }
 
         private static bool PromptYes(string msg)
             => MessageBox.Show(msg, "SimTools", MessageBoxButton.YesNo, MessageBoxImage.Information) == MessageBoxResult.Yes;
 
-        private static async Task<bool> TryInstallFromFolderAsync(bool forVJoy)
+        // ---- Installers (from Drivers\) ----
+        private static async Task<bool> TryInstallFromFolderAsync(bool forViGEm)
         {
             var baseDir = AppDomain.CurrentDomain.BaseDirectory;
             var folder = Path.Combine(baseDir, DriversFolderRelative);
-            if(!Directory.Exists(folder))
+            if (!Directory.Exists(folder))
             {
                 MessageBox.Show($"Missing folder: {folder}\nPlace the installers there and try again.",
                     "SimTools", MessageBoxButton.OK, MessageBoxImage.Error);
                 return false;
             }
 
-            if(!TryFindInstaller(folder, forVJoy, out var path, out var isMsi))
+            if (!TryFindInstaller(folder, forViGEm, out var path, out var isMsi))
             {
-                MessageBox.Show($"Couldn’t find an installer for {(forVJoy ? "vJoy" : "HidHide")} in:\n{folder}",
+                MessageBox.Show($"Couldn’t find an installer for {(forViGEm ? "ViGEm" : "HidHide")} in:\n{folder}",
                     "SimTools", MessageBoxButton.OK, MessageBoxImage.Error);
                 return false;
             }
@@ -94,24 +101,25 @@ namespace SimTools.Services
             return await RunInstallerAsync(path, isMsi);
         }
 
-        private static bool TryFindInstaller(string folder, bool forVJoy, out string path, out bool isMsi)
+        private static bool TryFindInstaller(string folder, bool forViGEm, out string path, out bool isMsi)
         {
             path = null; isMsi = false;
             bool is64 = Environment.Is64BitOperatingSystem;
 
-            string[] tokens = forVJoy
-                ? new[] { "vJoy", "vJoySetup" }
+            string[] tokens = forViGEm
+                ? new[] { "ViGEm", "ViGEmBus", "ViGEmBusSetup" }
                 : new[] { "HidHide" };
 
             string[] exts = { "*.msi", "*.exe" };
             string[] archFirst = is64 ? new[] { "x64", "amd64", "win64" } : new[] { "x86", "win32" };
 
-            foreach(var token in tokens)
-                foreach(var ext in exts)
-                    foreach(var arch in archFirst)
+            // Prefer arch-specific names
+            foreach (var token in tokens)
+                foreach (var ext in exts)
+                    foreach (var arch in archFirst)
                     {
                         var match = Directory.GetFiles(folder, $"{token}*{arch}*{ext}", SearchOption.TopDirectoryOnly).FirstOrDefault();
-                        if(!string.IsNullOrEmpty(match))
+                        if (!string.IsNullOrEmpty(match))
                         {
                             path = match;
                             isMsi = Path.GetExtension(match).Equals(".msi", StringComparison.OrdinalIgnoreCase);
@@ -119,12 +127,12 @@ namespace SimTools.Services
                         }
                     }
 
-            // fallback: first matching file
-            foreach(var token in tokens)
-                foreach(var ext in exts)
+            // Fallback: any matching file
+            foreach (var token in tokens)
+                foreach (var ext in exts)
                 {
                     var match = Directory.GetFiles(folder, $"{token}*{ext}", SearchOption.TopDirectoryOnly).FirstOrDefault();
-                    if(!string.IsNullOrEmpty(match))
+                    if (!string.IsNullOrEmpty(match))
                     {
                         path = match;
                         isMsi = Path.GetExtension(match).Equals(".msi", StringComparison.OrdinalIgnoreCase);
@@ -140,42 +148,63 @@ namespace SimTools.Services
             try
             {
                 var psi = isMsi
-                    ? new ProcessStartInfo("msiexec.exe", $"/i \"{path}\" /qn")
+                    ? new ProcessStartInfo("msiexec.exe", $"/i \"{path}\" /passive /norestart")
                     : new ProcessStartInfo(path, "/quiet /norestart");
 
-                psi.UseShellExecute = false;
-                psi.CreateNoWindow = true;
+                psi.UseShellExecute = true;
+                psi.Verb = "runas"; // elevate
+                psi.WindowStyle = ProcessWindowStyle.Hidden;
 
-                var p = Process.Start(psi);
-                await Task.Run(() => p.WaitForExit());
-                return p.ExitCode == 0;
+                using (var p = Process.Start(psi))
+                {
+                    if (p == null) return false;
+                    await Task.Run(() => p.WaitForExit(10 * 60 * 1000)); // 10 min max
+                    return p.ExitCode == 0 || p.ExitCode == 3010;        // MSI 3010 = reboot needed
+                }
             }
-            catch { return false; }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Failed to start installer:\n" + ex.Message, "SimTools",
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+                return false;
+            }
         }
 
+        // ---- HidHide whitelist (optional API) ----
         public static void EnsureHidHideWhitelist()
         {
 #if HIDHIDE_API
-            var path = System.Diagnostics.Process.GetCurrentProcess().MainModule.FileName;
-            using (var api = new HidHideControlService())
+            using (var svc = new HidHideControlService())
             {
-                var list = api.ApplicationPaths;
-                if (!list.Contains(path, StringComparer.OrdinalIgnoreCase))
+                svc.IsActive = true; // idempotent
+                var me = HidHideControlService.GetProcessExecutablePath();
+                var wl = svc.Whitelist?.ToList() ?? new System.Collections.Generic.List<string>(1);
+                if (!wl.Contains(me, StringComparer.OrdinalIgnoreCase))
                 {
-                    list.Add(path);
-                    api.ApplicationPaths = list;
+                    wl.Add(me);
+                    svc.Whitelist = wl;
                 }
-                api.IsActive = true;
             }
 #else
-            // If API not referenced, just try to open the config UI so user can do it
+            // If the API isn't compiled in, open the config app so the user can add SimTools manually.
             OpenHidHideConfig();
 #endif
         }
 
-        private static void OpenHidHideConfig()
+        public static bool OpenHidHideConfig()
         {
-            try { Process.Start(new ProcessStartInfo { FileName = "HidHideCfg.exe", UseShellExecute = true }); } catch { }
+            try
+            {
+                var pf = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles);
+                var exe = Path.Combine(pf, "Nefarius Software Solutions", "HidHide", "HidHide Configuration Client.exe");
+                if (File.Exists(exe))
+                {
+                    Process.Start(new ProcessStartInfo(exe) { UseShellExecute = true });
+                    return true;
+                }
+            }
+            catch { }
+            return false;
         }
     }
 }

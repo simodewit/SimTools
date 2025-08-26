@@ -1,5 +1,4 @@
-﻿// ViewModels/KeybindsViewModel.cs
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
@@ -50,18 +49,10 @@ namespace SimTools.ViewModels
             get { return SelectedMap != null ? SelectedMap.Keybinds : new ObservableCollection<KeybindBinding>(); }
         }
 
-        // ---- Only change: we control ordering/grouping in the ComboBox (no XAML edits) ----
+        // Expose the available virtual outputs for the ComboBox
         public IReadOnlyList<VirtualOutput> AvailableOutputs { get; } =
             Enum.GetValues(typeof(VirtualOutput)).Cast<VirtualOutput>()
-                .Where(v => v != VirtualOutput.None)
-                .OrderBy(v => v.GetGroup() == OutputGroup.Joystick ? 0 : v.GetGroup() == OutputGroup.Keyboard ? 1 : 2)
-                .ThenBy(v =>
-                {
-                    if(v.TryAsVJoyButton(out var idx)) return idx;                 // Button number
-                    if(v.TryAsKeyboard(out _, out _)) return 1000 + (int)v;        // Stable order
-                    return 2000 + (int)v;
-                })
-                .ToList();
+                .Where(v => v != VirtualOutput.None).ToList();
 
         public RelayCommand AddProfile { get; private set; }
         public RelayCommand RemoveProfile { get; private set; }
@@ -102,7 +93,7 @@ namespace SimTools.ViewModels
 
             RemoveProfile = new RelayCommand(() =>
             {
-                if(SelectedProfile != null)
+                if (SelectedProfile != null)
                 {
                     Profiles.Remove(SelectedProfile);
                     SelectedProfile = Profiles.FirstOrDefault();
@@ -112,7 +103,7 @@ namespace SimTools.ViewModels
 
             AddMap = new RelayCommand(() =>
             {
-                if(SelectedProfile != null)
+                if (SelectedProfile != null)
                 {
                     var m = new KeybindMap { Name = "Map " + (SelectedProfile.Maps.Count + 1) };
                     SelectedProfile.Maps.Add(m);
@@ -123,7 +114,7 @@ namespace SimTools.ViewModels
 
             RemoveMap = new RelayCommand(() =>
             {
-                if(SelectedProfile != null && SelectedMap != null)
+                if (SelectedProfile != null && SelectedMap != null)
                 {
                     SelectedProfile.Maps.Remove(SelectedMap);
                     SelectedMap = SelectedProfile.Maps.FirstOrDefault();
@@ -133,8 +124,9 @@ namespace SimTools.ViewModels
 
             AddKeybind = new RelayCommand(() =>
             {
-                if(SelectedMap != null)
+                if (SelectedMap != null)
                 {
+                    // Default to blocking the original key; user can change Output later
                     SelectedMap.Keybinds.Add(new KeybindBinding { Name = "New Action", BlockOriginal = true });
                     _storage.Save(Profiles);
                 }
@@ -142,7 +134,7 @@ namespace SimTools.ViewModels
 
             RemoveKeybind = new RelayCommand(() =>
             {
-                if(SelectedMap != null && SelectedMap.Keybinds.Any())
+                if (SelectedMap != null && SelectedMap.Keybinds.Any())
                 {
                     SelectedMap.Keybinds.Remove(SelectedMap.Keybinds.Last());
                     _storage.Save(Profiles);
@@ -156,7 +148,8 @@ namespace SimTools.ViewModels
 
             DuplicateProfile = new RelayCommand(() =>
             {
-                if(SelectedProfile == null) return;
+                if (SelectedProfile == null) return;
+
                 var copy = CloneProfile(SelectedProfile);
                 copy.Name = MakeCopyName(SelectedProfile.Name, Profiles.Select(p => p.Name));
 
@@ -167,7 +160,7 @@ namespace SimTools.ViewModels
 
             DuplicateMap = new RelayCommand(() =>
             {
-                if(SelectedProfile == null || SelectedMap == null) return;
+                if (SelectedProfile == null || SelectedMap == null) return;
 
                 var copy = CloneMap(SelectedMap);
                 copy.Name = MakeCopyName(SelectedMap.Name, SelectedProfile.Maps.Select(m => m.Name));
@@ -178,41 +171,110 @@ namespace SimTools.ViewModels
             });
         }
 
-        public void AssignKey(System.Windows.Input.KeyEventArgs e)
+        public void AssignKey(System.Windows.Input.KeyEventArgs e, KeybindBinding binding)
         {
-            // your existing helper logic can stay
+            if (binding == null || e == null) return;
+
+            var cap = HotkeyService.Capture(e);
+            if (cap.Key == System.Windows.Input.Key.None)
+                return;
+
+            binding.Modifiers = cap.Modifiers;
+            binding.Key = cap.Key;
+
+            binding.Device = "Keyboard";
+            binding.DeviceKey = FormatHotkey(binding.Modifiers, binding.Key);
+
+            Raise("Keybinds");
+            _storage.Save(Profiles);
         }
 
-        public void AssignDeviceBinding(SimTools.Models.InputBindingResult res)
+        public void NextMap()
         {
-            // your existing helper logic can stay
+            if (SelectedProfile == null || !SelectedProfile.Maps.Any()) return;
+            var idx = SelectedProfile.Maps.IndexOf(SelectedMap);
+            if (idx < 0) idx = 0;
+            idx = (idx + 1) % SelectedProfile.Maps.Count;
+            SelectedMap = SelectedProfile.Maps[idx];
         }
 
-        private void NextMap() { /* existing */ }
-        private void PrevMap() { /* existing */ }
+        public void PrevMap()
+        {
+            if (SelectedProfile == null || !SelectedProfile.Maps.Any()) return;
+            var idx = SelectedProfile.Maps.IndexOf(SelectedMap);
+            if (idx < 0) idx = 0;
+            idx = (idx - 1 + SelectedProfile.Maps.Count) % SelectedProfile.Maps.Count;
+            SelectedMap = SelectedProfile.Maps[idx];
+        }
 
-        // ---- copy helpers (unchanged) ----
+        // ---- Helpers ----
+        private static string FormatHotkey(ModifierKeys mods, System.Windows.Input.Key key)
+        {
+            if (key == System.Windows.Input.Key.None && mods == ModifierKeys.None) return "None";
+
+            var parts = new List<string>(4);
+            if (mods.HasFlag(ModifierKeys.Control)) parts.Add("Ctrl");
+            if (mods.HasFlag(ModifierKeys.Alt)) parts.Add("Alt");
+            if (mods.HasFlag(ModifierKeys.Shift)) parts.Add("Shift");
+            if (mods.HasFlag(ModifierKeys.Windows)) parts.Add("Win");
+
+            string keyName = key switch
+            {
+                System.Windows.Input.Key.Return => "Enter",
+                System.Windows.Input.Key.Escape => "Esc",
+                System.Windows.Input.Key.Prior => "PageUp",
+                System.Windows.Input.Key.Next => "PageDown",
+                System.Windows.Input.Key.OemPlus => "+",
+                System.Windows.Input.Key.OemMinus => "-",
+                _ => key.ToString()
+            };
+
+            parts.Add(keyName);
+            return string.Join(" + ", parts);
+        }
+
+        private static string MakeCopyName(string baseName, IEnumerable<string> existingNames)
+        {
+            if (string.IsNullOrWhiteSpace(baseName)) baseName = "Copy";
+            var set = new HashSet<string>(existingNames ?? Enumerable.Empty<string>(), StringComparer.OrdinalIgnoreCase);
+
+            string candidate = $"{baseName} - Copy";
+            if (!set.Contains(candidate)) return candidate;
+
+            int i = 2;
+            while (true)
+            {
+                candidate = $"{baseName} - Copy ({i})";
+                if (!set.Contains(candidate)) return candidate;
+                i++;
+            }
+        }
+
         private static Profile CloneProfile(Profile src)
         {
             var p = new Profile { Name = src?.Name };
-            if(src?.Maps != null) foreach(var m in src.Maps) p.Maps.Add(CloneMap(m));
+            if (src?.Maps != null)
+                foreach (var m in src.Maps) p.Maps.Add(CloneMap(m));
+
             CopyStringIfExists(src, p, "NextMapDevice");
             CopyStringIfExists(src, p, "NextMapDeviceKey");
             CopyStringIfExists(src, p, "PrevMapDevice");
             CopyStringIfExists(src, p, "PrevMapDeviceKey");
+
             return p;
         }
 
         private static KeybindMap CloneMap(KeybindMap src)
         {
             var m = new KeybindMap { Name = src?.Name };
-            if(src?.Keybinds != null) foreach(var kb in src.Keybinds) m.Keybinds.Add(CloneBinding(kb));
+            if (src?.Keybinds != null)
+                foreach (var kb in src.Keybinds) m.Keybinds.Add(CloneBinding(kb));
             return m;
         }
 
         private static KeybindBinding CloneBinding(KeybindBinding src)
         {
-            if(src == null) return new KeybindBinding();
+            if (src == null) return new KeybindBinding();
             return new KeybindBinding
             {
                 Name = src.Name,
@@ -225,21 +287,13 @@ namespace SimTools.ViewModels
             };
         }
 
-        private static string MakeCopyName(string baseName, IEnumerable<string> existing)
-        {
-            var n = baseName;
-            int i = 2;
-            var set = new HashSet<string>(existing ?? Enumerable.Empty<string>(), StringComparer.OrdinalIgnoreCase);
-            while(set.Contains(n)) n = $"{baseName} ({i++})";
-            return n;
-        }
-
         private static void CopyStringIfExists(object src, object dst, string propName)
         {
-            if(src == null || dst == null) return;
+            if (src == null || dst == null) return;
             var sp = src.GetType().GetProperty(propName);
             var dp = dst.GetType().GetProperty(propName);
-            if(sp != null && dp != null && sp.PropertyType == typeof(string) && dp.PropertyType == typeof(string) && dp.CanWrite)
+            if (sp != null && dp != null &&
+                sp.PropertyType == typeof(string) && dp.PropertyType == typeof(string) && dp.CanWrite)
             {
                 dp.SetValue(dst, (string)sp.GetValue(src));
             }
