@@ -1,24 +1,20 @@
 ﻿// Services/DriverBootstrap.cs
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Windows;
 using Microsoft.Win32;
 
 #if HIDHIDE_API
-using Nefarius.Drivers.HidHide;
+using Nefarius.Drivers.HidHide; // if you keep the NuGet + define
 #endif
 
 namespace SimTools.Services
 {
     /// <summary>
-    /// Silent bootstrap: detect/install vJoy + HidHide if installers are present.
-    /// No prompts, no MessageBoxes, no config windows.
-    /// Looks in:
-    ///  - the application base folder (e.g., bin\Release next to the EXE)
-    ///  - and an optional "Drivers" subfolder.
+    /// Detect/install vJoy + HidHide from local "Drivers" folder and optionally whitelist our EXE in HidHide.
     /// </summary>
     public static class DriverBootstrap
     {
@@ -26,37 +22,141 @@ namespace SimTools.Services
 
         public static async Task EnsureAllAsync()
         {
-            // vJoy (required for virtual joystick). If not installed and installer is present, try silent install.
-            if (!IsVJoyInstalled())
-                await TryInstallAsync(forVJoy: true);
-
-            // HidHide (optional). If not installed and installer is present, try silent install.
-            if (!IsHidHideInstalled())
-                await TryInstallAsync(forVJoy: false);
-
-            // Whitelist our EXE in HidHide if available. Silent; no UI fallback.
-            if (IsHidHideInstalled())
+            // 1) vJoy (required)
+            if(!IsVJoyInstalled())
             {
-                try { EnsureHidHideWhitelist(); } catch { /* silent */ }
+                if(!PromptYes("SimTools needs the vJoy driver (one-time install). Install now?"))
+                    return;
+
+                if(!await TryInstallFromFolderAsync(forVJoy: true))
+                {
+                    MessageBox.Show("vJoy install didn’t complete. You can retry from Settings.", "SimTools",
+                        MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+
+                if(!IsVJoyInstalled())
+                {
+                    MessageBox.Show("vJoy still not available after install. Please reboot or install manually.",
+                        "SimTools", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+            }
+
+            // 2) HidHide (optional but recommended)
+            if(!IsHidHideInstalled())
+            {
+                if(PromptYes("Install HidHide to prevent double inputs (hide real devices from games)?"))
+                {
+                    await TryInstallFromFolderAsync(forVJoy: false);
+                    await Task.Delay(800);
+                }
+            }
+
+            // 3) Whitelist our EXE in HidHide (if present)
+            if(IsHidHideInstalled())
+            {
+                try { EnsureHidHideWhitelist(); }
+                catch { OpenHidHideConfig(); }
             }
         }
 
         public static bool IsHidHideInstalled() => IsServiceInstalled("HidHide");
-        public static bool IsVJoyInstalled() => IsServiceInstalled("vjoy");
+        public static bool IsVJoyInstalled() => IsServiceInstalled("vjoy");  // vJoy service name
 
         public static bool IsServiceInstalled(string name)
         {
-            using (var key = Registry.LocalMachine.OpenSubKey(@"SYSTEM\CurrentControlSet\Services\" + name))
+            using(var key = Registry.LocalMachine.OpenSubKey(@"SYSTEM\CurrentControlSet\Services\" + name))
                 return key != null;
         }
 
-        /// <summary>
-        /// Silent whitelisting; if HidHide API is not referenced, this is a no-op (no UI).
-        /// </summary>
+        private static bool PromptYes(string msg)
+            => MessageBox.Show(msg, "SimTools", MessageBoxButton.YesNo, MessageBoxImage.Information) == MessageBoxResult.Yes;
+
+        private static async Task<bool> TryInstallFromFolderAsync(bool forVJoy)
+        {
+            var baseDir = AppDomain.CurrentDomain.BaseDirectory;
+            var folder = Path.Combine(baseDir, DriversFolderRelative);
+            if(!Directory.Exists(folder))
+            {
+                MessageBox.Show($"Missing folder: {folder}\nPlace the installers there and try again.",
+                    "SimTools", MessageBoxButton.OK, MessageBoxImage.Error);
+                return false;
+            }
+
+            if(!TryFindInstaller(folder, forVJoy, out var path, out var isMsi))
+            {
+                MessageBox.Show($"Couldn’t find an installer for {(forVJoy ? "vJoy" : "HidHide")} in:\n{folder}",
+                    "SimTools", MessageBoxButton.OK, MessageBoxImage.Error);
+                return false;
+            }
+
+            return await RunInstallerAsync(path, isMsi);
+        }
+
+        private static bool TryFindInstaller(string folder, bool forVJoy, out string path, out bool isMsi)
+        {
+            path = null; isMsi = false;
+            bool is64 = Environment.Is64BitOperatingSystem;
+
+            string[] tokens = forVJoy
+                ? new[] { "vJoy", "vJoySetup" }
+                : new[] { "HidHide" };
+
+            string[] exts = { "*.msi", "*.exe" };
+            string[] archFirst = is64 ? new[] { "x64", "amd64", "win64" } : new[] { "x86", "win32" };
+
+            foreach(var token in tokens)
+                foreach(var ext in exts)
+                    foreach(var arch in archFirst)
+                    {
+                        var match = Directory.GetFiles(folder, $"{token}*{arch}*{ext}", SearchOption.TopDirectoryOnly).FirstOrDefault();
+                        if(!string.IsNullOrEmpty(match))
+                        {
+                            path = match;
+                            isMsi = Path.GetExtension(match).Equals(".msi", StringComparison.OrdinalIgnoreCase);
+                            return true;
+                        }
+                    }
+
+            // fallback: first matching file
+            foreach(var token in tokens)
+                foreach(var ext in exts)
+                {
+                    var match = Directory.GetFiles(folder, $"{token}*{ext}", SearchOption.TopDirectoryOnly).FirstOrDefault();
+                    if(!string.IsNullOrEmpty(match))
+                    {
+                        path = match;
+                        isMsi = Path.GetExtension(match).Equals(".msi", StringComparison.OrdinalIgnoreCase);
+                        return true;
+                    }
+                }
+
+            return false;
+        }
+
+        private static async Task<bool> RunInstallerAsync(string path, bool isMsi)
+        {
+            try
+            {
+                var psi = isMsi
+                    ? new ProcessStartInfo("msiexec.exe", $"/i \"{path}\" /qn")
+                    : new ProcessStartInfo(path, "/quiet /norestart");
+
+                psi.UseShellExecute = false;
+                psi.CreateNoWindow = true;
+
+                var p = Process.Start(psi);
+                await Task.Run(() => p.WaitForExit());
+                return p.ExitCode == 0;
+            }
+            catch { return false; }
+        }
+
         public static void EnsureHidHideWhitelist()
         {
 #if HIDHIDE_API
-            var path = Process.GetCurrentProcess().MainModule.FileName;
+            var path = System.Diagnostics.Process.GetCurrentProcess().MainModule.FileName;
             using (var api = new HidHideControlService())
             {
                 var list = api.ApplicationPaths;
@@ -68,156 +168,14 @@ namespace SimTools.Services
                 api.IsActive = true;
             }
 #else
-            // No UI in silent mode; do nothing if API not available.
+            // If API not referenced, just try to open the config UI so user can do it
+            OpenHidHideConfig();
 #endif
         }
 
-        // ---------------- Installer search & run (silent) ----------------
-
-        private static async Task<bool> TryInstallAsync(bool forVJoy)
+        private static void OpenHidHideConfig()
         {
-            var roots = GetSearchRoots();
-
-            if (!TryFindInstaller(roots, forVJoy, out var path, out var isMsi))
-                return false; // no UI, just skip
-
-            return await RunInstallerAsync(path, isMsi);
-        }
-
-        private static List<string> GetSearchRoots()
-        {
-            var baseDir = AppDomain.CurrentDomain.BaseDirectory; // ...\bin\Release\
-            var roots = new List<string> { baseDir };
-
-            var drivers = Path.Combine(baseDir, DriversFolderRelative);
-            if (Directory.Exists(drivers))
-                roots.Add(drivers);
-
-            return roots;
-        }
-
-        private static bool TryFindInstaller(IEnumerable<string> roots, bool forVJoy, out string path, out bool isMsi)
-        {
-            path = null; isMsi = false;
-
-            var tokens = forVJoy
-                ? new[] { "vjoy", "vjoysetup" }
-                : new[] { "hidhide" };
-
-            var exts = new[] { ".msi", ".exe" };
-            bool is64 = Environment.Is64BitOperatingSystem;
-
-            foreach (var root in roots)
-            {
-                if (!Directory.Exists(root)) continue;
-
-                var candidates = Directory.EnumerateFiles(root, "*.*", SearchOption.TopDirectoryOnly)
-                    .Where(f => exts.Contains(Path.GetExtension(f), StringComparer.OrdinalIgnoreCase))
-                    .Where(f =>
-                    {
-                        var name = Path.GetFileName(f);
-                        return tokens.Any(t => name.IndexOf(t, StringComparison.OrdinalIgnoreCase) >= 0);
-                    })
-                    .Select(f => new
-                    {
-                        Path = f,
-                        IsMsi = Path.GetExtension(f).Equals(".msi", StringComparison.OrdinalIgnoreCase),
-                        Score = ArchScore(Path.GetFileName(f), is64) + ExtScore(Path.GetExtension(f))
-                    })
-                    .OrderByDescending(x => x.Score)
-                    .ToList();
-
-                var pick = candidates.FirstOrDefault();
-                if (pick != null)
-                {
-                    path = pick.Path;
-                    isMsi = pick.IsMsi;
-                    return true;
-                }
-            }
-
-            return false;
-
-            static int ArchScore(string fileName, bool is64Os)
-            {
-                fileName = fileName.ToLowerInvariant();
-                var has64 = fileName.Contains("x64") || fileName.Contains("amd64") || fileName.Contains("64");
-                var has86 = fileName.Contains("x86") || fileName.Contains("win32") || fileName.Contains("32");
-                if (is64Os && has64) return 20;
-                if (!is64Os && has86) return 20;
-                if (has64 || has86) return 10;
-                return 0;
-            }
-
-            static int ExtScore(string ext) => ext.Equals(".msi", StringComparison.OrdinalIgnoreCase) ? 5 : 0;
-        }
-
-        private static async Task<bool> RunInstallerAsync(string path, bool isMsi)
-        {
-            try
-            {
-                if (isMsi)
-                {
-                    var psi = new ProcessStartInfo
-                    {
-                        FileName = "msiexec.exe",
-                        Arguments = $"/i \"{path}\" /qn /norestart",
-                        UseShellExecute = true,
-                        Verb = "runas", // UAC (cannot be silenced programmatically)
-                        WindowStyle = ProcessWindowStyle.Hidden
-                    };
-
-                    using (var p = Process.Start(psi))
-                    {
-                        await Task.Run(() => p.WaitForExit());
-                        return p.ExitCode == 0;
-                    }
-                }
-                else
-                {
-                    // Try common silent flags; if none succeed, we still remain silent (no UI).
-                    var argSets = new[]
-                    {
-                        "/quiet /norestart",
-                        "/SILENT",
-                        "/VERYSILENT"
-                        // No interactive fallback here (to stay 100% silent)
-                    };
-
-                    foreach (var args in argSets)
-                    {
-                        try
-                        {
-                            var psi = new ProcessStartInfo
-                            {
-                                FileName = path,
-                                Arguments = args,
-                                UseShellExecute = true,
-                                Verb = "runas", // UAC prompt is OS-level
-                                WindowStyle = ProcessWindowStyle.Hidden
-                            };
-
-                            using (var p = Process.Start(psi))
-                            {
-                                await Task.Run(() => p.WaitForExit());
-                                if (p.ExitCode == 0) return true;
-                            }
-                        }
-                        catch
-                        {
-                            // Try next argument set; stay silent
-                            continue;
-                        }
-                    }
-
-                    return false;
-                }
-            }
-            catch
-            {
-                // Silent failure
-                return false;
-            }
+            try { Process.Start(new ProcessStartInfo { FileName = "HidHideCfg.exe", UseShellExecute = true }); } catch { }
         }
     }
 }

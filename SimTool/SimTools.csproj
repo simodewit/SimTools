@@ -150,7 +150,6 @@
     <Compile Include="Services\RuntimeInputEngine.cs" />
     <Compile Include="Services\StorageService.cs" />
     <Compile Include="Models\VirtualOutput.cs" />
-    <Compile Include="Services\VirtualGamepadService.cs" />
     <Compile Include="Services\VirtualJoystickService.cs" />
     <Compile Include="Services\VmCollectionBinder.cs" />
     <Compile Include="ViewModels\HomeViewModel.cs" />
@@ -249,6 +248,7 @@
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
     </EmbeddedResource>
     <None Include="Drivers\HidHideMSI.msi" />
+    <None Include="Drivers\ViGEmBusSetup_x64.msi" />
     <None Include="packages.config" />
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
@@ -258,9 +258,7 @@
   <ItemGroup>
     <None Include="App.config" />
   </ItemGroup>
-  <ItemGroup>
-    <Content Include="Drivers\vJoySetup.exe" />
-  </ItemGroup>
+  <ItemGroup />
   <ItemGroup>
     <Resource Include="Images\Asphalt.png" />
   </ItemGroup>
