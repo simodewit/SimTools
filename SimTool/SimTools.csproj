@@ -27,7 +27,7 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <PlatformTarget>AnyCPU</PlatformTarget>
+    <PlatformTarget>x64</PlatformTarget>
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>bin\Release\</OutputPath>
@@ -147,6 +147,7 @@
     <Compile Include="Services\StorageService.cs" />
     <Compile Include="Models\VirtualOutput.cs" />
     <Compile Include="Services\VirtualGamepadService.cs" />
+    <Compile Include="Services\VJoyBootstrap.cs" />
     <Compile Include="Services\VmCollectionBinder.cs" />
     <Compile Include="ViewModels\HomeViewModel.cs" />
     <Compile Include="ViewModels\KeybindsViewModel.cs" />
