@@ -107,6 +107,10 @@
     <Reference Include="System.Xaml">
       <RequiredTargetFramework>4.0</RequiredTargetFramework>
     </Reference>
+    <Reference Include="vJoyInterfaceWrap, Version=0.2.1.6, Culture=neutral, processorArchitecture=AMD64">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>Lib\vJoy\x64\vJoyInterfaceWrap.dll</HintPath>
+    </Reference>
     <Reference Include="WindowsBase" />
     <Reference Include="PresentationCore" />
     <Reference Include="PresentationFramework" />
@@ -147,6 +151,8 @@
     <Compile Include="Services\StorageService.cs" />
     <Compile Include="Models\VirtualOutput.cs" />
     <Compile Include="Services\VirtualGamepadService.cs" />
+    <Compile Include="Services\VirtualKeyboardService.cs" />
+    <Compile Include="Services\VirtualKeyMap.cs" />
     <Compile Include="Services\VJoyBootstrap.cs" />
     <Compile Include="Services\VmCollectionBinder.cs" />
     <Compile Include="ViewModels\HomeViewModel.cs" />
@@ -244,8 +250,6 @@
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
     </EmbeddedResource>
-    <None Include="Drivers\HidHideMSI.msi" />
-    <None Include="Drivers\ViGEmBusSetup_x64.msi" />
     <None Include="packages.config" />
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
@@ -255,7 +259,14 @@
   <ItemGroup>
     <None Include="App.config" />
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <Content Include="vJoyInterface.dll">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="vJoyInterfaceWrap.dll">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
   <ItemGroup>
     <Resource Include="Images\Asphalt.png" />
   </ItemGroup>

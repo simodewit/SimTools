@@ -21,11 +21,14 @@ namespace SimTools.Views
         private ButtonHighlightService _lights;
         private MapHotkeyController _hotkeys;
 
-        // NEW: safe game-mode pieces
+        // vJoy virtual joystick pieces
         private VirtualGamepadService _gamepad;
         private GameModeGuard _guard;
 
-        // NEW: global keyboard blocker (for BlockOriginal)
+        // NEW: Desktop keyboard mirror (for Discord/OBS etc.)
+        private VirtualKeyboardService _keyboard;
+
+        // Global keyboard blocker (for BlockOriginal)
         private InputBlockerService _blocker;
 
         // Monitor from your InputCapture (may or may not fire on your setup)
@@ -69,7 +72,7 @@ namespace SimTools.Views
             // Keyboard fallback (only while app has focus) – for UI hints, not game routing
             InputManager.Current.PreProcessInput += OnPreProcessInput;
 
-            // NEW: start ViGEm controller + guard
+            // Start vJoy virtual joystick + guard
             _gamepad = new VirtualGamepadService();
             _gamepad.TryStart();
 
@@ -80,7 +83,10 @@ namespace SimTools.Views
             };
             _guard.Start();
 
-            // NEW: start low-level keyboard blocker (uses BlockOriginal on bindings)
+            // NEW: desktop keyboard mirror service
+            _keyboard = new VirtualKeyboardService();
+
+            // Start low-level keyboard blocker (uses BlockOriginal on bindings)
             _blocker = new InputBlockerService(ShouldBlockKey);
             try { _blocker.Start(); } catch { /* hook can fail if not elevated; never throw */ }
         }
@@ -102,9 +108,12 @@ namespace SimTools.Views
             _lights?.ClearAll();
 
             try { _guard?.Dispose(); } catch { }
-            try { _gamepad?.Stop(); } catch { }
+            try { _gamepad?.Dispose(); } catch { }   // changed earlier from Stop() to Dispose()
             try { _blocker?.Dispose(); } catch { }
             _guard = null; _gamepad = null; _blocker = null;
+
+            // NEW: release keyboard mirror
+            _keyboard = null;
         }
 
         private void OnDataContextChanged(object sender, DependencyPropertyChangedEventArgs e)
@@ -230,7 +239,7 @@ namespace SimTools.Views
             // if (!KeybindHelpers.IsTyping())
             //     MaybeSwitchMapFrom(input);
 
-            // Game Mode: route 1:1 to ViGEm (no hooks, no SendInput)
+            // Game Mode: route 1:1 to vJoy (no hooks, no SendInput)
             TryRouteToVirtualTap(input);
         }
 
@@ -258,8 +267,25 @@ namespace SimTools.Views
         {
             try
             {
+                // vJoy press
                 _gamepad?.SetButton(output, true);
 
+                // --- DESKTOP MIRROR (auto) ---
+                // Only send the keyboard chord when it's safe (not in a game / not typing).
+                try
+                {
+                    bool gameSuspended = _guard?.ShouldOperateNow() == false;
+                    if (!gameSuspended && !KeybindHelpers.IsTyping())
+                    {
+                        if (VirtualKeyMap.TryMap(output, out var chord))
+                        {
+                            _keyboard?.Tap(chord.Scan, chord.Ctrl, chord.Alt, chord.Shift);
+                        }
+                    }
+                }
+                catch { /* never throw on input path */ }
+
+                // schedule release
                 var t = new DispatcherTimer(DispatcherPriority.Background) { Interval = TimeSpan.FromMilliseconds(durationMs) };
                 t.Tick += (s, e) =>
                 {
@@ -497,7 +523,7 @@ namespace SimTools.Views
             }
         }
 
-        // --------- NEW: Blocker predicate (decides whether to swallow a key) ---------
+        // --------- Blocker predicate (decides whether to swallow a key) ---------
         // Return true => BLOCK the original key globally.
         private bool ShouldBlockKey(Key key, ModifierKeys mods, bool isDown)
         {
