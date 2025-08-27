@@ -127,6 +127,7 @@
     <Compile Include="Controls\TitleBar.xaml.cs">
       <DependentUpon>TitleBar.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Debug\Diag.cs" />
     <Compile Include="Helpers\KeybindHelpers.cs" />
     <Compile Include="Helpers\KeybindUiHelpers.cs" />
     <Compile Include="Helpers\MinSizeHook.cs" />
@@ -255,6 +256,8 @@
       <Generator>SettingsSingleFileGenerator</Generator>
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
     </None>
+    <None Include="Views\KeybindsPage.Debug" />
+    <None Include="Views\KeybindsPage.RouteProbe" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />

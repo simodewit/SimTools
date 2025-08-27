@@ -7,6 +7,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
+using SimTools.Debug;
 using SimTools.Helpers;
 using SimTools.Models;
 using SimTools.Services;
@@ -37,12 +38,51 @@ namespace SimTools.Views
         // Tap duration for virtual button (ms) when we don't get release notifications.
         private const int TapMs = 50;
 
+        private RawInputMonitor _rim;
+
         public KeybindsPage()
         {
             InitializeComponent();
             Loaded += OnLoaded;
             Unloaded += OnUnloaded;
             DataContextChanged += OnDataContextChanged;
+        }
+
+        private void KeybindsPage_Loaded(object sender, RoutedEventArgs e)
+        {
+            // Wire this handler in XAML or in the constructor: this.Loaded += KeybindsPage_Loaded;
+            var owner = Window.GetWindow(this);
+            if(owner != null && _rim == null)
+            {
+                _rim = new RawInputMonitor(owner);
+                _rim.InputReceived += OnGlobalInput_FromRIM;
+                Diag.Log("[KP] RawInputMonitor started");
+            }
+
+            // Ensure vJoy is started
+            if(_gamepad == null) _gamepad = new VirtualGamepadService();
+            var started = _gamepad.TryStart();
+            Diag.Log($"[KP] vJoy.TryStart => {started}; status='{_gamepad.StatusSummary()}'");
+        }
+
+        private void KeybindsPage_Unloaded(object sender, RoutedEventArgs e)
+        {
+            if(_rim != null)
+            {
+                _rim.InputReceived -= OnGlobalInput_FromRIM;
+                _rim.Dispose();
+                _rim = null;
+                Diag.Log("[KP] RawInputMonitor disposed");
+            }
+        }
+
+        private void OnGlobalInput_FromRIM(InputBindingResult input)
+        {
+            // If you already have an OnGlobalInput method, call it here:
+            OnGlobalInput(input);
+
+            // If you don't, minimally do the route:
+            // TryRouteToVirtualTap(input);
         }
 
         private void OnLoaded(object sender, RoutedEventArgs e)
@@ -61,12 +101,13 @@ namespace SimTools.Views
 
             Dispatcher.BeginInvoke(DispatcherPriority.Background, new Action(RehydrateVisibleButtons));
 
-            // Global input from your InputCapture (safe for games; no keyboard injection)
+            // Global input via Raw Input (works even when not focused)
             var owner = Window.GetWindow(this);
-            if (owner != null && _inputMonitor == null)
+            if(owner != null && _inputMonitor == null)
             {
-                try { _inputMonitor = InputCapture.StartMonitor(owner, OnGlobalInput); }
-                catch { /* monitor not available on some setups */ }
+                var rim = new SimTools.Services.RawInputMonitor(owner);
+                rim.InputReceived += OnGlobalInput; // same handler you already have
+                _inputMonitor = rim;                // keep to Dispose() later
             }
 
             // Keyboard fallback (only while app has focus) – for UI hints, not game routing
@@ -246,7 +287,8 @@ namespace SimTools.Views
         // Route this input to a single virtual button (tap), if bound in the current map.
         private void TryRouteToVirtualTap(InputBindingResult input)
         {
-            if (_gamepad == null || !_guard?.ShouldOperateNow() == true) return;
+            if(_gamepad == null) return;
+            if(_guard != null && !_guard.ShouldOperateNow()) return;
 
             var items = (KeybindsList?.ItemsSource as IEnumerable) ?? Enumerable.Empty<object>();
             foreach (var kb in items.OfType<KeybindBinding>())

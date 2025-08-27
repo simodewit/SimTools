@@ -1,168 +1,290 @@
-﻿// services/InputCapture.cs
-#nullable enable
+﻿#nullable enable
 using System;
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Input;
-using System.Windows.Interop;
+using System.Windows.Threading;
+using SimTools.Debug;
 using SimTools.Models;
-using static SimTools.Interop.RawInputNative;
+using SimTools.Helpers; // KeybindHelpers
 
 namespace SimTools.Services
 {
     /// <summary>
-    /// High-level input capture API for the UI:
-    /// - CaptureBinding: show dialog and return one pressed control
-    /// - StartMonitor: listen in background and report inputs as they happen
-    /// Uses RawInputNative for interop and RawInputMonitor for background listening.
+    /// Raw Input helpers (keyboard) with heavy instrumentation.
+    /// C# 8.0 compatible.
     /// </summary>
     public static class InputCapture
     {
-        /// <summary>Modal capture dialog – shows "Listening…" and returns the first captured input.</summary>
-        public static InputBindingResult? CaptureBinding(Window owner)
-        {
-            // Uses your XAML dialog instead of a code-built window
-            var dlg = new SimTools.Views.InputCaptureDialog { Owner = owner };
-            bool? ok = dlg.ShowDialog();
-            return ok == true ? dlg.Result : null;
-        }
+        // ---------------------- Public API ----------------------
 
-        /// <summary>Start a background Raw Input monitor and invoke onInput whenever an input is received.</summary>
         public static IDisposable StartMonitor(Window owner, Action<InputBindingResult> onInput)
         {
-            var monitor = new RawInputMonitor(owner);
-            monitor.InputReceived += onInput;
-            return monitor;
+            if(owner == null) throw new ArgumentNullException(nameof(owner));
+            if(onInput == null) throw new ArgumentNullException(nameof(onInput));
+
+            Diag.Log("IC.StartMonitor: creating RawInputMonitor");
+            var rim = new RawInputMonitor(owner);
+
+            Action<InputBindingResult> forward = null;
+            forward = (res) =>
+            {
+                if(res == null)
+                {
+                    Diag.Log("IC.Forward: NULL result (ignored)");
+                    return;
+                }
+                Diag.Log("IC.Forward: delivering result to callback -> dev='" + res.DeviceType + "' key='" + res.ControlLabel + "'");
+                try { onInput(res); }
+                catch(Exception ex) { Diag.LogEx("IC.Forward callback", ex); }
+            };
+
+            rim.InputReceived += forward;
+            Diag.Log("IC.StartMonitor: subscribed to RawInputMonitor");
+
+            return new RimHandle(rim, forward);
         }
 
-        // -------------------- Shared RAWINPUT parsing (kept here) --------------------
-        internal static InputBindingResult? ReadInput(IntPtr hRawInput)
+        /// <summary>
+        /// Capture a single keyboard MAKE, synchronously. Used by your binding UI.
+        /// </summary>
+        public static InputBindingResult CaptureBinding(Window owner)
         {
-            uint dwSize = 0;
-            GetRawInputData(hRawInput, RID_INPUT, IntPtr.Zero, ref dwSize, (uint)Marshal.SizeOf(typeof(RAWINPUTHEADER)));
-            if (dwSize == 0) return null;
+            Diag.Log("IC.CaptureBinding: begin");
+            InputBindingResult captured = null;
 
-            IntPtr buffer = Marshal.AllocHGlobal((int)dwSize);
-            try
+            var rim = new RawInputMonitor(owner);
+            Action<InputBindingResult> handler = null;
+
+            var frame = new DispatcherFrame();
+            var timeout = new DispatcherTimer(DispatcherPriority.Background) { Interval = TimeSpan.FromSeconds(5) };
+            EventHandler timeCb = null;
+            timeCb = (s, e) =>
             {
-                if (GetRawInputData(hRawInput, RID_INPUT, buffer, ref dwSize, (uint)Marshal.SizeOf(typeof(RAWINPUTHEADER))) != dwSize)
-                    return null;
+                try { timeout.Stop(); } catch { }
+                Diag.Log("IC.CaptureBinding: timeout");
+                frame.Continue = false;
+            };
 
-                RAWINPUT raw = Marshal.PtrToStructure<RAWINPUT>(buffer);
-                if (raw.header.dwType == RIM_TYPEKEYBOARD)
-                {
-                    if (raw.keyboard.Message == WM_KEYDOWN || raw.keyboard.Message == WM_SYSKEYDOWN)
-                    {
-                        var key = KeyInterop.KeyFromVirtualKey(raw.keyboard.VKey);
-                        return new InputBindingResult
-                        {
-                            DeviceType = "Keyboard",
-                            DeviceName = "Keyboard",
-                            ControlLabel = FormatKey(key)
-                        };
-                    }
-                }
-                else if (raw.header.dwType == RIM_TYPEMOUSE)
-                {
-                    ushort flags = raw.mouse.usButtonFlags;
-                    string? btn = null;
-                    if ((flags & RI_MOUSE_LEFT_BUTTON_DOWN) != 0) btn = "LeftButton";
-                    else if ((flags & RI_MOUSE_RIGHT_BUTTON_DOWN) != 0) btn = "RightButton";
-                    else if ((flags & RI_MOUSE_MIDDLE_BUTTON_DOWN) != 0) btn = "MiddleButton";
-                    else if ((flags & RI_MOUSE_BUTTON_4_DOWN) != 0) btn = "XButton1";
-                    else if ((flags & RI_MOUSE_BUTTON_5_DOWN) != 0) btn = "XButton2";
+            handler = (res) =>
+            {
+                Diag.Log("IC.CaptureBinding: got result -> " + (res == null ? "NULL" : $"dev='{res.DeviceType}' key='{res.ControlLabel}'"));
+                if(res == null) return;
+                captured = res;
+                try { rim.InputReceived -= handler; } catch { }
+                try { rim.Dispose(); } catch { }
+                try { timeout.Stop(); } catch { }
+                frame.Continue = false;
+            };
 
-                    if (!string.IsNullOrEmpty(btn))
-                    {
-                        return new InputBindingResult
-                        {
-                            DeviceType = "Mouse",
-                            DeviceName = "Mouse",
-                            ControlLabel = btn
-                        };
-                    }
-                }
-                else if (raw.header.dwType == RIM_TYPEHID)
-                {
-                    GetDeviceInfo(raw.header.hDevice,
-                                  out ushort vid, out ushort pid,
-                                  out string? name, out ushort usagePage, out ushort usage);
+            rim.InputReceived += handler;
+            timeout.Tick += timeCb;
+            timeout.Start();
 
-                    return new InputBindingResult
-                    {
-                        DeviceType = "HID",
-                        DeviceName = !string.IsNullOrWhiteSpace(name) ? name : $"HID {vid:X4}:{pid:X4}",
-                        VendorId = vid,
-                        ProductId = pid,
-                        ControlLabel = $"UsagePage {usagePage}, Usage {usage}"
-                    };
-                }
-                return null;
-            }
+            try { Dispatcher.PushFrame(frame); }
             finally
             {
-                Marshal.FreeHGlobal(buffer);
+                try { timeout.Tick -= timeCb; } catch { }
+                try { rim.InputReceived -= handler; } catch { }
+                try { rim.Dispose(); } catch { }
             }
+
+            Diag.Log("IC.CaptureBinding: end (captured=" + (captured == null ? "NULL" : captured.ControlLabel) + ")");
+            return captured;
         }
 
-        internal static string FormatKey(Key key)
+        /// <summary>
+        /// Parse WM_INPUT (lParam) to InputBindingResult, or null if not a MAKE keyboard event.
+        /// </summary>
+        public static InputBindingResult ReadInput(IntPtr lParam)
         {
-            if (key >= Key.F1 && key <= Key.F24) return key.ToString();
-            if (key >= Key.NumPad0 && key <= Key.NumPad9) return "Num" + (key - Key.NumPad0);
-            if (key == Key.Space) return "Space";
-            if (key == Key.Return) return "Enter";
-            if (key == Key.Escape) return "Esc";
-            if (key == Key.LeftCtrl || key == Key.RightCtrl) return "Ctrl";
-            if (key == Key.LeftAlt || key == Key.RightAlt) return "Alt";
-            if (key == Key.LeftShift || key == Key.RightShift) return "Shift";
-            return key.ToString();
-        }
-
-        internal static void GetDeviceInfo(IntPtr hDevice, out ushort vid, out ushort pid, out string? name, out ushort usagePage, out ushort usage)
-        {
-            vid = pid = usagePage = usage = 0;
-            name = null;
-
-            // Device path (Unicode; often contains VID/PID)
-            uint pcbSize = 0;
-            GetRawInputDeviceInfo(hDevice, RIDI_DEVICENAME, IntPtr.Zero, ref pcbSize);
-            if (pcbSize > 0)
+            try
             {
-                var pData = Marshal.AllocHGlobal((int)pcbSize);
+                uint size = 0;
+                uint want0 = GetRawInputData(lParam, RID_INPUT, IntPtr.Zero, ref size, (uint)Marshal.SizeOf(typeof(RAWINPUTHEADER)));
+                if(want0 != 0 || size == 0)
+                {
+                    Diag.Log("IC.ReadInput: size query failed (ret=" + want0 + ", size=" + size + ")");
+                    return null;
+                }
+
+                IntPtr buffer = Marshal.AllocHGlobal((int)size);
                 try
                 {
-                    if (GetRawInputDeviceInfo(hDevice, RIDI_DEVICENAME, pData, ref pcbSize) > 0)
+                    uint read = GetRawInputData(lParam, RID_INPUT, buffer, ref size, (uint)Marshal.SizeOf(typeof(RAWINPUTHEADER)));
+                    if(read == 0)
                     {
-                        string devicePath = Marshal.PtrToStringUni(pData)!;
-                        name = devicePath;
-
-                        if (!string.IsNullOrEmpty(devicePath))
-                        {
-                            int vidIdx = devicePath.IndexOf("VID_", StringComparison.OrdinalIgnoreCase);
-                            int pidIdx = devicePath.IndexOf("PID_", StringComparison.OrdinalIgnoreCase);
-                            if (vidIdx >= 0 && vidIdx + 8 <= devicePath.Length)
-                            {
-                                string vs = devicePath.Substring(vidIdx + 4, 4);
-                                ushort.TryParse(vs, System.Globalization.NumberStyles.HexNumber, provider: null, out vid);
-                            }
-                            if (pidIdx >= 0 && pidIdx + 8 <= devicePath.Length)
-                            {
-                                string ps = devicePath.Substring(pidIdx + 4, 4);
-                                ushort.TryParse(ps, System.Globalization.NumberStyles.HexNumber, provider: null, out pid);
-                            }
-                        }
+                        Diag.Log("IC.ReadInput: data query returned 0");
+                        return null;
                     }
-                }
-                finally { Marshal.FreeHGlobal(pData); }
-            }
 
-            // Device info (usage page/usage)
-            uint size = (uint)Marshal.SizeOf(typeof(RID_DEVICE_INFO));
-            var info = new RID_DEVICE_INFO { cbSize = size };
-            if (GetRawInputDeviceInfo(hDevice, RIDI_DEVICEINFO, ref info, ref size) > 0)
+                    var raw = (RAWINPUT)Marshal.PtrToStructure(buffer, typeof(RAWINPUT));
+                    if(raw.header.dwType != RIM_TYPEKEYBOARD)
+                    {
+                        Diag.Log("IC.ReadInput: non-keyboard type=" + raw.header.dwType);
+                        return null;
+                    }
+
+                    var k = raw.data.keyboard;
+                    Diag.Log("IC.Raw: VK=" + k.VKey + " Make=" + k.MakeCode + " Flags=0x" + k.Flags.ToString("X") + " Msg=0x" + k.Message.ToString("X"));
+
+                    if(k.VKey == 0xFF)
+                    {
+                        Diag.Log("IC.ReadInput: VKey=0xFF -> ignoring");
+                        return null;
+                    }
+
+                    bool isBreak = (k.Flags & RI_KEY_BREAK) != 0;
+                    if(isBreak)
+                    {
+                        Diag.Log("IC.ReadInput: BREAK -> ignoring");
+                        return null;
+                    }
+
+                    int vk = k.VKey;
+                    Key key = Key.None;
+                    try { key = KeyInterop.KeyFromVirtualKey(vk); }
+                    catch { key = Key.None; }
+
+                    var mods = GetCurrentModifiers();
+                    string label = KeybindHelpers.BuildKeyboardLabel(mods, key);
+
+                    if(key == Key.None || string.IsNullOrEmpty(label))
+                    {
+                        var fb = VkToFallbackLabel(vk, mods);
+                        Diag.Log("IC.ReadInput: fallback label used -> '" + fb + "'");
+                        label = fb;
+                    }
+                    else
+                    {
+                        Diag.Log("IC.ReadInput: built label -> '" + label + "'");
+                    }
+
+                    var result = new InputBindingResult
+                    {
+                        DeviceType = "Keyboard",
+                        ControlLabel = label
+                    };
+
+                    return result;
+                }
+                finally
+                {
+                    Marshal.FreeHGlobal(buffer);
+                }
+            }
+            catch(Exception ex)
             {
-                usagePage = info.u.hid.usUsagePage;
-                usage = info.u.hid.usUsage;
+                Diag.LogEx("IC.ReadInput", ex);
+                return null;
+            }
+        }
+
+        // ---------------------- Internals ----------------------
+
+        private sealed class RimHandle : IDisposable
+        {
+            private RawInputMonitor _rim;
+            private Action<InputBindingResult> _cb;
+            public RimHandle(RawInputMonitor rim, Action<InputBindingResult> cb) { _rim = rim; _cb = cb; }
+            public void Dispose()
+            {
+                if(_rim != null)
+                {
+                    try { _rim.InputReceived -= _cb; } catch { }
+                    try { _rim.Dispose(); } catch { }
+                }
+                _rim = null; _cb = null;
+            }
+        }
+
+        private static ModifierKeys GetCurrentModifiers()
+        {
+            ModifierKeys mods = ModifierKeys.None;
+            if((GetKeyState(VK_CONTROL) & 0x8000) != 0) mods |= ModifierKeys.Control;
+            if((GetKeyState(VK_MENU) & 0x8000) != 0) mods |= ModifierKeys.Alt;
+            if((GetKeyState(VK_SHIFT) & 0x8000) != 0) mods |= ModifierKeys.Shift;
+            if((GetKeyState(VK_LWIN) & 0x8000) != 0) mods |= ModifierKeys.Windows;
+            if((GetKeyState(VK_RWIN) & 0x8000) != 0) mods |= ModifierKeys.Windows;
+            return mods;
+        }
+
+        private static string VkToFallbackLabel(int vk, ModifierKeys mods)
+        {
+            string core;
+            if(vk == 0x20) core = "Space";
+            else if(vk == 0x0D) core = "Enter";
+            else if(vk == 0x1B) core = "Esc";
+            else if(vk == 0x08) core = "Backspace";
+            else if(vk >= 0x30 && vk <= 0x39) core = ((char)vk).ToString(); // 0-9
+            else if(vk >= 0x41 && vk <= 0x5A) core = ((char)vk).ToString(); // A-Z
+            else core = "VK_" + vk.ToString("X2");
+
+            string prefix = "";
+            if((mods & ModifierKeys.Control) != 0) prefix += "Ctrl + ";
+            if((mods & ModifierKeys.Alt) != 0) prefix += "Alt + ";
+            if((mods & ModifierKeys.Shift) != 0) prefix += "Shift + ";
+            if((mods & ModifierKeys.Windows) != 0) prefix += "Win + ";
+            return prefix + core;
+        }
+
+        // -------- Win32 --------
+
+        private const uint RID_INPUT = 0x10000003;
+        private const int RIM_TYPEKEYBOARD = 1;
+
+        private const ushort RI_KEY_BREAK = 0x01;
+
+        private const int VK_SHIFT = 0x10;
+        private const int VK_CONTROL = 0x11;
+        private const int VK_MENU = 0x12;
+        private const int VK_LWIN = 0x5B;
+        private const int VK_RWIN = 0x5C;
+
+        [DllImport("user32.dll", SetLastError = true)]
+        private static extern uint GetRawInputData(IntPtr hRawInput, uint uiCommand, IntPtr pData, ref uint pcbSize, uint cbSizeHeader);
+
+        [DllImport("user32.dll")] private static extern short GetKeyState(int nVirtKey);
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct RAWINPUTHEADER { public uint dwType; public uint dwSize; public IntPtr hDevice; public IntPtr wParam; }
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct RAWMOUSE { public ushort usFlags; public uint ulButtons; public ushort usButtonFlags; public ushort usButtonData; public uint ulRawButtons; public int lLastX; public int lLastY; public uint ulExtraInformation; }
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct RAWKEYBOARD
+        {
+            public ushort MakeCode;
+            public ushort Flags;
+            public ushort Reserved;
+            public ushort VKey;
+            public uint Message;
+            public uint ExtraInformation;
+        }
+
+        [StructLayout(LayoutKind.Explicit)]
+        private struct RAWINPUTUNION { [FieldOffset(0)] public RAWMOUSE mouse; [FieldOffset(0)] public RAWKEYBOARD keyboard; }
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct RAWINPUT { public RAWINPUTHEADER header; public RAWINPUTUNION data; }
+
+        // Add inside SimTools.Services.InputCapture (same class as before)
+        public static void RouteFromHook(string device, string label)
+        {
+            try
+            {
+                // Marshal to UI thread so all your existing code paths & timers behave the same.
+                Application.Current?.Dispatcher.BeginInvoke(new Action(() =>
+                {
+                    var res = new InputBindingResult { DeviceType = device, ControlLabel = label };
+                    SimTools.Debug.Diag.Log($"IC.RouteFromHook: synth -> dev='{device}' key='{label}'");
+                    RawInputMonitor.RouteSynthetic(res);
+                }));
+            }
+            catch(Exception ex)
+            {
+                SimTools.Debug.Diag.LogEx("IC.RouteFromHook", ex);
             }
         }
     }

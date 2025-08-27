@@ -1,0 +1,200 @@
+﻿using System;
+using System.Collections;
+using System.Linq;
+using System.Windows;
+using System.Windows.Input;
+using System.Windows.Threading;
+using SimTools.Debug;
+using SimTools.Models;
+using SimTools.Services;
+
+namespace SimTools.Views
+{
+    // This partial only wires diagnostics and a raw-input fallback monitor.
+    public partial class KeybindsPage
+    {
+        private RawInputMonitor _rimDebug; // our own WM_INPUT tap just for logs
+
+        // Hook our debug init when the control is loaded (runs in addition to your existing handler)
+        private void KeybindsPage_DebugLoaded(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                // vJoy status at page load
+                if (_gamepad == null) _gamepad = new VirtualGamepadService();
+                var started = _gamepad.TryStart();
+                Diag.Log($"[KP] OnLoaded: vJoy.TryStart => {started}; status='{_gamepad.StatusSummary()}'");
+
+                // Start a Raw Input monitor purely for visibility (does not change your routing)
+                var owner = Window.GetWindow(this);
+                if (owner != null && _rimDebug == null)
+                {
+                    _rimDebug = new RawInputMonitor(owner);
+                    _rimDebug.InputReceived += OnGlobalInput_DebugTap;
+                    Diag.Log("[KP] Debug RawInputMonitor started");
+                }
+
+                // Ensure WPF fallback input path logs (when focused)
+                try
+                {
+                    InputManager.Current.PreProcessInput -= OnPreProcessInput_DebugTap;
+                    InputManager.Current.PreProcessInput += OnPreProcessInput_DebugTap;
+                }
+                catch { /* ignore */ }
+            }
+            catch (Exception ex)
+            {
+                Diag.LogEx("[KP] DebugLoaded", ex);
+            }
+        }
+
+        private void KeybindsPage_DebugUnloaded(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                if (_rimDebug != null)
+                {
+                    _rimDebug.InputReceived -= OnGlobalInput_DebugTap;
+                    _rimDebug.Dispose();
+                    _rimDebug = null;
+                    Diag.Log("[KP] Debug RawInputMonitor disposed");
+                }
+                try { InputManager.Current.PreProcessInput -= OnPreProcessInput_DebugTap; } catch { }
+                Diag.Log("[KP] OnUnloaded");
+            }
+            catch (Exception ex)
+            {
+                Diag.LogEx("[KP] DebugUnloaded", ex);
+            }
+        }
+
+        // Attach/detach our debug handlers (constructor-safe)
+        private void InitializeDebugWiring()
+        {
+            try
+            {
+                this.Loaded -= KeybindsPage_DebugLoaded;
+                this.Unloaded -= KeybindsPage_DebugUnloaded;
+                this.Loaded += KeybindsPage_DebugLoaded;
+                this.Unloaded += KeybindsPage_DebugUnloaded;
+                Diag.Log("[KP] Debug wiring attached");
+            }
+            catch (Exception ex)
+            {
+                Diag.LogEx("[KP] InitializeDebugWiring", ex);
+            }
+        }
+
+        // This will log every WM_INPUT that the RawInputMonitor sees
+        private void OnGlobalInput_DebugTap(InputBindingResult input)
+        {
+            if (input == null) { Diag.Log("[KP] OnGlobalInput: NULL"); return; }
+            Diag.Log($"[KP] OnGlobalInput: dev='{input.DeviceType}' key='{input.ControlLabel}'");
+            TryRouteToVirtualTap_Debug(input);
+        }
+
+        // Mirror of your routing with verbose logs (does not change behavior)
+        private void TryRouteToVirtualTap_Debug(InputBindingResult input)
+        {
+            if (_gamepad == null)
+            {
+                Diag.Log("[KP] Route: _gamepad is null");
+                return;
+            }
+            if (_guard != null && !_guard.ShouldOperateNow())
+            {
+                Diag.Log("[KP] Route: guard says NOT operating now");
+                return;
+            }
+
+            var src = KeybindsList?.ItemsSource as IEnumerable;
+            if (src == null)
+            {
+                Diag.Log("[KP] Route: ItemsSource is null");
+                return;
+            }
+
+            bool anyCandidate = false, matched = false;
+
+            foreach (var kb in src.OfType<KeybindBinding>())
+            {
+                if (kb == null) continue;
+                if (kb.Output == VirtualOutput.None) continue;
+
+                anyCandidate = true;
+
+                bool devMatch = string.Equals(kb.Device, input.DeviceType, StringComparison.OrdinalIgnoreCase);
+                bool keyMatch = string.Equals(kb.DeviceKey, input.ControlLabel, StringComparison.OrdinalIgnoreCase);
+
+                Diag.Log($"[KP] Route.CHECK: '{kb.Device}/{kb.DeviceKey}' -> '{input.DeviceType}/{input.ControlLabel}', out={kb.Output}, block={kb.BlockOriginal}, devMatch={devMatch}, keyMatch={keyMatch}");
+
+                if (devMatch && keyMatch)
+                {
+                    matched = true;
+                    var outBtn = kb.Output;
+
+                    Diag.Log($"[KP] Route.MATCH -> vJoy DOWN {outBtn}");
+                    _gamepad.SetButton(outBtn, true);
+
+                    var ms = kb.HoldMs <= 0 ? 35 : kb.HoldMs;
+                    var t = new DispatcherTimer(DispatcherPriority.Background) { Interval = TimeSpan.FromMilliseconds(ms) };
+                    t.Tick += (s, e) =>
+                    {
+                        try
+                        {
+                            Diag.Log($"[KP] Route.RELEASE -> vJoy UP {outBtn}");
+                            _gamepad?.SetButton(outBtn, false);
+                        }
+                        catch (Exception ex) { Diag.LogEx("[KP] Route.SetButton(up)", ex); }
+                        (s as DispatcherTimer)?.Stop();
+                    };
+                    t.Start();
+
+                    break; // one match per input
+                }
+            }
+
+            if (!anyCandidate) Diag.Log("[KP] Route: no rows with VirtualOutput set");
+            if (anyCandidate && !matched) Diag.Log("[KP] Route: candidates exist but none matched this input");
+        }
+
+        // WPF fallback (only when your window is focused) – logs labels it sees
+        private void OnPreProcessInput_DebugTap(object sender, PreProcessInputEventArgs e)
+        {
+            if (e?.StagingItem?.Input is not KeyEventArgs ke) return;
+
+            if (ke.RoutedEvent == Keyboard.PreviewKeyDownEvent || ke.RoutedEvent == Keyboard.KeyDownEvent)
+            {
+                var key = ke.Key == Key.System ? ke.SystemKey : ke.Key;
+                var label = KeybindHelpers.BuildKeyboardLabel(Keyboard.Modifiers, key);
+                Diag.Log($"[KP] WPF.KB DOWN: label='{label}', repeat={ke.IsRepeat}");
+            }
+            else if (ke.RoutedEvent == Keyboard.PreviewKeyUpEvent || ke.RoutedEvent == Keyboard.KeyUpEvent)
+            {
+                Diag.Log("[KP] WPF.KB UP");
+            }
+        }
+
+        // A quick vJoy self-test you can wire to any temporary button (Click handler)
+        private async void Debug_TestVJoy(object sender, RoutedEventArgs e)
+        {
+            if (_gamepad == null || !_gamepad.IsReady)
+            {
+                Diag.Log($"[KP] Debug_TestVJoy: vJoy NOT ready. lastError='{_gamepad?.LastError}'");
+                return;
+            }
+            Diag.Log("[KP] Debug_TestVJoy: pressing Button1 for 200ms");
+            _gamepad.SetButton(VirtualOutput.Button1, true);
+            await System.Threading.Tasks.Task.Delay(200);
+            _gamepad.SetButton(VirtualOutput.Button1, false);
+            Diag.Log("[KP] Debug_TestVJoy: released Button1");
+        }
+
+        // Ensure our debug wiring is initialized when the object is constructed
+        partial void OnConstructed();
+        public KeybindsPage()
+        {
+            InitializeDebugWiring();
+        }
+    }
+}

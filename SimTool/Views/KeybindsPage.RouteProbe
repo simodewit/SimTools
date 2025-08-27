@@ -1,0 +1,117 @@
+﻿using System;
+using System.Collections;
+using System.Linq;
+using System.Windows;
+using System.Windows.Threading;
+using SimTools.Debug;
+using SimTools.Models;
+using SimTools.Services;
+
+namespace SimTools.Views
+{
+    // Drop-in diagnostic partial: shows every step Keyboard→Map→vJoy.
+    public partial class KeybindsPage
+    {
+        private RawInputMonitor _probeRim;
+
+        // Call this ONCE in your existing KeybindsPage constructor:
+        //   this.Loaded += KP_Probe_Loaded;
+        //   this.Unloaded += KP_Probe_Unloaded;
+        //
+        // If you prefer, paste these two += lines directly into your constructor.
+        private void KP_Probe_Loaded(object sender, RoutedEventArgs e)
+        {
+            var owner = Window.GetWindow(this);
+            if (owner != null && _probeRim == null)
+            {
+                _probeRim = new RawInputMonitor(owner);
+                _probeRim.InputReceived += KP_OnInputProbe;
+                Diag.Log("[KP] Probe: RawInputMonitor started");
+            }
+
+            if (_gamepad == null) _gamepad = new VirtualGamepadService();
+            var ok = _gamepad.TryStart();
+            Diag.Log("[KP] Probe: vJoy.TryStart => " + ok + "; " + _gamepad.StatusSummary());
+        }
+
+        private void KP_Probe_Unloaded(object sender, RoutedEventArgs e)
+        {
+            if (_probeRim != null)
+            {
+                _probeRim.InputReceived -= KP_OnInputProbe;
+                _probeRim.Dispose();
+                _probeRim = null;
+                Diag.Log("[KP] Probe: RawInputMonitor disposed");
+            }
+        }
+
+        private void KP_OnInputProbe(InputBindingResult input)
+        {
+            if (input == null)
+            {
+                Diag.Log("[KP] Probe: NULL input");
+                return;
+            }
+
+            Diag.Log("[KP] Step1: Received input dev='" + input.DeviceType + "' key='" + input.ControlLabel + "'");
+
+            // Step 2: enumerate candidate rows (those with a VirtualOutput set)
+            var src = KeybindsList != null ? KeybindsList.ItemsSource as IEnumerable : null;
+            if (src == null)
+            {
+                Diag.Log("[KP] Step2: ItemsSource is NULL");
+                return;
+            }
+
+            var candidates = src.OfType<KeybindBinding>().Where(k => k != null && k.Output != VirtualOutput.None).ToList();
+            Diag.Log("[KP] Step2: candidates=" + candidates.Count);
+
+            if (candidates.Count == 0)
+            {
+                Diag.Log("[KP] Step2: no rows with VirtualOutput set");
+                return;
+            }
+
+            // Optional guard
+            if (_guard != null && !_guard.ShouldOperateNow())
+            {
+                Diag.Log("[KP] Step3: guard says NOT operating now");
+                return;
+            }
+
+            // Step 4: try to match by Device/Key
+            bool matched = false;
+            foreach (var kb in candidates)
+            {
+                bool devMatch = string.Equals(kb.Device, input.DeviceType, StringComparison.OrdinalIgnoreCase);
+                bool keyMatch = string.Equals(kb.DeviceKey, input.ControlLabel, StringComparison.OrdinalIgnoreCase);
+
+                Diag.Log("[KP] Step4: check '" + kb.Device + "/" + kb.DeviceKey + "' vs '" + input.DeviceType + "/" + input.ControlLabel + "' -> dev=" + devMatch + " key=" + keyMatch + " out=" + kb.Output + " block=" + kb.BlockOriginal);
+
+                if (devMatch && keyMatch)
+                {
+                    matched = true;
+
+                    // Step 5: press vJoy
+                    var outBtn = kb.Output;
+                    Diag.Log("[KP] Step5: MATCH -> vJoy DOWN " + outBtn);
+                    _gamepad.SetButton(outBtn, true);
+
+                    int ms = kb.HoldMs <= 0 ? 35 : kb.HoldMs;
+                    var t = new DispatcherTimer(DispatcherPriority.Background) { Interval = TimeSpan.FromMilliseconds(ms) };
+                    t.Tick += (s, ev) =>
+                    {
+                        Diag.Log("[KP] Step6: RELEASE -> vJoy UP " + outBtn);
+                        _gamepad.SetButton(outBtn, false);
+                        t.Stop();
+                    };
+                    t.Start();
+
+                    break; // one mapping per press
+                }
+            }
+
+            if (!matched) Diag.Log("[KP] Step4: no mapping matched for '" + input.ControlLabel + "'");
+        }
+    }
+}

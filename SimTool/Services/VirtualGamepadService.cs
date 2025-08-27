@@ -1,13 +1,13 @@
 ﻿using System;
 using vJoyInterfaceWrap;
 using SimTools.Models;
+using SimTools.Debug;
 
 namespace SimTools.Services
 {
     /// <summary>
-    /// Minimal vJoy wrapper that just acquires Device #1 and can press/release buttons.
-    /// Assumes vJoy is installed and Device #1 is already configured (e.g., 128 buttons).
-    /// No elevation, no configuration, no popups.
+    /// vJoy wrapper that acquires Device #1 and lets you press/release buttons.
+    /// Now includes verbose diagnostics.
     /// </summary>
     public sealed class VirtualGamepadService : IDisposable
     {
@@ -25,87 +25,124 @@ namespace SimTools.Services
         /// </summary>
         public bool TryStart()
         {
-            lock (_sync)
+            lock(_sync)
             {
                 IsReady = false;
+                _acquired = false;
                 LastError = "";
                 ButtonCount = 0;
 
-                // vJoy driver present?
-                if (!_vjoy.vJoyEnabled())
+                try
                 {
-                    LastError = "vJoy driver not enabled/installed.";
-                    return false;
-                }
+                    var enabled = _vjoy.vJoyEnabled();
+                    var status = _vjoy.GetVJDStatus(DeviceId);
+                    Diag.Log($"vJoy.TryStart: enabled={enabled}, deviceId={DeviceId}, status={status}");
 
-                // Device status must be FREE or already OWNed by us
-                var status = _vjoy.GetVJDStatus(DeviceId);
-                if (status != VjdStat.VJD_STAT_FREE && status != VjdStat.VJD_STAT_OWN)
-                {
-                    LastError = $"vJoy Device #{DeviceId} is not available (status: {status}).";
-                    return false;
-                }
-
-                // Acquire if not already ours
-                if (status != VjdStat.VJD_STAT_OWN)
-                {
-                    _acquired = _vjoy.AcquireVJD(DeviceId);
-                    if (!_acquired)
+                    if(!enabled)
                     {
-                        LastError = $"Failed to acquire vJoy Device #{DeviceId}.";
+                        LastError = "vJoy driver not enabled/installed.";
+                        Diag.Log($"vJoy.TryStart: FAIL -> {LastError}");
                         return false;
                     }
+
+                    if(status != VjdStat.VJD_STAT_FREE && status != VjdStat.VJD_STAT_OWN)
+                    {
+                        LastError = $"vJoy Device #{DeviceId} is not available (status: {status}).";
+                        Diag.Log($"vJoy.TryStart: FAIL -> {LastError}");
+                        return false;
+                    }
+
+                    if(status == VjdStat.VJD_STAT_FREE)
+                    {
+                        var ok = _vjoy.AcquireVJD(DeviceId);
+                        Diag.Log($"vJoy.AcquireVJD({DeviceId}) => {ok}");
+                        if(!ok)
+                        {
+                            LastError = "AcquireVJD returned false.";
+                            Diag.Log($"vJoy.TryStart: FAIL -> {LastError}");
+                            return false;
+                        }
+                        _acquired = true;
+                    }
+                    else
+                    {
+                        // already owned by us
+                        _acquired = true;
+                    }
+
+                    try { _vjoy.ResetVJD(DeviceId); } catch(Exception ex) { Diag.LogEx("vJoy.ResetVJD", ex); }
+
+                    try { ButtonCount = (int)_vjoy.GetVJDButtonNumber(DeviceId); }
+                    catch(Exception ex) { ButtonCount = 0; Diag.LogEx("vJoy.GetVJDButtonNumber", ex); }
+
+                    IsReady = true;
+                    Diag.Log($"vJoy.TryStart: SUCCESS, buttons={ButtonCount}");
+                    return true;
                 }
-                else
+                catch(Exception ex)
                 {
-                    _acquired = true;
+                    LastError = ex.Message;
+                    Diag.LogEx("vJoy.TryStart", ex);
+                    return false;
                 }
-
-                // Clear device & read capabilities (informational only)
-                try { _vjoy.ResetVJD(DeviceId); } catch { }
-                try { ButtonCount = (int)_vjoy.GetVJDButtonNumber(DeviceId); } catch { ButtonCount = 0; }
-
-                IsReady = true;
-                return true;
             }
         }
 
         /// <summary>
-        /// Set a vJoy button state. Ignores requests if not ready.
-        /// VirtualOutput enum must map 1..128 to buttons; 0 means None.
+        /// Press or release a vJoy button (1-based).
         /// </summary>
         public void SetButton(VirtualOutput output, bool down)
         {
-            if (!IsReady) return;
             uint index = (uint)output;
-            if (index == 0) return;
-
-            lock (_sync)
+            if(index == 0)
             {
-                try { _vjoy.SetBtn(down, DeviceId, index); } catch { /* ignore at runtime */ }
+                Diag.Log("vJoy.SetButton: ignored (output=None)");
+                return;
             }
-        }
 
-        public void Dispose()
-        {
-            lock (_sync)
+            if(!IsReady)
+            {
+                Diag.Log($"vJoy.SetButton: IGNORED (not ready) -> out={output}({index}) down={down}");
+                return;
+            }
+
+            lock(_sync)
             {
                 try
                 {
-                    if (_acquired)
-                    {
-                        try { _vjoy.ResetVJD(DeviceId); } catch { }
-                        _vjoy.RelinquishVJD(DeviceId);
-                        _acquired = false;
-                    }
+                    var ok = _vjoy.SetBtn(down, DeviceId, index);
+                    Diag.Log($"vJoy.SetButton: out={output}({index}) down={down} -> {ok}");
                 }
-                catch { }
+                catch(Exception ex)
+                {
+                    Diag.LogEx($"vJoy.SetButton out={output}({index}) down={down}", ex);
+                }
             }
         }
 
-        /// <summary>Optional: simple status string if you want to log it.</summary>
         public string StatusSummary()
             => $"vJoy Enabled: {_vjoy.vJoyEnabled()}, Device: {DeviceId}, " +
-               $"Acquired: {_acquired}, Buttons reported: {ButtonCount}";
+               $"Acquired: {_acquired}, Buttons reported: {ButtonCount}, LastError='{LastError}'";
+
+        public void Dispose()
+        {
+            lock(_sync)
+            {
+                try
+                {
+                    if(_acquired)
+                    {
+                        try { _vjoy.ResetVJD(DeviceId); } catch { }
+                        try { _vjoy.RelinquishVJD(DeviceId); } catch { }
+                    }
+                }
+                catch { }
+                finally
+                {
+                    _acquired = false;
+                    IsReady = false;
+                }
+            }
+        }
     }
 }
