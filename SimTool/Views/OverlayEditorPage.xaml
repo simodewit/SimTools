@@ -12,7 +12,8 @@
             </ResourceDictionary.MergedDictionaries>
 
             <BooleanToVisibilityConverter x:Key="BoolToVisibility"/>
-            <!-- Local light-weight button style (fallback if the app doesn't define it) -->
+
+            <!-- Fallback base button style -->
             <Style x:Key="SecondaryButton" TargetType="Button">
                 <Setter Property="Foreground" Value="{DynamicResource Brush.Text}"/>
                 <Setter Property="Background" Value="{DynamicResource Brush.Surface}"/>
@@ -29,15 +30,56 @@
                 </Style.Triggers>
             </Style>
 
-            <!-- Compare two values (item vs SelectedTool) -->
+            <!-- Compare two values (item == SelectedTool) -->
             <conv:MultiEqualityConverter x:Key="MultiEqualityConverter"/>
+
+            <!-- Chrome-like tab toggle button -->
+            <Style x:Key="TabToggleButton" TargetType="ToggleButton">
+                <Setter Property="Foreground" Value="{DynamicResource Brush.Text}"/>
+                <Setter Property="Background" Value="{DynamicResource Brush.Surface}"/>
+                <Setter Property="BorderBrush" Value="{DynamicResource Brush.Border}"/>
+                <Setter Property="BorderThickness" Value="1"/>
+                <Setter Property="Padding" Value="12,8"/>
+                <Setter Property="Margin" Value="0,0,8,0"/>
+                <Setter Property="Cursor" Value="Hand"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="ToggleButton">
+                            <Grid>
+                                <Border x:Name="TabShape"
+                                        Background="{TemplateBinding Background}"
+                                        BorderBrush="{TemplateBinding BorderBrush}"
+                                        BorderThickness="{TemplateBinding BorderThickness}"
+                                        CornerRadius="12,12,0,0"
+                                        Padding="{TemplateBinding Padding}">
+                                    <ContentPresenter HorizontalAlignment="Center"
+                                                      VerticalAlignment="Center"
+                                                      RecognizesAccessKey="True"/>
+                                </Border>
+                            </Grid>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsChecked" Value="True">
+                                    <Setter TargetName="TabShape" Property="Background" Value="{DynamicResource Brush.SurfaceAlt}"/>
+                                    <Setter Property="FontWeight" Value="Bold"/>
+                                </Trigger>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="TabShape" Property="Background" Value="{DynamicResource Brush.SurfaceAlt}"/>
+                                </Trigger>
+                                <Trigger Property="IsEnabled" Value="False">
+                                    <Setter Property="Opacity" Value="0.6"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
         </ResourceDictionary>
     </UserControl.Resources>
 
     <Grid Margin="20" x:Name="Root">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
-            <!-- Header + Tool Buttons -->
+            <!-- Header + Tool Tabs -->
             <RowDefinition Height="*" />
             <!-- Preview Surface -->
             <RowDefinition Height="Auto"/>
@@ -48,15 +90,15 @@
         <StackPanel Grid.Row="0" Margin="0,0,0,10">
             <TextBlock Text="Overlay Editor" FontSize="20" FontWeight="Bold"
                        Foreground="{DynamicResource Brush.Text}"/>
-            <TextBlock Text="Pick a tool, click elements to edit them. Inspector stays open until you close it."
+            <TextBlock Text="Choose a tool, then click elements to edit them. Inspector stays until you close it."
                        Foreground="{DynamicResource Brush.TextDim}" Margin="0,4,0,0"/>
         </StackPanel>
 
-        <!-- TOOL BUTTONS (row above preview) -->
+        <!-- TOOL TABS (Chrome-like) -->
         <ScrollViewer Grid.Row="0" Margin="0,48,0,8"
                       HorizontalScrollBarVisibility="Auto"
                       VerticalScrollBarVisibility="Disabled">
-            <ItemsControl x:Name="ToolButtons" ItemsSource="{Binding Tools}">
+            <ItemsControl x:Name="ToolTabs" ItemsSource="{Binding Tools}">
                 <ItemsControl.ItemsPanel>
                     <ItemsPanelTemplate>
                         <StackPanel Orientation="Horizontal"/>
@@ -64,39 +106,27 @@
                 </ItemsControl.ItemsPanel>
                 <ItemsControl.ItemTemplate>
                     <DataTemplate>
-                        <Button Content="{Binding Name}"
-                                Margin="0,0,8,0"
-                                Padding="10,6"
-                                Click="ToolButton_Click"
-                                Tag="{Binding}">
-                            <!-- Only one Style set: keep nested style and base it on SecondaryButton -->
-                            <Button.Style>
-                                <Style TargetType="Button" BasedOn="{StaticResource SecondaryButton}">
-                                    <Style.Triggers>
-                                        <!-- Highlight when this item == SelectedTool -->
-                                        <DataTrigger Value="True">
-                                            <DataTrigger.Binding>
-                                                <MultiBinding Converter="{StaticResource MultiEqualityConverter}">
-                                                    <!-- current item -->
-                                                    <Binding/>
-                                                    <!-- editor SelectedTool -->
-                                                    <Binding Path="DataContext.SelectedTool"
-                                                             RelativeSource="{RelativeSource AncestorType=UserControl}"/>
-                                                </MultiBinding>
-                                            </DataTrigger.Binding>
-                                            <Setter Property="FontWeight" Value="Bold"/>
-                                            <Setter Property="Opacity" Value="1"/>
-                                        </DataTrigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </Button.Style>
-                        </Button>
+                        <ToggleButton Content="{Binding Name}"
+                                      Tag="{Binding}"
+                                      Click="ToolTab_Click"
+                                      Style="{StaticResource TabToggleButton}">
+                            <ToggleButton.IsChecked>
+                                <!-- Force OneWay to avoid TwoWay requirement on child bindings -->
+                                <MultiBinding Converter="{StaticResource MultiEqualityConverter}" Mode="OneWay">
+                                    <!-- Current item -->
+                                    <Binding/>
+                                    <!-- Selected tool -->
+                                    <Binding Path="DataContext.SelectedTool"
+                                             RelativeSource="{RelativeSource AncestorType=UserControl}"/>
+                                </MultiBinding>
+                            </ToggleButton.IsChecked>
+                        </ToggleButton>
                     </DataTemplate>
                 </ItemsControl.ItemTemplate>
             </ItemsControl>
         </ScrollViewer>
 
-        <!-- PREVIEW SURFACE -->
+        <!-- PREVIEW SURFACE (tool sits directly over backdrop; no middle panel) -->
         <Border Grid.Row="1"
                 x:Name="PreviewBackdrop"
                 CornerRadius="10"
@@ -107,26 +137,18 @@
                   Background="#00000000"
                   MouseLeftButtonDown="PreviewSurface_MouseLeftButtonDown">
 
-                <!-- Clickable overlay background -->
-                <Border x:Name="OverlayBackgroundHitTarget"
-                        Background="{DynamicResource Overlay.PanelBrush}"
-                        Opacity="1.0"
-                        CornerRadius="10"
-                        Margin="32"
-                        IsHitTestVisible="True"
-                        MouseLeftButtonDown="OverlayBackgroundHitTarget_MouseLeftButtonDown"/>
-
-                <!-- Tool host -->
+                <!-- Tool host directly -->
                 <Viewbox Stretch="Uniform" StretchDirection="DownOnly"
-                         Margin="32" IsHitTestVisible="False">
+                         Margin="32">
                     <Border Background="#00000000">
                         <ContentPresenter x:Name="ToolHost"/>
                     </Border>
                 </Viewbox>
 
-                <!-- Inspector popup (stays open; close with the 'x' button) -->
+                <!-- Inspector popup (draggable) -->
                 <Popup x:Name="InspectorPopup"
-                       Placement="Mouse"
+                       PlacementTarget="{Binding ElementName=PreviewSurface}"
+                       Placement="RelativePoint"
                        StaysOpen="True"
                        AllowsTransparency="True"
                        PopupAnimation="Fade">
@@ -134,18 +156,36 @@
                             BorderBrush="{DynamicResource Brush.Border}"
                             BorderThickness="1"
                             CornerRadius="10"
-                            Padding="8"
                             SnapsToDevicePixels="True">
                         <DockPanel LastChildFill="True">
-                            <Button Content="✕"
-                                    DockPanel.Dock="Top"
-                                    HorizontalAlignment="Right"
-                                    VerticalAlignment="Top"
-                                    Padding="6,2"
-                                    Margin="0,0,0,6"
-                                    Click="CloseInspector_Click"
-                                    Style="{StaticResource SecondaryButton}"/>
-                            <local:InspectorPanel x:Name="Inspector"/>
+                            <!-- Draggable header -->
+                            <Grid DockPanel.Dock="Top"
+                                  Background="{DynamicResource Brush.SurfaceAlt}"
+                                  Height="28"
+                                  MouseLeftButtonDown="InspectorHeader_MouseLeftButtonDown"
+                                  MouseMove="InspectorHeader_MouseMove"
+                                  MouseLeftButtonUp="InspectorHeader_MouseLeftButtonUp">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="Inspector"
+                                           Margin="8,0,0,0"
+                                           VerticalAlignment="Center"
+                                           Foreground="{DynamicResource Brush.TextDim}"/>
+                                <Button Grid.Column="1"
+                                        Content="✕"
+                                        HorizontalAlignment="Right"
+                                        VerticalAlignment="Center"
+                                        Margin="0,0,4,0"
+                                        Padding="8,2"
+                                        Click="CloseInspector_Click"
+                                        Style="{StaticResource SecondaryButton}"/>
+                            </Grid>
+
+                            <Border Padding="8">
+                                <local:InspectorPanel x:Name="Inspector"/>
+                            </Border>
                         </DockPanel>
                     </Border>
                 </Popup>
@@ -158,13 +198,20 @@
                 <TextBlock Text="Preview background:" VerticalAlignment="Center"
                            Foreground="{DynamicResource Brush.Text}" Margin="0,0,8,0"/>
                 <ComboBox x:Name="BackgroundSelector"
-                          Width="180"
+                          Width="185"
                           SelectionChanged="BackgroundSelector_SelectionChanged">
                     <ComboBoxItem Content="Asphalt (default)" IsSelected="True"/>
                     <ComboBoxItem Content="Solid gray"/>
                     <ComboBoxItem Content="Solid dark"/>
                     <ComboBoxItem Content="Choose image…"/>
                 </ComboBox>
+
+                <Separator Margin="12,0,12,0" Width="1" Background="{DynamicResource Brush.Border}"/>
+
+                <Button Content="Open overlay"
+                        Style="{StaticResource SecondaryButton}"
+                        Click="OpenOverlay_Click"
+                        Margin="0,0,0,0"/>
             </StackPanel>
         </Border>
     </Grid>
