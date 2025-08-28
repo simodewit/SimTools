@@ -403,5 +403,6 @@
             </Setter.Value>
         </Setter>
     </Style>
+    <BooleanToVisibilityConverter x:Key="BoolToVisibility" />
 </ResourceDictionary>
 

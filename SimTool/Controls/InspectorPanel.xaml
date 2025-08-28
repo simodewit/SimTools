@@ -1,0 +1,128 @@
+﻿<UserControl x:Class="SimTools.Controls.InspectorPanel"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="clr-namespace:SimTools.Controls"
+             Background="{DynamicResource Brush.Surface}"
+             MinWidth="260" MaxWidth="320">
+    <UserControl.Resources>
+        <!-- Needed by this control; your app-wide styles don't define it -->
+        <BooleanToVisibilityConverter x:Key="BoolToVisibility" />
+    </UserControl.Resources>
+
+    <Border Background="{DynamicResource Brush.Surface}"
+            BorderBrush="{DynamicResource Brush.Border}"
+            BorderThickness="1"
+            CornerRadius="8"
+            Padding="10"
+            SnapsToDevicePixels="True">
+        <ScrollViewer VerticalScrollBarVisibility="Auto">
+            <StackPanel>
+
+                <!-- Header -->
+                <TextBlock Text="{Binding Title}"
+                           FontWeight="Bold"
+                           Margin="0,0,0,8"
+                           Foreground="{DynamicResource Brush.Text}"/>
+
+                <!-- Background -->
+                <StackPanel Margin="0,6,0,6"
+                            Visibility="{Binding HasBackground, Converter={StaticResource BoolToVisibility}}">
+                    <TextBlock Text="Background" FontWeight="SemiBold"
+                               Foreground="{DynamicResource Brush.TextDim}"/>
+                    <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
+                        <local:ColorWheel Width="110" Height="110"
+                                          Hue="{Binding BackgroundHue, Mode=TwoWay}"
+                                          Saturation="{Binding BackgroundSaturation, Mode=TwoWay}"
+                                          SelectedColor="{Binding BackgroundColor, Mode=TwoWay}"/>
+                        <StackPanel Margin="10,0,0,0" VerticalAlignment="Center">
+                            <TextBlock Text="Brightness" Foreground="{DynamicResource Brush.TextDim}"/>
+                            <Slider Minimum="0" Maximum="1"
+                                    Value="{Binding BackgroundValue, Mode=TwoWay}"
+                                    Width="120"/>
+                            <TextBlock Text="Alpha" Margin="0,10,0,0"
+                                       Foreground="{DynamicResource Brush.TextDim}"/>
+                            <Slider Minimum="0" Maximum="1"
+                                    Value="{Binding BackgroundAlpha, Mode=TwoWay}"
+                                    Width="120"/>
+                        </StackPanel>
+                    </StackPanel>
+                </StackPanel>
+
+                <!-- Foreground -->
+                <StackPanel Margin="0,6,0,6"
+                            Visibility="{Binding HasForeground, Converter={StaticResource BoolToVisibility}}">
+                    <TextBlock Text="Foreground" FontWeight="SemiBold"
+                               Foreground="{DynamicResource Brush.TextDim}"/>
+                    <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
+                        <local:ColorWheel Width="110" Height="110"
+                                          Hue="{Binding ForegroundHue, Mode=TwoWay}"
+                                          Saturation="{Binding ForegroundSaturation, Mode=TwoWay}"
+                                          SelectedColor="{Binding ForegroundColor, Mode=TwoWay}"/>
+                        <StackPanel Margin="10,0,0,0" VerticalAlignment="Center">
+                            <TextBlock Text="Brightness" Foreground="{DynamicResource Brush.TextDim}"/>
+                            <Slider Minimum="0" Maximum="1"
+                                    Value="{Binding ForegroundValue, Mode=TwoWay}"
+                                    Width="120"/>
+                        </StackPanel>
+                    </StackPanel>
+                </StackPanel>
+
+                <!-- Opacity -->
+                <StackPanel Margin="0,6,0,6"
+                            Visibility="{Binding HasOpacity, Converter={StaticResource BoolToVisibility}}">
+                    <TextBlock Text="Opacity" FontWeight="SemiBold"
+                               Foreground="{DynamicResource Brush.TextDim}"/>
+                    <Slider Minimum="0" Maximum="1" Value="{Binding Opacity, Mode=TwoWay}"/>
+                </StackPanel>
+
+                <!-- Margin -->
+                <StackPanel Margin="0,6,0,6"
+                            Visibility="{Binding HasMargin, Converter={StaticResource BoolToVisibility}}">
+                    <TextBlock Text="Margin" FontWeight="SemiBold"
+                               Foreground="{DynamicResource Brush.TextDim}"/>
+                    <TextBox Text="{Binding MarginText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                </StackPanel>
+
+                <!-- Padding -->
+                <StackPanel Margin="0,6,0,6"
+                            Visibility="{Binding HasPadding, Converter={StaticResource BoolToVisibility}}">
+                    <TextBlock Text="Padding" FontWeight="SemiBold"
+                               Foreground="{DynamicResource Brush.TextDim}"/>
+                    <TextBox Text="{Binding PaddingText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                </StackPanel>
+
+                <!-- CornerRadius -->
+                <StackPanel Margin="0,6,0,6"
+                            Visibility="{Binding HasCornerRadius, Converter={StaticResource BoolToVisibility}}">
+                    <TextBlock Text="Corner Radius" FontWeight="SemiBold"
+                               Foreground="{DynamicResource Brush.TextDim}"/>
+                    <TextBox Text="{Binding CornerRadiusText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                </StackPanel>
+
+                <!-- Font Size -->
+                <StackPanel Margin="0,6,0,6"
+                            Visibility="{Binding HasFontSize, Converter={StaticResource BoolToVisibility}}">
+                    <TextBlock Text="Font Size" FontWeight="SemiBold"
+                               Foreground="{DynamicResource Brush.TextDim}"/>
+                    <Slider Minimum="8" Maximum="48" Value="{Binding FontSize, Mode=TwoWay}"/>
+                </StackPanel>
+
+                <!-- Text/Content -->
+                <StackPanel Margin="0,6,0,6"
+                            Visibility="{Binding HasText, Converter={StaticResource BoolToVisibility}}">
+                    <TextBlock Text="Text" FontWeight="SemiBold"
+                               Foreground="{DynamicResource Brush.TextDim}"/>
+                    <TextBox Text="{Binding Text, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                </StackPanel>
+
+                <StackPanel Margin="0,6,0,6"
+                            Visibility="{Binding HasContent, Converter={StaticResource BoolToVisibility}}">
+                    <TextBlock Text="Content" FontWeight="SemiBold"
+                               Foreground="{DynamicResource Brush.TextDim}"/>
+                    <TextBox Text="{Binding Content, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                </StackPanel>
+
+            </StackPanel>
+        </ScrollViewer>
+    </Border>
+</UserControl>

@@ -121,12 +121,17 @@
       <SubType>Designer</SubType>
     </ApplicationDefinition>
     <Compile Include="Controls\ColorWheel.cs" />
+    <Compile Include="Controls\InspectorPanel.xaml.cs">
+      <DependentUpon>InspectorPanel.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Controls\SideNav.xaml.cs">
       <DependentUpon>SideNav.xaml</DependentUpon>
     </Compile>
     <Compile Include="Controls\TitleBar.xaml.cs">
       <DependentUpon>TitleBar.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Converters\EqualityConverter.cs" />
+    <Compile Include="Converters\MultiEqualityConverter.cs" />
     <Compile Include="Debug\Diag.cs" />
     <Compile Include="Helpers\KeybindHelpers.cs" />
     <Compile Include="Helpers\KeybindUiHelpers.cs" />
@@ -169,6 +174,10 @@
     <Compile Include="Views\OverlayWindow.xaml.cs">
       <DependentUpon>OverlayWindow.xaml</DependentUpon>
     </Compile>
+    <Page Include="Controls\InspectorPanel.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="Controls\SideNav.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
