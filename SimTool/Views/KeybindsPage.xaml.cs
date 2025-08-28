@@ -40,6 +40,8 @@ namespace SimTools.Views
         private const int TapMs = 50;
 
         private RawInputMonitor _rim;
+
+        // HWND source for device-change notifications (WM_DEVICECHANGE)
         private HwndSource _hwndSrc;
 
         public KeybindsPage()
@@ -54,7 +56,7 @@ namespace SimTools.Views
         {
             // Wire this handler in XAML or in the constructor: this.Loaded += KeybindsPage_Loaded;
             var owner = Window.GetWindow(this);
-            if(owner != null && _rim == null)
+            if (owner != null && _rim == null)
             {
                 _rim = new RawInputMonitor(owner);
                 _rim.InputReceived += OnGlobalInput_FromRIM;
@@ -62,14 +64,14 @@ namespace SimTools.Views
             }
 
             // Ensure vJoy is started
-            if(_gamepad == null) _gamepad = new VirtualGamepadService();
+            if (_gamepad == null) _gamepad = new VirtualGamepadService();
             var started = _gamepad.TryStart();
             Diag.Log($"[KP] vJoy.TryStart => {started}; status='{_gamepad.StatusSummary()}'");
         }
 
         private void KeybindsPage_Unloaded(object sender, RoutedEventArgs e)
         {
-            if(_rim != null)
+            if (_rim != null)
             {
                 _rim.InputReceived -= OnGlobalInput_FromRIM;
                 _rim.Dispose();
@@ -105,7 +107,16 @@ namespace SimTools.Views
 
             // Global input via Raw Input (works even when not focused)
             var owner = Window.GetWindow(this);
-            if(owner != null && _inputMonitor == null)
+
+            // NEW: hook WM_DEVICECHANGE so we can re-acquire vJoy when HID stack bounces (e.g., HidHide toggled)
+            if (_hwndSrc == null && owner != null)
+            {
+                _hwndSrc = (HwndSource)PresentationSource.FromVisual(owner);
+                _hwndSrc?.AddHook(DeviceChangeHook);
+                Diag.Log("[KP] WM_DEVICECHANGE hook attached");
+            }
+
+            if (owner != null && _inputMonitor == null)
             {
                 var rim = new SimTools.Services.RawInputMonitor(owner);
                 rim.InputReceived += OnGlobalInput; // same handler you already have
@@ -136,6 +147,10 @@ namespace SimTools.Views
 
         private void OnUnloaded(object sender, RoutedEventArgs e)
         {
+            // NEW: unhook WM_DEVICECHANGE
+            try { _hwndSrc?.RemoveHook(DeviceChangeHook); } catch { }
+            _hwndSrc = null;
+
             try { PerformSave(); } catch { }
             _inputMonitor?.Dispose();
             _inputMonitor = null;
@@ -289,8 +304,8 @@ namespace SimTools.Views
         // Route this input to a single virtual button (tap), if bound in the current map.
         private void TryRouteToVirtualTap(InputBindingResult input)
         {
-            if(_gamepad == null) return;
-            if(_guard != null && !_guard.ShouldOperateNow()) return;
+            if (_gamepad == null) return;
+            if (_guard != null && !_guard.ShouldOperateNow()) return;
 
             var items = (KeybindsList?.ItemsSource as IEnumerable) ?? Enumerable.Empty<object>();
             foreach (var kb in items.OfType<KeybindBinding>())
@@ -311,6 +326,14 @@ namespace SimTools.Views
         {
             try
             {
+                // NEW: Just-in-time re-acquire in case vJoy bounced (e.g., HidHide toggled)
+                try
+                {
+                    var ok = _gamepad?.TryStart() ?? false;
+                    if (!ok) Diag.Log("[KP] vJoy.TryStart before TapVirtual returned false; output may not be sent.");
+                }
+                catch { }
+
                 // vJoy press
                 _gamepad?.SetButton(output, true);
 
@@ -617,6 +640,25 @@ namespace SimTools.Views
                 case Key.OemMinus: return "-";
                 default: return key.ToString();
             }
+        }
+
+        // -----------------------------------------------------
+        // NEW: Window proc hook to detect HID device changes
+        // -----------------------------------------------------
+        private IntPtr DeviceChangeHook(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
+        {
+            const int WM_DEVICECHANGE = 0x0219;
+            if (msg == WM_DEVICECHANGE)
+            {
+                // Re-acquire vJoy when devices (re)enumerate (e.g., HidHide toggled).
+                try
+                {
+                    Diag.Log("[KP] WM_DEVICECHANGE received – attempting vJoy re-acquire");
+                    _gamepad?.TryStart();
+                }
+                catch { }
+            }
+            return IntPtr.Zero;
         }
     }
 }

@@ -9,7 +9,9 @@ namespace SimTools.Services
 {
     /// <summary>
     /// Registers for Raw Input (keyboard) using RIDEV_INPUTSINK and raises InputReceived on WM_INPUT.
-    /// Robust against invalid HWND and bad parameter combos; logs every step.
+    /// Also listens for synthetic inputs routed from the low-level hook (InputCapture.RouteFromHook)
+    /// and forwards them into the exact same InputReceived event so downstream code (highlight, vJoy)
+    /// behaves identically whether WM_INPUT arrived or a key was swallowed and synthesized.
     /// </summary>
     public sealed class RawInputMonitor : IDisposable
     {
@@ -18,19 +20,28 @@ namespace SimTools.Services
         private bool _disposed;
         private bool _registered;
 
+        // Synthetic pipeline: InputCapture.RouteFromHook -> RawInputMonitor.RouteSynthetic -> SyntheticRouted -> OnSyntheticInput
         private static event Action<InputBindingResult> SyntheticRouted;
+
+        /// <summary>Entry point for the synthetic path. Called by InputCapture.RouteFromHook.</summary>
+        public static void RouteSynthetic(InputBindingResult res)
+        {
+            try { SyntheticRouted?.Invoke(res); }
+            catch (Exception ex) { Diag.LogEx("RIM.RouteSynthetic", ex); }
+        }
+
+        /// <summary>Raised for BOTH real WM_INPUT and synthetic inputs.</summary>
         public event Action<InputBindingResult> InputReceived;
 
         public RawInputMonitor(Window owner)
         {
             _owner = owner ?? throw new ArgumentNullException(nameof(owner));
 
-            // If the source isn't ready yet, defer until SourceInitialized.
             var src = (HwndSource)PresentationSource.FromVisual(owner);
-            if(src == null)
+            if (src == null)
             {
                 _owner.SourceInitialized += OwnerOnSourceInitialized;
-                _owner.Loaded += OwnerOnLoaded; // extra guard
+                _owner.Loaded += OwnerOnLoaded; // extra guard in case SourceInitialized already fired
                 Diag.Log("RIM.Ctor: HwndSource null; will register on SourceInitialized/Loaded");
             }
             else
@@ -38,7 +49,8 @@ namespace SimTools.Services
                 Init(src);
             }
 
-            SyntheticRouted += OnSyntheticInput;
+            // Subscribe to the synthetic route
+            try { SyntheticRouted += OnSyntheticInput; } catch { }
         }
 
         private void OwnerOnSourceInitialized(object sender, EventArgs e)
@@ -46,193 +58,185 @@ namespace SimTools.Services
             try
             {
                 var src = (HwndSource)PresentationSource.FromVisual(_owner);
-                if(src != null) Init(src);
+                if (src != null) Init(src);
             }
-            catch(Exception ex) { Diag.LogEx("RIM.OwnerOnSourceInitialized", ex); }
-            finally
-            {
-                _owner.SourceInitialized -= OwnerOnSourceInitialized;
-            }
+            catch (Exception ex) { Diag.LogEx("RIM.OwnerOnSourceInitialized", ex); }
+            finally { _owner.SourceInitialized -= OwnerOnSourceInitialized; }
         }
 
         private void OwnerOnLoaded(object sender, RoutedEventArgs e)
         {
             try
             {
-                if(_registered) return;
+                if (_registered) return;
                 var src = (HwndSource)PresentationSource.FromVisual(_owner);
-                if(src != null) Init(src);
+                if (src != null) Init(src);
             }
-            catch(Exception ex) { Diag.LogEx("RIM.OwnerOnLoaded", ex); }
-            finally
-            {
-                _owner.Loaded -= OwnerOnLoaded;
-            }
+            catch (Exception ex) { Diag.LogEx("RIM.OwnerOnLoaded", ex); }
+            finally { _owner.Loaded -= OwnerOnLoaded; }
         }
 
         private void Init(HwndSource src)
         {
-            _source = src;
-            _source.AddHook(WndProc);
+            if (_disposed || src == null) return;
 
-            var hwnd = _source.Handle;
-            Diag.Log($"RIM.Init: hwnd=0x{hwnd.ToInt64():X}");
-
-            if(hwnd == IntPtr.Zero)
+            try
             {
-                Diag.Log("RIM.Init: hwnd is NULL, deferring registration");
-                return; // Loaded/SourceInitialized handler will retry
-            }
+                _source = src;
+                _source.AddHook(WndProc);
+                Diag.Log($"RIM.Init: hwnd={_source.Handle}");
 
-            // Register **only the keyboard** first. We'll add extra usages once this succeeds.
-            // HID: UsagePage 0x01 (Generic Desktop), Usage 0x06 (Keyboard).
-            var rid = new RAWINPUTDEVICE[]
-            {
-                new RAWINPUTDEVICE
+                // Register Raw Input: keyboard only, INPUTSINK
+                var rid = new RAWINPUTDEVICE
                 {
-                    usUsagePage = 0x01,
-                    usUsage = 0x06,
-                    dwFlags = RIDEV_INPUTSINK,
-                    hwndTarget = hwnd
-                }
-            };
+                    usUsagePage = 0x01, // Generic Desktop Controls
+                    usUsage = 0x06,     // Keyboard
+                    dwFlags = 0x00000100, // RIDEV_INPUTSINK
+                    hwndTarget = _source.Handle
+                };
 
-            bool ok = RegisterRawInputDevices(rid, (uint)rid.Length, (uint)Marshal.SizeOf(typeof(RAWINPUTDEVICE)));
-            var err = Marshal.GetLastWin32Error();
-            Diag.Log($"RIM.Register(Keyboard only) => {ok} (err={err})");
-
-            if(!ok && err == 87)
-            {
-                // Retry once, some systems are picky about cbSize vs. packing or race to HWND
-                Diag.Log("RIM.Register: err=87, retrying once after 50ms...");
-                System.Threading.Thread.Sleep(50);
-                ok = RegisterRawInputDevices(rid, (uint)rid.Length, (uint)Marshal.SizeOf(typeof(RAWINPUTDEVICE)));
-                err = Marshal.GetLastWin32Error();
-                Diag.Log($"RIM.Register(retry) => {ok} (err={err})");
+                bool ok = RegisterRawInputDevices(new[] { rid }, 1, Marshal.SizeOf<RAWINPUTDEVICE>());
+                Diag.Log($"RIM.Register(Keyboard only) => {ok} (err={Marshal.GetLastWin32Error()})");
+                _registered = ok;
+                if (ok) Diag.Log("RIM.Init: registration OK; WM_INPUT should arrive.");
             }
-
-            _registered = ok;
-            if(!_registered)
-                Diag.Log("RIM.Init: registration FAILED; WM_INPUT will not arrive.");
-            else
-                Diag.Log("RIM.Init: registration OK; WM_INPUT should arrive.");
+            catch (Exception ex)
+            {
+                Diag.LogEx("RIM.Init", ex);
+            }
         }
 
         private IntPtr WndProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
         {
-            if(msg == WM_INPUT)
+            if (msg == WM_INPUT)
             {
                 Diag.Log("RIM.WndProc: WM_INPUT received");
                 InputBindingResult res = null;
                 try { res = InputCapture.ReadInput(lParam); }
-                catch(Exception ex) { Diag.LogEx("InputCapture.ReadInput", ex); }
+                catch (Exception ex) { Diag.LogEx("InputCapture.ReadInput", ex); }
 
-                if(res == null)
+                if (res == null)
+                {
                     Diag.Log("RIM.WndProc: ReadInput -> NULL");
+                }
                 else
+                {
                     Diag.Log($"RIM.WndProc: ReadInput -> dev='{res.DeviceType}' key='{res.ControlLabel}'");
-
-                if(res != null) InputReceived?.Invoke(res);
+                    try { InputReceived?.Invoke(res); }
+                    catch (Exception ex) { Diag.LogEx("RIM.InputReceived.Invoke", ex); }
+                }
             }
+
             return IntPtr.Zero;
+        }
+
+        /// <summary>
+        /// Receives synthetic input (from the LL hook path) and forwards it into the same InputReceived event.
+        /// This is the key fix so vJoy output fires even when HidHide + swallow prevents WM_INPUT from arriving.
+        /// </summary>
+        private void OnSyntheticInput(InputBindingResult res)
+        {
+            try
+            {
+                if (res == null)
+                {
+                    Diag.Log("RIM.Synth: NULL result");
+                    return;
+                }
+
+                Diag.Log($"RIM.Synth: dev='{res.DeviceType}' key='{res.ControlLabel}'");
+                InputReceived?.Invoke(res);
+            }
+            catch (Exception ex)
+            {
+                Diag.LogEx("RIM.Synth", ex);
+            }
+        }
+
+        /// <summary>
+        /// Optional helper to support any older call sites that used reflection to extract fields.
+        /// This now understands DeviceType / ControlLabel (your model) and falls back to common alternates.
+        /// Ultimately forwards to InputReceived.
+        /// </summary>
+        private void HandleResult(object resObj)
+        {
+            try
+            {
+                if (resObj == null) { Diag.Log("RIM.HandleResult: NULL"); return; }
+
+                string device = null;
+                string label = null;
+                var t = resObj.GetType();
+                var devProp = t.GetProperty("DeviceType") ?? t.GetProperty("Device") ?? t.GetProperty("device");
+                var keyProp = t.GetProperty("ControlLabel") ?? t.GetProperty("Label") ?? t.GetProperty("Key")
+                              ?? t.GetProperty("controlLabel") ?? t.GetProperty("label") ?? t.GetProperty("key");
+
+                if (devProp != null) device = devProp.GetValue(resObj)?.ToString();
+                if (keyProp != null) label = keyProp.GetValue(resObj)?.ToString();
+
+                Diag.Log($"RIM.HandleResult: dev='{device}' key='{label}' -> route");
+
+                if (string.IsNullOrWhiteSpace(label))
+                {
+                    Diag.Log("RIM.HandleResult: empty label; skipping route");
+                    return;
+                }
+
+                var res = resObj as InputBindingResult ?? new InputBindingResult
+                {
+                    DeviceType = device ?? "",
+                    ControlLabel = label ?? ""
+                };
+
+                InputReceived?.Invoke(res);
+            }
+            catch (Exception ex)
+            {
+                Diag.LogEx("RIM.HandleResult", ex);
+            }
         }
 
         public void Dispose()
         {
-            if(_disposed) return;
+            if (_disposed) return;
             _disposed = true;
+
+            try { SyntheticRouted -= OnSyntheticInput; } catch { }
+
+            if (_source != null)
+            {
+                try { _source.RemoveHook(WndProc); } catch { }
+                _source = null;
+            }
+
             try
             {
-                if(_source != null) _source.RemoveHook(WndProc);
+                // Best-effort de-registration (optional)
+                var rid = new RAWINPUTDEVICE
+                {
+                    usUsagePage = 0x01,
+                    usUsage = 0x06,
+                    dwFlags = 0x00000001, // RIDEV_REMOVE
+                    hwndTarget = IntPtr.Zero
+                };
+                RegisterRawInputDevices(new[] { rid }, 1, Marshal.SizeOf<RAWINPUTDEVICE>());
             }
             catch { }
-
-            SyntheticRouted -= OnSyntheticInput;
         }
 
         // P/Invoke + constants
-
         private const int WM_INPUT = 0x00FF;
-        private const int RIDEV_INPUTSINK = 0x00000100;
 
         [StructLayout(LayoutKind.Sequential)]
         private struct RAWINPUTDEVICE
         {
             public ushort usUsagePage;
             public ushort usUsage;
-            public int dwFlags;     // int instead of uint
+            public int dwFlags;
             public IntPtr hwndTarget;
         }
 
-        [DllImport("user32.dll", SetLastError = true)]
-        private static extern bool RegisterRawInputDevices(
-            RAWINPUTDEVICE[] pRawInputDevices,
-            uint uiNumDevices,
-            uint cbSize);
-
-        // Add this NEW method:
-        private void OnSyntheticInput(InputBindingResult res)
-        {
-            try
-            {
-                // Mirror whatever you do after parsing WM_INPUT.
-                // If your code currently calls a single helper (e.g., HandleResult(res)),
-                // call it here. If not, inline the same steps used in WndProc after ReadInput.
-                SimTools.Debug.Diag.Log($"RIM.Synth: dev='{res.DeviceType}' key='{res.ControlLabel}'");
-                HandleResult(res); // <-- this is the same internal method you already use after ReadInput
-            }
-            catch(Exception ex)
-            {
-                SimTools.Debug.Diag.LogEx("RIM.Synth", ex);
-            }
-        }
-
-        // Handles the legacy call site: HandleResult(res)
-        // Extracts Device/Label from res (whatever its concrete type is) and routes it.
-        private void HandleResult(object res)
-        {
-            if(res == null)
-            {
-                Diag.Log("RIM.HandleResult: res is null");
-                return;
-            }
-
-            try
-            {
-                var t = res.GetType();
-
-                // Try common property names (case variants included)
-                var devProp = t.GetProperty("Device") ?? t.GetProperty("device");
-                var keyProp = t.GetProperty("Label")
-                           ?? t.GetProperty("Key")
-                           ?? t.GetProperty("label")
-                           ?? t.GetProperty("key");
-
-                var device = devProp != null ? Convert.ToString(devProp.GetValue(res)) : "Keyboard";
-                var label = keyProp != null ? Convert.ToString(keyProp.GetValue(res)) : string.Empty;
-
-                Diag.Log($"RIM.HandleResult: dev='{device}' key='{label}' -> route");
-
-                if(!string.IsNullOrEmpty(label))
-                {
-                    InputCapture.RouteFromHook(device ?? "Keyboard", label);
-                }
-                else
-                {
-                    Diag.Log("RIM.HandleResult: empty label; skipping route");
-                }
-            }
-            catch(Exception ex)
-            {
-                Diag.LogEx("RIM.HandleResult", ex);
-            }
-        }
-
-        // Add this NEW public static entry point the hook will call:
-        public static void RouteSynthetic(InputBindingResult res)
-        {
-            try { SyntheticRouted?.Invoke(res); }
-            catch(Exception ex) { SimTools.Debug.Diag.LogEx("RIM.RouteSynthetic", ex); }
-        }
+        [DllImport("User32.dll", SetLastError = true)]
+        private static extern bool RegisterRawInputDevices([In] RAWINPUTDEVICE[] pRawInputDevices, int uiNumDevices, int cbSize);
     }
 }
