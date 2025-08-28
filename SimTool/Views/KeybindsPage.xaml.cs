@@ -5,6 +5,7 @@ using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Threading;
 using SimTools.Debug;
@@ -39,6 +40,7 @@ namespace SimTools.Views
         private const int TapMs = 50;
 
         private RawInputMonitor _rim;
+        private HwndSource _hwndSrc;
 
         public KeybindsPage()
         {

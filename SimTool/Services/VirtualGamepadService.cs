@@ -93,29 +93,50 @@ namespace SimTools.Services
         /// </summary>
         public void SetButton(VirtualOutput output, bool down)
         {
-            uint index = (uint)output;
-            if(index == 0)
-            {
-                Diag.Log("vJoy.SetButton: ignored (output=None)");
-                return;
-            }
+            if(output == VirtualOutput.None) return;
 
-            if(!IsReady)
-            {
-                Diag.Log($"vJoy.SetButton: IGNORED (not ready) -> out={output}({index}) down={down}");
-                return;
-            }
+            var index = (uint)((int)output - (int)VirtualOutput.VJoy1_Btn1 + 1);
 
             lock(_sync)
             {
-                try
+                // Re-validate vJoy each time; cheap and robust against re-enumeration
+                if(!_vjoy.vJoyEnabled())
                 {
-                    var ok = _vjoy.SetBtn(down, DeviceId, index);
-                    Diag.Log($"vJoy.SetButton: out={output}({index}) down={down} -> {ok}");
+                    IsReady = false;
+                    _acquired = false;
+                    Diag.Log("vJoy.SetButton: vJoy driver not enabled");
+                    return;
                 }
-                catch(Exception ex)
+
+                var status = _vjoy.GetVJDStatus(DeviceId);
+                if(status != VjdStat.VJD_STAT_OWN)
                 {
-                    Diag.LogEx($"vJoy.SetButton out={output}({index}) down={down}", ex);
+                    // Try to (re)acquire
+                    if(status == VjdStat.VJD_STAT_FREE)
+                    {
+                        var okAcquire = _vjoy.AcquireVJD(DeviceId);
+                        Diag.Log($"vJoy.SetButton: re-acquire -> {okAcquire}, status was {status}");
+                        _acquired = okAcquire;
+                        IsReady = okAcquire;
+                        if(!okAcquire) return;
+                    }
+                    else
+                    {
+                        // Busy or missing – bail out cleanly
+                        _acquired = false;
+                        IsReady = false;
+                        Diag.Log($"vJoy.SetButton: device not OWN (status={status})");
+                        return;
+                    }
+                }
+
+                var ok = _vjoy.SetBtn(down, DeviceId, index);
+                Diag.Log($"vJoy.SetButton: out={output}({index}) down={down} -> {ok}");
+                if(!ok)
+                {
+                    // Last-chance: device may have bounced mid-call; reset our state
+                    _acquired = false;
+                    IsReady = false;
                 }
             }
         }
@@ -142,6 +163,15 @@ namespace SimTools.Services
                     _acquired = false;
                     IsReady = false;
                 }
+            }
+        }
+
+        public void MarkStale()
+        {
+            lock(_sync)
+            {
+                _acquired = false;
+                IsReady = false;
             }
         }
     }
