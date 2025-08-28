@@ -187,6 +187,47 @@ namespace SimTools.Services
             }
         }
 
+        // Handles the legacy call site: HandleResult(res)
+        // Extracts Device/Label from res (whatever its concrete type is) and routes it.
+        private void HandleResult(object res)
+        {
+            if(res == null)
+            {
+                Diag.Log("RIM.HandleResult: res is null");
+                return;
+            }
+
+            try
+            {
+                var t = res.GetType();
+
+                // Try common property names (case variants included)
+                var devProp = t.GetProperty("Device") ?? t.GetProperty("device");
+                var keyProp = t.GetProperty("Label")
+                           ?? t.GetProperty("Key")
+                           ?? t.GetProperty("label")
+                           ?? t.GetProperty("key");
+
+                var device = devProp != null ? Convert.ToString(devProp.GetValue(res)) : "Keyboard";
+                var label = keyProp != null ? Convert.ToString(keyProp.GetValue(res)) : string.Empty;
+
+                Diag.Log($"RIM.HandleResult: dev='{device}' key='{label}' -> route");
+
+                if(!string.IsNullOrEmpty(label))
+                {
+                    InputCapture.RouteFromHook(device ?? "Keyboard", label);
+                }
+                else
+                {
+                    Diag.Log("RIM.HandleResult: empty label; skipping route");
+                }
+            }
+            catch(Exception ex)
+            {
+                Diag.LogEx("RIM.HandleResult", ex);
+            }
+        }
+
         // Add this NEW public static entry point the hook will call:
         public static void RouteSynthetic(InputBindingResult res)
         {
