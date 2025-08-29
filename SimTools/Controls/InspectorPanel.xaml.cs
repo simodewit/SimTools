@@ -68,9 +68,14 @@ namespace SimTools.Controls
             }
             private void SetBackgroundColor(Color c)
             {
-                var b = GetBackgroundBrush() as SolidColorBrush;
-                if (b == null) { SetBackgroundBrush(new SolidColorBrush(c)); }
-                else { b.Color = c; }
+                // If there is a current brush, keep its opacity, but never mutate it:
+                // resource brushes are often Frozen (read-only) and shared app-wide.
+                var existing = GetBackgroundBrush() as SolidColorBrush;
+                var opacity = existing?.Opacity ?? 1.0;
+
+                // Always assign a fresh, unfrozen brush so edits are local to the selected element.
+                var local = new SolidColorBrush(c) { Opacity = opacity };
+                SetBackgroundBrush(local);
             }
             private void SetBackgroundAlpha(double a01)
             {
