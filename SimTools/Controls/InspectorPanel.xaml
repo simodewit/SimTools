@@ -31,9 +31,9 @@
                                Foreground="{DynamicResource Brush.TextDim}"/>
                     <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
                         <local:ColorWheel Width="110" Height="110"
-                                          Hue="{Binding BackgroundHue, Mode=TwoWay}"
-                                          Saturation="{Binding BackgroundSaturation, Mode=TwoWay}"
-                                          SelectedColor="{Binding BackgroundColor, Mode=TwoWay}"/>
+                                            Hue="{Binding BackgroundHue, Mode=TwoWay}"
+                                            Saturation="{Binding BackgroundSaturation, Mode=TwoWay}"
+                                            SelectedColor="{Binding BackgroundColor, Mode=OneWay}"/>
                         <StackPanel Margin="10,0,0,0" VerticalAlignment="Center">
                             <TextBlock Text="Brightness" Foreground="{DynamicResource Brush.TextDim}"/>
                             <Slider Minimum="0" Maximum="1"
@@ -55,9 +55,9 @@
                                Foreground="{DynamicResource Brush.TextDim}"/>
                     <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
                         <local:ColorWheel Width="110" Height="110"
-                                          Hue="{Binding ForegroundHue, Mode=TwoWay}"
-                                          Saturation="{Binding ForegroundSaturation, Mode=TwoWay}"
-                                          SelectedColor="{Binding ForegroundColor, Mode=TwoWay}"/>
+                                            Hue="{Binding ForegroundHue, Mode=TwoWay}"
+                                            Saturation="{Binding ForegroundSaturation, Mode=TwoWay}"
+                                            SelectedColor="{Binding ForegroundColor, Mode=OneWay}"/>
                         <StackPanel Margin="10,0,0,0" VerticalAlignment="Center">
                             <TextBlock Text="Brightness" Foreground="{DynamicResource Brush.TextDim}"/>
                             <Slider Minimum="0" Maximum="1"

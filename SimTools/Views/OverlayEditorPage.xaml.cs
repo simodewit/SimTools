@@ -9,6 +9,7 @@ using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using System.Windows.Threading;
 
 namespace SimTools.Views
 {
@@ -20,10 +21,11 @@ namespace SimTools.Views
 
         private FrameworkElement _currentToolRoot;
 
-        // Dragging state for the Inspector popup
         private bool _isDraggingInspector;
         private Point _dragStartMouseInPopup;
-        private Point _dragStartPopupOffset; // (HorizontalOffset, VerticalOffset)
+        private Point _dragStartPopupOffset;
+
+        private bool _suppressSelection;
 
         public OverlayEditorPage()
         {
@@ -99,13 +101,53 @@ namespace SimTools.Views
                 _currentToolRoot = view;
 
                 // 1) As before: clicking any element opens inspector for that element
-                view.AddHandler(UIElement.MouseLeftButtonDownEvent, new MouseButtonEventHandler(PreviewElement_MouseLeftButtonDown), handledEventsToo: true);
+                view.AddHandler(UIElement.MouseLeftButtonUpEvent, new MouseButtonEventHandler(PreviewElement_MouseLeftButtonUp), handledEventsToo: true);
 
                 // 2) Special: if click lands on the container background itself, select the container
-                view.AddHandler(UIElement.PreviewMouseLeftButtonDownEvent, new MouseButtonEventHandler(ToolRoot_PreviewMouseLeftButtonDown), handledEventsToo: true);
+                view.AddHandler(UIElement.PreviewMouseLeftButtonUpEvent, new MouseButtonEventHandler(ToolRoot_PreviewMouseLeftButtonUp), handledEventsToo: true);
             }
 
             ToolHost.Content = view;
+        }
+
+        private void PreviewElement_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+        {
+            if (sender is DependencyObject d)
+            {
+                e.Handled = true;
+                ShowInspectorFor(d, e.GetPosition(PreviewSurface));
+            }
+        }
+
+        private void ToolRoot_PreviewMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+        {
+            if (_currentToolRoot == null) return;
+
+            var pos = e.GetPosition(_currentToolRoot);
+
+            FrameworkElement top = null;
+            VisualTreeHelper.HitTest(_currentToolRoot, null,
+                result =>
+                {
+                    if (result.VisualHit is FrameworkElement fe)
+                    {
+                        top = fe;
+                        return HitTestResultBehavior.Stop;
+                    }
+                    return HitTestResultBehavior.Continue;
+                },
+                new PointHitTestParameters(pos));
+
+            e.Handled = true;
+
+            if (ReferenceEquals(top, _currentToolRoot))
+            {
+                ShowInspectorFor(_currentToolRoot, e.GetPosition(PreviewSurface));
+                return;
+            }
+
+            if (top != null)
+                ShowInspectorFor(top, e.GetPosition(PreviewSurface));
         }
 
         private void ToolTab_Click(object sender, RoutedEventArgs e)
@@ -120,18 +162,46 @@ namespace SimTools.Views
 
         private void PreviewElement_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
-            if (sender is DependencyObject d)
-                ShowInspectorFor(d, e.GetPosition(PreviewSurface));
+            if (_suppressSelection || _currentToolRoot == null) { e.Handled = true; return; }
+
+            // Find the element that was actually clicked
+            var d = e.OriginalSource as DependencyObject;
+            FrameworkElement fe = null;
+
+            // Walk up until we find a FrameworkElement (and ensure it belongs to the tool)
+            while (d != null)
+            {
+                if (ReferenceEquals(d, _currentToolRoot)) { fe = _currentToolRoot; break; }
+                if (d is FrameworkElement f) { fe = f; break; }
+                d = VisualTreeHelper.GetParent(d);
+            }
+
+            // Only allow selections inside the current tool root
+            if (fe != null)
+            {
+                // Make sure the element lives under the tool root
+                DependencyObject p = fe;
+                bool withinTool = false;
+                while (p != null)
+                {
+                    if (ReferenceEquals(p, _currentToolRoot)) { withinTool = true; break; }
+                    p = VisualTreeHelper.GetParent(p);
+                }
+                if (!withinTool) { e.Handled = true; return; }
+
+                e.Handled = true;
+                ShowInspectorFor(fe, e.GetPosition(PreviewSurface));
+            }
         }
 
         private void ToolRoot_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
-            if (_currentToolRoot == null) return;
+            if (_suppressSelection || _currentToolRoot == null) { e.Handled = true; return; }
 
             // Where was the click relative to the tool root?
             var pos = e.GetPosition(_currentToolRoot);
 
-            // Hit test to get the topmost element at that point
+            // Hit test to get the topmost element at that point within the tool root
             FrameworkElement top = null;
             VisualTreeHelper.HitTest(_currentToolRoot, null,
                 result =>
@@ -145,19 +215,26 @@ namespace SimTools.Views
                 },
                 new PointHitTestParameters(pos));
 
-            // If the topmost element is the root container itself, treat it as a "background click"
+            // If the topmost element is the root container itself, treat it as a "background click" (still the tool)
             if (ReferenceEquals(top, _currentToolRoot))
             {
                 e.Handled = true;
                 ShowInspectorFor(_currentToolRoot, e.GetPosition(PreviewSurface));
+                return;
+            }
+
+            if (top != null)
+            {
+                e.Handled = true;
+                ShowInspectorFor(top, e.GetPosition(PreviewSurface));
             }
         }
 
-        private void PreviewSurface_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        private void PreviewSurface_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
         {
-            // Fallback: pick nearest FrameworkElement under the mouse on the whole preview
             var pos = e.GetPosition(PreviewSurface);
             DependencyObject found = null;
+
             VisualTreeHelper.HitTest(PreviewSurface, null,
                 r =>
                 {
@@ -167,20 +244,56 @@ namespace SimTools.Views
                 new PointHitTestParameters(pos));
 
             if (found != null)
+            {
+                e.Handled = true;
                 ShowInspectorFor(found, pos);
+            }
+        }
+
+        private void PreviewSurface_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            if (_suppressSelection || _currentToolRoot == null) { e.Handled = true; return; }
+
+            // Try hit-testing INSIDE the tool root only
+            var pos = e.GetPosition(_currentToolRoot);
+            FrameworkElement found = null;
+
+            VisualTreeHelper.HitTest(_currentToolRoot, null,
+                r =>
+                {
+                    if (r.VisualHit is FrameworkElement fe) { found = fe; return HitTestResultBehavior.Stop; }
+                    return HitTestResultBehavior.Continue;
+                },
+                new PointHitTestParameters(pos));
+
+            if (found != null)
+            {
+                e.Handled = true;
+                ShowInspectorFor(found, e.GetPosition(PreviewSurface));
+            }
+            else
+            {
+                // No selection if click is outside the tool — do NOT select backdrop/panels
+                e.Handled = true;
+            }
         }
 
         private void ShowInspectorFor(DependencyObject obj, Point? openAt = null)
         {
             if (VM == null) return;
+
             VM.SelectedVisual = obj;
             Inspector.SelectedObject = obj;
 
-            // Place popup at mouse position within the preview surface
             var p = openAt ?? Mouse.GetPosition(PreviewSurface);
-            InspectorPopup.HorizontalOffset = p.X;
-            InspectorPopup.VerticalOffset = p.Y;
-            InspectorPopup.IsOpen = true;
+
+            // Defer until after the current input event completes
+            Dispatcher.BeginInvoke(new Action(() =>
+            {
+                InspectorPopup.HorizontalOffset = p.X + 8;  // small nudge
+                InspectorPopup.VerticalOffset = p.Y + 8;
+                InspectorPopup.IsOpen = true;
+            }), DispatcherPriority.Input);
         }
 
         private void CloseInspector_Click(object sender, RoutedEventArgs e)
@@ -265,7 +378,10 @@ namespace SimTools.Views
             _isDraggingInspector = true;
             _dragStartMouseInPopup = e.GetPosition(PreviewSurface);
             _dragStartPopupOffset = new Point(InspectorPopup.HorizontalOffset, InspectorPopup.VerticalOffset);
-            Mouse.Capture(sender as IInputElement);
+
+            // Capture the entire popup subtree so we reliably get MouseUp even if pointer leaves header
+            Mouse.Capture(InspectorPopup.Child, CaptureMode.SubTree);
+            e.Handled = true;
         }
 
         private void InspectorHeader_MouseMove(object sender, MouseEventArgs e)
@@ -276,6 +392,7 @@ namespace SimTools.Views
             var dy = cur.Y - _dragStartMouseInPopup.Y;
             InspectorPopup.HorizontalOffset = _dragStartPopupOffset.X + dx;
             InspectorPopup.VerticalOffset = _dragStartPopupOffset.Y + dy;
+            e.Handled = true;
         }
 
         private void InspectorHeader_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
@@ -283,7 +400,20 @@ namespace SimTools.Views
             if (!_isDraggingInspector) return;
             _isDraggingInspector = false;
             Mouse.Capture(null);
+            e.Handled = true;
         }
+
+        private void InspectorHeader_LostMouseCapture(object sender, MouseEventArgs e)
+        {
+            _isDraggingInspector = false;
+        }
+
+        private void InspectorPopup_Closed(object sender, EventArgs e)
+        {
+            _isDraggingInspector = false;
+            Mouse.Capture(null);
+        }
+
         #endregion
     }
 }

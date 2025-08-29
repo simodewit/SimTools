@@ -126,7 +126,7 @@
             </ItemsControl>
         </ScrollViewer>
 
-        <!-- PREVIEW SURFACE (tool sits directly over backdrop; no middle panel) -->
+        <!-- PREVIEW SURFACE -->
         <Border Grid.Row="1"
                 x:Name="PreviewBackdrop"
                 CornerRadius="10"
@@ -135,11 +135,10 @@
                 BorderThickness="1">
             <Grid x:Name="PreviewSurface"
                   Background="#00000000"
-                  MouseLeftButtonDown="PreviewSurface_MouseLeftButtonDown">
+                  MouseLeftButtonUp="PreviewSurface_MouseLeftButtonUp">
 
                 <!-- Tool host directly -->
-                <Viewbox Stretch="Uniform" StretchDirection="DownOnly"
-                         Margin="32">
+                <Viewbox Stretch="Uniform" StretchDirection="DownOnly" Margin="32">
                     <Border Background="#00000000">
                         <ContentPresenter x:Name="ToolHost"/>
                     </Border>
@@ -151,7 +150,8 @@
                        Placement="RelativePoint"
                        StaysOpen="True"
                        AllowsTransparency="True"
-                       PopupAnimation="Fade">
+                       PopupAnimation="Fade"
+                       Closed="InspectorPopup_Closed">
                     <Border Background="{DynamicResource Brush.Surface}"
                             BorderBrush="{DynamicResource Brush.Border}"
                             BorderThickness="1"
@@ -164,7 +164,8 @@
                                   Height="28"
                                   MouseLeftButtonDown="InspectorHeader_MouseLeftButtonDown"
                                   MouseMove="InspectorHeader_MouseMove"
-                                  MouseLeftButtonUp="InspectorHeader_MouseLeftButtonUp">
+                                  MouseLeftButtonUp="InspectorHeader_MouseLeftButtonUp"
+                                  LostMouseCapture="InspectorHeader_LostMouseCapture">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition/>
                                     <ColumnDefinition Width="Auto"/>
