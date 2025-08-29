@@ -24,13 +24,6 @@ namespace SimTools.Services
         }
     }
 
-    /// <summary>
-    /// Fetches and processes racing news RSS feeds into <see cref="NewsItem"/> objects.
-    /// - Combines multiple feeds for different series (F1, WEC, IMSA, NASCAR, etc.).
-    /// - Removes duplicates and balances the number of results per series.
-    /// - Falls back gracefully if a feed is unavailable.
-    /// </summary>
-
     public class NewsService
     {
         private readonly HttpClient _http = new HttpClient();

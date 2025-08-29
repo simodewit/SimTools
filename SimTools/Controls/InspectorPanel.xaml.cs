@@ -39,13 +39,6 @@ namespace SimTools.Controls
                 return obj?.GetType().Name ?? "(null)";
             }
 
-            private T Get<T>(DependencyProperty dp, T @default = default)
-            {
-                if (_target == null) return @default;
-                var v = _target.GetValue(dp);
-                return v is T t ? t : @default;
-            }
-
             // BACKGROUND
             public bool HasBackground => _target is Control || _target is Panel || _target is Border;
             public Color BackgroundColor { get => GetBackgroundColor(); set => SetBackgroundColor(value); }

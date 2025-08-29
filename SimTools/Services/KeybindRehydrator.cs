@@ -6,9 +6,6 @@ using SimTools.Models;
 
 namespace SimTools.Services
 {
-    /// <summary>
-    /// Rehydrates row and general buttons from model state.
-    /// </summary>
     public static class KeybindRehydrator
     {
         public static void RehydrateRows(ItemsControl list)

@@ -14,30 +14,46 @@ namespace SimTools.Views
             InitializeComponent();
         }
 
-        private void NewsLink_RequestNavigate(object sender, RequestNavigateEventArgs e)
+        private static void OpenUrl(string url)
         {
-            try { Process.Start(e.Uri.AbsoluteUri); } catch { }
+            if (string.IsNullOrWhiteSpace(url)) return;
+
+            try
+            {
+                var psi = new System.Diagnostics.ProcessStartInfo
+                {
+                    FileName = url,
+                    UseShellExecute = true
+                };
+                System.Diagnostics.Process.Start(psi);
+            }
+            catch { /* optionally log */ }
+        }
+
+        // Opens when clicking the title Hyperlink
+        void NewsLink_RequestNavigate(object sender, System.Windows.Navigation.RequestNavigateEventArgs e)
+        {
+            OpenUrl(e?.Uri?.AbsoluteUri ?? string.Empty);
             e.Handled = true;
         }
 
-        private void OpenLink_Click(object sender, System.Windows.RoutedEventArgs e)
+        // Opens when clicking the image/tile overlay button
+        void OpenLink_Click(object sender, System.Windows.RoutedEventArgs e)
         {
-            var btn = sender as Button;
-            var url = btn != null ? btn.Tag as string : null;
-            if (!string.IsNullOrWhiteSpace(url))
-            {
-                try { Process.Start(url); } catch { }
-            }
+            var btn = sender as System.Windows.Controls.Button;
+            var url = btn?.Tag as string;
+            OpenUrl(url ?? string.Empty);
         }
 
+        // Optional quick-links
         private void Discord_Click(object sender, System.Windows.RoutedEventArgs e)
         {
-            try { Process.Start(DiscordUrl); } catch { }
+            OpenUrl(DiscordUrl);
         }
 
         private void Website_Click(object sender, System.Windows.RoutedEventArgs e)
         {
-            try { Process.Start(WebsiteUrl); } catch { }
+            OpenUrl(WebsiteUrl);
         }
     }
 }

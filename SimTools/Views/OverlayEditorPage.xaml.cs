@@ -1,5 +1,4 @@
 ﻿using Microsoft.Win32;
-using SimTools.Controls;
 using SimTools.ViewModels;
 using System;
 using System.ComponentModel;

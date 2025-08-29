@@ -7,10 +7,6 @@ using System.Reflection;
 
 namespace SimTools.Services
 {
-    /// <summary>
-    /// Wires to VM collections (Profiles/Maps/Keybinds) and tracks their items' INotifyPropertyChanged.
-    /// Emits a single Changed event whenever anything changes.
-    /// </summary>
     public sealed class VmCollectionBinder : IDisposable
     {
         private readonly string[] _collectionPropertyNames;

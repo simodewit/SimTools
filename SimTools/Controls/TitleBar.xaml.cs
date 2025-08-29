@@ -12,18 +12,6 @@ namespace SimTools.Controls
             InitializeComponent();
         }
 
-        private bool IsInsideButtons(DependencyObject source)
-        {
-            if (ButtonsPanel == null || source == null) return false;
-            var current = source;
-            while (current != null)
-            {
-                if (current == ButtonsPanel) return true;
-                current = VisualTreeHelper.GetParent(current);
-            }
-            return false;
-        }
-
         private void DragArea_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
             // Optional: only if you want to support dragging from a specific child element

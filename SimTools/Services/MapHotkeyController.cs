@@ -7,9 +7,6 @@ using SimTools.Models;
 
 namespace SimTools.Services
 {
-    /// <summary>
-    /// Debounced next/prev hotkey evaluation + command execution.
-    /// </summary>
     public sealed class MapHotkeyController
     {
         private DateTime _lastNextUtc = DateTime.MinValue;

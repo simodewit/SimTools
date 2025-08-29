@@ -4,9 +4,6 @@ using System.Threading;
 
 namespace SimTools.Services
 {
-    /// <summary>
-    /// Minimal keyboard sender using SendInput with scan codes.
-    /// </summary>
     public sealed class VirtualKeyboardService
     {
         [StructLayout(LayoutKind.Sequential)]

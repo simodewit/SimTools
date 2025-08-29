@@ -1,14 +1,9 @@
-﻿// interop/RawInputNative.cs
-#nullable enable
+﻿#nullable enable
 using System;
 using System.Runtime.InteropServices;
 
 namespace SimTools.Interop
 {
-    /// <summary>
-    /// Win32 Raw Input constants, structs, and P/Invoke signatures.
-    /// Keep all interop details here to keep higher-level code clean.
-    /// </summary>
     internal static class RawInputNative
     {
         // --- Messages ---

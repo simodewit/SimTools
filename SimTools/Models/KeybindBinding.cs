@@ -3,10 +3,6 @@ using System.Windows.Input;
 
 namespace SimTools.Models
 {
-    /// <summary>
-    /// Describes a single logical action and how it is triggered (physical input)
-    /// and what it emits (virtual output). Supports optional global blocking.
-    /// </summary>
     public class KeybindBinding
     {
         /// <summary>Display name shown in the UI (user-defined action name).</summary>

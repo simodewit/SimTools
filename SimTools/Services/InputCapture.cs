@@ -6,18 +6,12 @@ using System.Windows.Input;
 using System.Windows.Threading;
 using SimTools.Debug;
 using SimTools.Models;
-using SimTools.Helpers; // KeybindHelpers
+using SimTools.Helpers; 
 
 namespace SimTools.Services
 {
-    /// <summary>
-    /// Raw Input helpers (keyboard) with heavy instrumentation.
-    /// C# 8.0 compatible.
-    /// </summary>
     public static class InputCapture
     {
-        // ---------------------- Public API ----------------------
-
         public static IDisposable StartMonitor(Window owner, Action<InputBindingResult> onInput)
         {
             if(owner == null) throw new ArgumentNullException(nameof(owner));

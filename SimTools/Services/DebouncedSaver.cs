@@ -3,9 +3,6 @@ using System.Windows.Threading;
 
 namespace SimTools.Services
 {
-    /// <summary>
-    /// Simple debounce for save operations.
-    /// </summary>
     public sealed class DebouncedSaver : IDisposable
     {
         private readonly DispatcherTimer _timer;

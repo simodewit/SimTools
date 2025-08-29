@@ -1,7 +1,7 @@
-﻿using System;       // for StringComparison
-using System.Linq;  // for e.Args.Any(...)
+﻿using System;
+using System.Linq;
 using System.Windows;
-using SimTools.Services;  // VirtualGamepadService
+using SimTools.Services;
 using SimTools.Views;
 
 namespace SimTools
@@ -14,7 +14,6 @@ namespace SimTools
         {
             base.OnStartup(e);
 
-            // Optional: HidHide postinstall
             if (e.Args != null && e.Args.Any(a => string.Equals(a, "--postinstall", StringComparison.OrdinalIgnoreCase)))
             {
                 try
@@ -25,9 +24,8 @@ namespace SimTools
                 catch { /* ignore */ }
             }
 
-            // Start vJoy wrapper (assumes Device #1 is present & configured)
             _vjoy = new VirtualGamepadService();
-            _vjoy.TryStart();   // we don't block the app even if it fails; just try
+            _vjoy.TryStart();
 
             new MainWindow().Show();
         }

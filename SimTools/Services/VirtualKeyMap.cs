@@ -2,10 +2,6 @@
 
 namespace SimTools.Services
 {
-    /// <summary>
-    /// Default mapping from vJoy buttons to rare desktop-friendly keys.
-    /// Uses F13..F24 + Ctrl/Alt/Shift combos for capacity.
-    /// </summary>
     public static class VirtualKeyMap
     {
         // Scan codes for F13..F24 (extended F-keys many keyboards don’t have)
@@ -27,17 +23,11 @@ namespace SimTools.Services
             chord = default;
             if (i <= 0) return false;
 
-            // Bucket into groups of 12 (F13..F24)
-            // 1..12 => plain F13..F24
-            // 13..24 => Ctrl + F13..F24
-            // 25..36 => Alt + F13..F24
-            // 37..48 => Shift + F13..F24
-            // You can add more (Ctrl+Alt, etc.) if you need >48.
             var idx = (i - 1) % 12;
             var group = (i - 1) / 12;
 
             if (idx < 0 || idx >= Fxx.Length) return false;
-            if (group > 3) return false; // only first 48 mapped by default
+            if (group > 3) return false; 
 
             chord = new Chord
             {

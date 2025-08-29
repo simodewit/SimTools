@@ -4,7 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
-using Microsoft.Win32;   // Registry
+using Microsoft.Win32;
 
 #if HIDHIDE_API
 using Nefarius.Drivers.HidHide; // optional, only if you add the NuGet and define HIDHIDE_API
@@ -12,10 +12,6 @@ using Nefarius.Drivers.HidHide; // optional, only if you add the NuGet and defin
 
 namespace SimTools.Services
 {
-    /// <summary>
-    /// Minimal bootstrap: detect/install ViGEm + HidHide from a local "Drivers" folder.
-    /// Supports MSI or EXE installers. Optional HidHide whitelist via HIDHIDE_API.
-    /// </summary>
     public static class DriverBootstrap
     {
         private const string DriversFolderRelative = "Drivers";

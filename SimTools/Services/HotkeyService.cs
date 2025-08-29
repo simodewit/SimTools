@@ -8,12 +8,6 @@ namespace SimTools.Services
         public Key Key;
     }
 
-    /// <summary>
-    /// Helper for turning a WPF KeyEvent into a (Modifiers + Key) hotkey.
-    /// Filters out pure modifier keys so you only get a real key when one is pressed.
-    /// Use in your keybind UI to read what the user pressed.
-    /// </summary>
-
     public static class HotkeyService
     {
         public static HotkeyCaptureResult Capture(KeyEventArgs e)

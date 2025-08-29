@@ -5,10 +5,6 @@ namespace SimTools.ViewModels
 {
     public enum Page { Home, Keybinds, Overlay }
 
-    // App-wide VM: loads/saves profiles, holds shared AppState, and handles page navigation.
-    // Exposes commands (Home/Keybinds/Overlay/Save) and sets CurrentPage with the right DataContext.
-    // Default start = Home page.
-
     public class MainViewModel : ViewModelBase
     {
         public AppState State { get; private set; }

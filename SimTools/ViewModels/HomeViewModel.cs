@@ -5,9 +5,6 @@ using SimTools.Services;
 
 namespace SimTools.ViewModels
 {
-    // Home screen VM: asynchronously loads racing News and Media on startup.
-    // Populates two ObservableCollections for binding. Media excludes links already in News.
-
     public class HomeViewModel
     {
         public ObservableCollection<NewsItem> News { get; } = new ObservableCollection<NewsItem>();

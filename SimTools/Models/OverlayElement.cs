@@ -3,10 +3,6 @@ using System.Runtime.CompilerServices;
 
 namespace SimTools.Models
 {
-    // Represents a UI overlay item with position (X, Y) and a Type label.
-    // Implements INotifyPropertyChanged so the UI updates when values change.
-    // Used by the overlay editor/window to place indicators on screen.
-
     public class OverlayElement : INotifyPropertyChanged
     {
         private double _x;

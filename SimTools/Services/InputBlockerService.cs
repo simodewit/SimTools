@@ -3,15 +3,10 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Windows.Input;
 using SimTools.Debug;
-using SimTools.Helpers; // for KeybindHelpers.BuildKeyboardLabel
+using SimTools.Helpers; 
 
 namespace SimTools.Services
 {
-    /// <summary>
-    /// Global low-level keyboard hook that can swallow key presses based on a predicate.
-    /// When swallowing a key on key-down, we also route a synthetic input into the normal pipeline
-    /// so vJoy/highlight still fire even though WM_INPUT won't arrive.
-    /// </summary>
     public sealed class InputBlockerService : IDisposable
     {
         public delegate bool BlockPredicate(Key key, ModifierKeys mods, bool isDown);

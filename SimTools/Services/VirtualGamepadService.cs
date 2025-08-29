@@ -5,10 +5,6 @@ using SimTools.Debug;
 
 namespace SimTools.Services
 {
-    /// <summary>
-    /// vJoy wrapper that acquires Device #1 and lets you press/release buttons.
-    /// Now includes verbose diagnostics.
-    /// </summary>
     public sealed class VirtualGamepadService : IDisposable
     {
         private readonly object _sync = new object();

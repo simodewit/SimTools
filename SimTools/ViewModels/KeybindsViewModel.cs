@@ -171,12 +171,12 @@ namespace SimTools.ViewModels
             });
         }
 
-        public void AssignKey(System.Windows.Input.KeyEventArgs e, KeybindBinding binding)
+        public void AssignKey(KeyEventArgs e, KeybindBinding binding)
         {
             if (binding == null || e == null) return;
 
             var cap = HotkeyService.Capture(e);
-            if (cap.Key == System.Windows.Input.Key.None)
+            if (cap.Key == Key.None)
                 return;
 
             binding.Modifiers = cap.Modifiers;
@@ -208,9 +208,9 @@ namespace SimTools.ViewModels
         }
 
         // ---- Helpers ----
-        private static string FormatHotkey(ModifierKeys mods, System.Windows.Input.Key key)
+        private static string FormatHotkey(ModifierKeys mods, Key key)
         {
-            if (key == System.Windows.Input.Key.None && mods == ModifierKeys.None) return "None";
+            if (key == Key.None && mods == ModifierKeys.None) return "None";
 
             var parts = new List<string>(4);
             if (mods.HasFlag(ModifierKeys.Control)) parts.Add("Ctrl");
@@ -220,12 +220,12 @@ namespace SimTools.ViewModels
 
             string keyName = key switch
             {
-                System.Windows.Input.Key.Return => "Enter",
-                System.Windows.Input.Key.Escape => "Esc",
-                System.Windows.Input.Key.Prior => "PageUp",
-                System.Windows.Input.Key.Next => "PageDown",
-                System.Windows.Input.Key.OemPlus => "+",
-                System.Windows.Input.Key.OemMinus => "-",
+                Key.Return => "Enter",
+                Key.Escape => "Esc",
+                Key.Prior => "PageUp",
+                Key.Next => "PageDown",
+                Key.OemPlus => "+",
+                Key.OemMinus => "-",
                 _ => key.ToString()
             };
 

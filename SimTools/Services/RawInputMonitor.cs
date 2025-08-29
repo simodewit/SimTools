@@ -7,12 +7,6 @@ using SimTools.Models;
 
 namespace SimTools.Services
 {
-    /// <summary>
-    /// Registers for Raw Input (keyboard) using RIDEV_INPUTSINK and raises InputReceived on WM_INPUT.
-    /// Also listens for synthetic inputs routed from the low-level hook (InputCapture.RouteFromHook)
-    /// and forwards them into the exact same InputReceived event so downstream code (highlight, vJoy)
-    /// behaves identically whether WM_INPUT arrived or a key was swallowed and synthesized.
-    /// </summary>
     public sealed class RawInputMonitor : IDisposable
     {
         private readonly Window _owner;
@@ -150,49 +144,6 @@ namespace SimTools.Services
             catch (Exception ex)
             {
                 Diag.LogEx("RIM.Synth", ex);
-            }
-        }
-
-        /// <summary>
-        /// Optional helper to support any older call sites that used reflection to extract fields.
-        /// This now understands DeviceType / ControlLabel (your model) and falls back to common alternates.
-        /// Ultimately forwards to InputReceived.
-        /// </summary>
-        private void HandleResult(object resObj)
-        {
-            try
-            {
-                if (resObj == null) { Diag.Log("RIM.HandleResult: NULL"); return; }
-
-                string device = null;
-                string label = null;
-                var t = resObj.GetType();
-                var devProp = t.GetProperty("DeviceType") ?? t.GetProperty("Device") ?? t.GetProperty("device");
-                var keyProp = t.GetProperty("ControlLabel") ?? t.GetProperty("Label") ?? t.GetProperty("Key")
-                              ?? t.GetProperty("controlLabel") ?? t.GetProperty("label") ?? t.GetProperty("key");
-
-                if (devProp != null) device = devProp.GetValue(resObj)?.ToString();
-                if (keyProp != null) label = keyProp.GetValue(resObj)?.ToString();
-
-                Diag.Log($"RIM.HandleResult: dev='{device}' key='{label}' -> route");
-
-                if (string.IsNullOrWhiteSpace(label))
-                {
-                    Diag.Log("RIM.HandleResult: empty label; skipping route");
-                    return;
-                }
-
-                var res = resObj as InputBindingResult ?? new InputBindingResult
-                {
-                    DeviceType = device ?? "",
-                    ControlLabel = label ?? ""
-                };
-
-                InputReceived?.Invoke(res);
-            }
-            catch (Exception ex)
-            {
-                Diag.LogEx("RIM.HandleResult", ex);
             }
         }
 

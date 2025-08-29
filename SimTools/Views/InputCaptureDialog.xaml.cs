@@ -1,5 +1,4 @@
-﻿// views/InputCaptureDialog.xaml.cs
-#nullable enable
+﻿#nullable enable
 using System;
 using System.Windows;
 using System.Windows.Input;
@@ -10,16 +9,9 @@ using static SimTools.Interop.RawInputNative;
 
 namespace SimTools.Views
 {
-    /// <summary>
-    /// Small dialog that listens for the next input (keyboard/mouse/HID) and exposes it via Result.
-    /// Backwards compatible: still sets Device/DeviceKey/Modifiers/Key/Accepted for existing callers.
-    /// </summary>
     public partial class InputCaptureDialog : Window
     {
-        // NEW API (used by InputCapture.CaptureBinding)
         public InputBindingResult? Result { get; private set; }
-
-        // BACK-COMPAT public properties (do not remove; keep old callers working)
         public string Device { get; private set; } = "";       // "Keyboard" / "Mouse" / "HID"
         public string DeviceKey { get; private set; } = "";    // "Ctrl+K" / "Left Button" / "UsagePage 1, Usage 4"
         public ModifierKeys Modifiers { get; private set; }

@@ -3,12 +3,9 @@ using SimTools.Models;
 using SimTools.Services;
 using System;
 using System.Collections.ObjectModel;
-using System.ComponentModel;
-using System.Globalization;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Shapes;
 
@@ -178,7 +175,7 @@ namespace SimTools.ViewModels
 
         private void OpenOverlayWindow()
         {
-            var win = new SimTools.Views.OverlayWindow
+            var win = new Views.OverlayWindow
             {
                 DataContext = this
             };

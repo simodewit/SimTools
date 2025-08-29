@@ -1,9 +1,5 @@
 ﻿namespace SimTools.Models
 {
-    /// <summary>
-    /// Logical outputs your mapping engine can target.
-    /// Device 1: 128 buttons. Add more devices later if needed.
-    /// </summary>
     public enum VirtualOutput
     {
         None = 0, // <-- added so other code can use a "no output" state

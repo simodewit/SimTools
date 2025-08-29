@@ -1,5 +1,4 @@
-﻿using SimTools.Helpers;
-using System;
+﻿using System;
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Interop;
@@ -103,7 +102,5 @@ namespace SimTools.Views
             public RECT rcWork;
             public int dwFlags;
         }
-
-
     }
 }

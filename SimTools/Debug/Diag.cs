@@ -4,10 +4,6 @@ using System.Threading;
 
 namespace SimTools.Debug
 {
-    /// <summary>
-    /// Ultra-lightweight logger that writes to Debug and to a file in the app folder.
-    /// File: SimTools.debug.log
-    /// </summary>
     public static class Diag
     {
         private static readonly object _lock = new object();
@@ -17,7 +13,7 @@ namespace SimTools.Debug
         public static void Log(string message)
         {
             var line = $"{DateTime.Now:O} [T{Thread.CurrentThread.ManagedThreadId}] {message}";
-            System.Diagnostics.Debug.WriteLine(line); // fully qualified to avoid namespace clash
+            System.Diagnostics.Debug.WriteLine(line); 
             try
             {
                 lock(_lock)

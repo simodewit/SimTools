@@ -2,9 +2,6 @@
 
 namespace SimTools.Models
 {
-    /// <summary>
-    /// Lightweight descriptor for a captured/rehydrated device binding.
-    /// </summary>
     public sealed class DeviceBindingDescriptor
     {
         public string DeviceType { get; set; }

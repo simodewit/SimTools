@@ -6,7 +6,6 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Interop;
-using System.Windows.Media;
 using System.Windows.Threading;
 using SimTools.Debug;
 using SimTools.Helpers;
@@ -468,44 +467,6 @@ namespace SimTools.Views
             _lights.ClearRowsExcept(NextMapBtn, PrevMapBtn);
         }
 
-        private void MaybeSwitchMapFrom(InputBindingResult input)
-        {
-            var nextTag = NextMapBtn?.Tag as DeviceBindingDescriptor;
-            var prevTag = PrevMapBtn?.Tag as DeviceBindingDescriptor;
-
-            _hotkeys.OnInput(
-                input,
-                nextTag,
-                prevTag,
-                nextCmd: () => ExecuteMapSwitchCommand(+1),
-                prevCmd: () => ExecuteMapSwitchCommand(-1),
-                nextBtn: NextMapBtn,
-                prevBtn: PrevMapBtn
-            );
-        }
-
-        private void ExecuteMapSwitchCommand(int delta)
-        {
-            var vm = DataContext;
-            if (vm == null) return;
-
-            if (delta > 0)
-            {
-                if (ReflectionUtils.TryExecuteCommand(vm, "NextMapCommand")) return;
-                if (ReflectionUtils.TryInvoke(vm, "SwitchToNextMap")) return;
-                if (ReflectionUtils.TryInvoke(vm, "SelectNextMap")) return;
-                if (ReflectionUtils.TryInvoke(vm, "NextMap")) return;
-            }
-            else
-            {
-                if (ReflectionUtils.TryExecuteCommand(vm, "PrevMapCommand")) return;
-                if (ReflectionUtils.TryExecuteCommand(vm, "PreviousMapCommand")) return;
-                if (ReflectionUtils.TryInvoke(vm, "SwitchToPreviousMap")) return;
-                if (ReflectionUtils.TryInvoke(vm, "SelectPreviousMap")) return;
-                if (ReflectionUtils.TryInvoke(vm, "PrevMap")) return;
-            }
-        }
-
         private void RenameProfile_Click(object sender, RoutedEventArgs e)
             => BeginInlineRename(ProfilesList, "ProfileNameEditor", "ProfileNameText");
         private void RenameMap_Click(object sender, RoutedEventArgs e)
@@ -642,9 +603,6 @@ namespace SimTools.Views
             }
         }
 
-        // -----------------------------------------------------
-        // NEW: Window proc hook to detect HID device changes
-        // -----------------------------------------------------
         private IntPtr DeviceChangeHook(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
         {
             const int WM_DEVICECHANGE = 0x0219;

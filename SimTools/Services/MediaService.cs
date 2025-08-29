@@ -15,17 +15,8 @@ namespace SimTools.Services
         public string Link { get; set; }
         public string ImageUrl { get; set; }
         public DateTime PubDate { get; set; }
-        public string Category { get; set; }  // Normalized series (F1, WEC, etc.)
+        public string Category { get; set; } 
     }
-
-    /// <summary>
-    /// Downloads and parses racing RSS feeds into <see cref="MediaItem"/>s.
-    /// - <see cref="FetchAsync(int, System.Collections.Generic.IEnumerable{string})"/> gets items from several series
-    ///   (F1, WEC, IMSA, etc.), skips broken feeds, removes duplicates, and balances results per series.
-    /// - Each item has a title, link, image (from media:content/enclosure/first &lt;img&gt;), date, and a series tag.
-    /// - The optional exclude list keeps links you already showed elsewhere from appearing again.
-    /// Note: Network calls happen over HttpClient; returns an empty list on errors instead of throwing.
-    /// </summary>
 
     public class MediaService
     {
@@ -48,7 +39,6 @@ namespace SimTools.Services
             ("DTM",           "https://www.motorsport.com/rss/dtm/news/"),
             ("MotoGP",        "https://www.motorsport.com/rss/motogp/news/"),
             ("SuperFormula",  "https://www.motorsport.com/rss/super-formula/news/"),
-            // broad feed as a final catch-all
             ("Other",         "https://www.motorsport.com/rss/all/news/")
         };
 
@@ -71,7 +61,7 @@ namespace SimTools.Services
                     }
                     catch
                     {
-                        continue; // skip failing feed
+                        continue; 
                     }
 
                     foreach (var it in fromFeed)
@@ -80,8 +70,8 @@ namespace SimTools.Services
                             continue;
 
                         var norm = NormalizeLink(it.Link);
-                        if (exclude.Contains(norm)) continue;      // de-dupe vs news
-                        if (seenLinks.Contains(norm)) continue;     // de-dupe within media
+                        if (exclude.Contains(norm)) continue;
+                        if (seenLinks.Contains(norm)) continue;
                         seenLinks.Add(norm);
 
                         items.Add(it);
