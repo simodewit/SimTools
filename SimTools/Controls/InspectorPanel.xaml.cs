@@ -3,9 +3,11 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Markup;
 using System.Windows.Media;
 
 namespace SimTools.Controls
@@ -29,7 +31,7 @@ namespace SimTools.Controls
             {
                 _target = obj as DependencyObject;
                 Title = BuildTitle(obj);
-                BuildFontOptions();    // <— add the fonts for the dropdown
+                BuildFontOptions();    // populate the dropdown strictly from simtools/fonts
                 Hydrate();
             }
 
@@ -37,7 +39,7 @@ namespace SimTools.Controls
 
             private static string BuildTitle(object obj)
             {
-                if(obj is FrameworkElement fe)
+                if (obj is FrameworkElement fe)
                 {
                     var name = string.IsNullOrWhiteSpace(fe.Name) ? fe.GetType().Name : fe.Name;
                     return $"{name} ({fe.GetType().Name})";
@@ -57,21 +59,21 @@ namespace SimTools.Controls
 
             private Brush GetBackgroundBrush()
             {
-                if(_target is Border bd) return bd.Background;
-                if(_target is Control c) return c.Background;
-                if(_target is Panel p) return p.Background;
+                if (_target is Border bd) return bd.Background;
+                if (_target is Control c) return c.Background;
+                if (_target is Panel p) return p.Background;
                 return null;
             }
             private void SetBackgroundBrush(Brush b)
             {
-                if(_target is Border bd) bd.Background = b;
-                else if(_target is Control c) c.Background = b;
-                else if(_target is Panel p) p.Background = b;
+                if (_target is Border bd) bd.Background = b;
+                else if (_target is Control c) c.Background = b;
+                else if (_target is Panel p) p.Background = b;
             }
             private Color GetBackgroundColor()
             {
                 var b = GetBackgroundBrush() as SolidColorBrush;
-                if(b == null) return Colors.Transparent;
+                if (b == null) return Colors.Transparent;
                 return b.Color;
             }
             private void SetBackgroundColor(Color c)
@@ -104,15 +106,15 @@ namespace SimTools.Controls
             {
                 get
                 {
-                    if(_target is Control c && c.Foreground is SolidColorBrush sb1) return sb1.Color;
-                    if(_target is TextBlock t && t.Foreground is SolidColorBrush sb2) return sb2.Color;
+                    if (_target is Control c && c.Foreground is SolidColorBrush sb1) return sb1.Color;
+                    if (_target is TextBlock t && t.Foreground is SolidColorBrush sb2) return sb2.Color;
                     return Colors.White;
                 }
                 set
                 {
                     var b = new SolidColorBrush(value);
-                    if(_target is Control c) c.Foreground = b;
-                    if(_target is TextBlock t) t.Foreground = b;
+                    if (_target is Control c) c.Foreground = b;
+                    if (_target is TextBlock t) t.Foreground = b;
                 }
             }
             public double ForegroundHue { get => ColorToHSV(ForegroundColor).h; set => SetForegroundHSV(h: value); }
@@ -132,7 +134,7 @@ namespace SimTools.Controls
             public double Opacity
             {
                 get => _target is UIElement u ? u.Opacity : 1.0;
-                set { if(_target is UIElement u) u.Opacity = Math.Max(0, Math.Min(1, value)); }
+                set { if (_target is UIElement u) u.Opacity = Math.Max(0, Math.Min(1, value)); }
             }
 
             // =========================
@@ -143,19 +145,19 @@ namespace SimTools.Controls
             {
                 get
                 {
-                    if(_target is Control c) return c.FontSize;
-                    if(_target is TextBlock t) return t.FontSize;
+                    if (_target is Control c) return c.FontSize;
+                    if (_target is TextBlock t) return t.FontSize;
                     return 12;
                 }
                 set
                 {
-                    if(_target is Control c) c.FontSize = value;
-                    if(_target is TextBlock t) t.FontSize = value;
+                    if (_target is Control c) c.FontSize = value;
+                    if (_target is TextBlock t) t.FontSize = value;
                 }
             }
 
             // =========================
-            // FONT FAMILY (bundled + grouped)
+            // FONT FAMILY (ONLY project folder)
             // =========================
             public bool HasFontFamily => _target is Control || _target is TextBlock;
 
@@ -163,14 +165,14 @@ namespace SimTools.Controls
             {
                 get
                 {
-                    if(_target is Control c) return c.FontFamily;
-                    if(_target is TextBlock t) return t.FontFamily;
+                    if (_target is Control c) return c.FontFamily;
+                    if (_target is TextBlock t) return t.FontFamily;
                     return new FontFamily("Segoe UI");
                 }
                 set
                 {
-                    if(_target is Control c) c.FontFamily = value;
-                    if(_target is TextBlock t) t.FontFamily = value;
+                    if (_target is Control c) c.FontFamily = value;
+                    if (_target is TextBlock t) t.FontFamily = value;
                     PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(SelectedFontOption)));
                 }
             }
@@ -178,7 +180,7 @@ namespace SimTools.Controls
             public sealed class FontOption : INotifyPropertyChanged
             {
                 public string Name { get; init; }
-                public string Category { get; init; }   // "Motorsport", "Game", "Close", "System (installed)"
+                public string Category { get; init; }   // "Project Fonts" only
                 public FontFamily Family { get; init; }
                 public Visibility ShowCategoryHeader { get; set; } = Visibility.Collapsed;
                 public event PropertyChangedEventHandler PropertyChanged;
@@ -190,81 +192,50 @@ namespace SimTools.Controls
             {
                 get
                 {
-                    // Try to select the current element's family if present, else first option
+                    if (FontOptions.Count == 0) return null;
+                    string currentName = GetDisplayName(FontFamily);
                     return FontOptions.FirstOrDefault(o =>
-                        string.Equals(o.Family?.Source, FontFamily?.Source, StringComparison.OrdinalIgnoreCase))
-                           ?? FontOptions.FirstOrDefault();
+                               string.Equals(o.Family?.Source, FontFamily?.Source, StringComparison.OrdinalIgnoreCase)
+                               || string.Equals(o.Name, currentName, StringComparison.OrdinalIgnoreCase))
+                           ?? FontOptions.First();
                 }
-                set { if(value != null) FontFamily = value.Family; }
+                set { if (value != null) FontFamily = value.Family; }
             }
 
             private void BuildFontOptions()
             {
-                // 1) Bundled fonts (FREE). Place files under Assets/Fonts and set Build Action=Resource.
-                // The fragment after # MUST match the font's internal family name.
-                var bundled = new (string Category, string Display, string PackFamily)[]
-                {
-                    // Motorsport (driver names & numbers)
-                    ("Motorsport", "Bebas Neue",        "./Assets/Fonts/#Bebas Neue"),
-                    ("Motorsport", "Oswald",            "./Assets/Fonts/#Oswald"),
-                    ("Motorsport", "Anton",             "./Assets/Fonts/#Anton"),
-                    ("Motorsport", "League Gothic",     "./Assets/Fonts/#League Gothic"),
-                    ("Motorsport", "Teko",              "./Assets/Fonts/#Teko"),
-                    ("Motorsport", "Rajdhani",          "./Assets/Fonts/#Rajdhani"),
-                    ("Motorsport", "Saira Condensed",   "./Assets/Fonts/#Saira Condensed"),
-
-                    // Game / HUD / telemetry
-                    ("Game", "Orbitron",                "./Assets/Fonts/#Orbitron"),
-                    ("Game", "Oxanium",                 "./Assets/Fonts/#Oxanium"),
-                    ("Game", "Exo 2",                   "./Assets/Fonts/#Exo 2"),
-                    ("Game", "Audiowide",               "./Assets/Fonts/#Audiowide"),
-                    ("Game", "Michroma",                "./Assets/Fonts/#Michroma"),
-                    ("Game", "DSEG 7-Segment",          "./Assets/Fonts/#DSEG7 Classic"),
-                    ("Game", "DSEG 14-Segment",         "./Assets/Fonts/#DSEG14 Classic"),
-
-                    // Close (free substitutes)
-                    ("Close", "Antonio",                "./Assets/Fonts/#Antonio"),
-                    ("Close", "Roboto Condensed",       "./Assets/Fonts/#Roboto Condensed"),
-                    ("Close", "Barlow Condensed",       "./Assets/Fonts/#Barlow Condensed"),
-                };
-
+                // Discover fonts ONLY under simtools/fonts (or SimTools/Fonts) next to the app/cwd.
                 var list = new List<FontOption>();
-                foreach(var (cat, display, packFamily) in bundled)
+
+                var probes = GetFontDirectoryProbes();
+                string fontsDir = probes.FirstOrDefault(Directory.Exists);
+
+                if (!string.IsNullOrEmpty(fontsDir))
                 {
-                    try
+                    foreach (var family in Fonts.GetFontFamilies(fontsDir))
                     {
-                        var fam = new FontFamily(new Uri("pack://application:,,,/"), packFamily);
-                        list.Add(new FontOption { Category = cat, Name = display, Family = fam });
-                    }
-                    catch
-                    {
-                        // If a file or family is missing, skip silently.
+                        var display = GetDisplayName(family);
+                        if (!string.IsNullOrWhiteSpace(display) &&
+                            !list.Any(o => string.Equals(o.Name, display, StringComparison.OrdinalIgnoreCase)))
+                        {
+                            list.Add(new FontOption
+                            {
+                                Category = "Project Fonts",
+                                Name = display,
+                                Family = family
+                            });
+                        }
                     }
                 }
 
-                // 2) Add *installed* system lookalikes if present (still free if user installed them)
-                string[] tokens = { "Formula1", "F1", "DIN", "Microgramma", "Eurostile", "Bank Gothic", "Compacta" };
-                foreach(var f in Fonts.SystemFontFamilies)
-                {
-                    var src = f.Source ?? string.Empty;
-                    if(tokens.Any(t => src.IndexOf(t, StringComparison.OrdinalIgnoreCase) >= 0))
-                    {
-                        if(!list.Any(o => string.Equals(o.Family?.Source, f.Source, StringComparison.OrdinalIgnoreCase)))
-                            list.Add(new FontOption { Category = "System (installed)", Name = src, Family = f });
-                    }
-                }
-
-                // 3) Sort by category, then name; mark first item of each category with a header
-                string[] order = { "Motorsport", "Game", "Close", "System (installed)" };
-                var ordered = list.OrderBy(o => Array.IndexOf(order, o.Category))
-                                  .ThenBy(o => o.Name, StringComparer.CurrentCultureIgnoreCase)
-                                  .ToList();
+                // IMPORTANT: no fallback to system fonts. If none found, the list stays empty.
+                var ordered = list.OrderBy(o => o.Name, StringComparer.CurrentCultureIgnoreCase).ToList();
 
                 string currentCat = null;
                 FontOptions.Clear();
-                foreach(var item in ordered)
+                foreach (var item in ordered)
                 {
-                    if(item.Category != currentCat)
+                    if (item.Category != currentCat)
                     {
                         item.ShowCategoryHeader = Visibility.Visible;
                         currentCat = item.Category;
@@ -272,8 +243,37 @@ namespace SimTools.Controls
                     FontOptions.Add(item);
                 }
 
-                // Nudge selection so the combo shows a valid entry at first load
+                // Refresh selection binding
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(SelectedFontOption)));
+            }
+
+            private static IEnumerable<string> GetFontDirectoryProbes()
+            {
+                // Only probe these project-local paths
+                var baseDir = AppContext.BaseDirectory;
+                yield return Path.Combine(baseDir, "simtools", "fonts");
+                yield return Path.Combine(baseDir, "SimTools", "Fonts");
+
+                // Also probe the current working directory (useful when running from VS)
+                var cwd = Directory.GetCurrentDirectory();
+                yield return Path.Combine(cwd, "simtools", "fonts");
+                yield return Path.Combine(cwd, "SimTools", "Fonts");
+            }
+
+            private static string GetDisplayName(FontFamily family)
+            {
+                try
+                {
+                    var lang = XmlLanguage.GetLanguage(CultureInfo.CurrentUICulture.IetfLanguageTag);
+                    if (family.FamilyNames != null && family.FamilyNames.TryGetValue(lang, out string localized))
+                        return localized;
+
+                    return family.FamilyNames?.Values?.FirstOrDefault() ?? family.Source;
+                }
+                catch
+                {
+                    return family.Source;
+                }
             }
 
             // =========================
@@ -288,9 +288,9 @@ namespace SimTools.Controls
                 {
                     var parts = s.Split(new[] { ',', ' ' }, StringSplitOptions.RemoveEmptyEntries)
                                  .Select(p => double.Parse(p, CultureInfo.InvariantCulture)).ToArray();
-                    if(parts.Length == 1) t = new Thickness(parts[0]);
-                    else if(parts.Length == 2) t = new Thickness(parts[0], parts[1], parts[0], parts[1]);
-                    else if(parts.Length == 4) t = new Thickness(parts[0], parts[1], parts[2], parts[3]);
+                    if (parts.Length == 1) t = new Thickness(parts[0]);
+                    else if (parts.Length == 2) t = new Thickness(parts[0], parts[1], parts[0], parts[1]);
+                    else if (parts.Length == 4) t = new Thickness(parts[0], parts[1], parts[2], parts[3]);
                     else return false;
                     return true;
                 }
@@ -304,10 +304,10 @@ namespace SimTools.Controls
                 double h = 0, s, v = max;
                 double d = max - min;
                 s = max == 0 ? 0 : d / max;
-                if(d != 0)
+                if (d != 0)
                 {
-                    if(max == r) h = (g - b) / d + (g < b ? 6 : 0);
-                    else if(max == g) h = (b - r) / d + 2;
+                    if (max == r) h = (g - b) / d + (g < b ? 6 : 0);
+                    else if (max == g) h = (b - r) / d + 2;
                     else h = (r - g) / d + 4;
                     h *= 60;
                 }
@@ -324,7 +324,7 @@ namespace SimTools.Controls
                 double t = v * (1 - (1 - f) * s);
 
                 double r = 0, g = 0, b = 0;
-                switch(i % 6)
+                switch (i % 6)
                 {
                     case 0: r = v; g = t; b = p; break;
                     case 1: r = q; g = v; b = p; break;

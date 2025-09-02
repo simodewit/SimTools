@@ -82,7 +82,7 @@
                     <Slider Minimum="8" Maximum="48" Value="{Binding FontSize, Mode=TwoWay}"/>
                 </StackPanel>
 
-                <!-- Font Family (bundled + grouped) -->
+                <!-- Font Family (ONLY from simtools/fonts) -->
                 <StackPanel Margin="0,6,0,6"
                             Visibility="{Binding HasFontFamily, Converter={StaticResource BoolToVisibility}}">
                     <TextBlock Text="Font Family" FontWeight="SemiBold"
@@ -90,7 +90,7 @@
                     <ComboBox ItemsSource="{Binding FontOptions}"
                               SelectedItem="{Binding SelectedFontOption, Mode=TwoWay}"
                               Width="260" MaxDropDownHeight="360"
-                              ToolTip="Bundled motorsport/game fonts first; close matches and any system lookalikes follow.">
+                              ToolTip="Lists only fonts found in simtools/fonts next to the app. Drop .ttf/.otf files there to add them.">
                         <ComboBox.ItemTemplate>
                             <DataTemplate>
                                 <StackPanel>
