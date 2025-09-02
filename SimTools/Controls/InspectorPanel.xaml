@@ -5,7 +5,6 @@
              Background="{DynamicResource Brush.Surface}"
              MinWidth="260" MaxWidth="320">
     <UserControl.Resources>
-        <!-- Needed by this control; your app-wide styles don't define it -->
         <BooleanToVisibilityConverter x:Key="BoolToVisibility" />
     </UserControl.Resources>
 
@@ -31,9 +30,9 @@
                                Foreground="{DynamicResource Brush.TextDim}"/>
                     <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
                         <local:ColorWheel Width="110" Height="110"
-                                            Hue="{Binding BackgroundHue, Mode=TwoWay}"
-                                            Saturation="{Binding BackgroundSaturation, Mode=TwoWay}"
-                                            SelectedColor="{Binding BackgroundColor, Mode=OneWay}"/>
+                                          Hue="{Binding BackgroundHue, Mode=TwoWay}"
+                                          Saturation="{Binding BackgroundSaturation, Mode=TwoWay}"
+                                          SelectedColor="{Binding BackgroundColor, Mode=OneWay}"/>
                         <StackPanel Margin="10,0,0,0" VerticalAlignment="Center">
                             <TextBlock Text="Brightness" Foreground="{DynamicResource Brush.TextDim}"/>
                             <Slider Minimum="0" Maximum="1"
@@ -55,9 +54,9 @@
                                Foreground="{DynamicResource Brush.TextDim}"/>
                     <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
                         <local:ColorWheel Width="110" Height="110"
-                                            Hue="{Binding ForegroundHue, Mode=TwoWay}"
-                                            Saturation="{Binding ForegroundSaturation, Mode=TwoWay}"
-                                            SelectedColor="{Binding ForegroundColor, Mode=OneWay}"/>
+                                          Hue="{Binding ForegroundHue, Mode=TwoWay}"
+                                          Saturation="{Binding ForegroundSaturation, Mode=TwoWay}"
+                                          SelectedColor="{Binding ForegroundColor, Mode=OneWay}"/>
                         <StackPanel Margin="10,0,0,0" VerticalAlignment="Center">
                             <TextBlock Text="Brightness" Foreground="{DynamicResource Brush.TextDim}"/>
                             <Slider Minimum="0" Maximum="1"
@@ -83,23 +82,31 @@
                     <Slider Minimum="8" Maximum="48" Value="{Binding FontSize, Mode=TwoWay}"/>
                 </StackPanel>
 
+                <!-- Font Family (bundled + grouped) -->
                 <StackPanel Margin="0,6,0,6"
                             Visibility="{Binding HasFontFamily, Converter={StaticResource BoolToVisibility}}">
                     <TextBlock Text="Font Family" FontWeight="SemiBold"
                                Foreground="{DynamicResource Brush.TextDim}"/>
-
-                    <ComboBox ItemsSource="{Binding MotorsportFonts}"
-                                SelectedItem="{Binding FontFamily, Mode=TwoWay}"
-                                Width="220"
-                                MaxDropDownHeight="320">
+                    <ComboBox ItemsSource="{Binding FontOptions}"
+                              SelectedItem="{Binding SelectedFontOption, Mode=TwoWay}"
+                              Width="260" MaxDropDownHeight="360"
+                              ToolTip="Bundled motorsport/game fonts first; close matches and any system lookalikes follow.">
                         <ComboBox.ItemTemplate>
                             <DataTemplate>
-                                <TextBlock FontFamily="{Binding}"
-                                            Text="{Binding Source}"/>
+                                <StackPanel>
+                                    <TextBlock Text="{Binding Category}"
+                                               FontSize="11" Margin="0,4,0,0"
+                                               Foreground="{DynamicResource Brush.TextDim}"
+                                               Visibility="{Binding ShowCategoryHeader}"/>
+                                    <TextBlock Text="{Binding Name}"
+                                               FontFamily="{Binding Family}"
+                                               Margin="12,0,0,0"/>
+                                </StackPanel>
                             </DataTemplate>
                         </ComboBox.ItemTemplate>
                     </ComboBox>
                 </StackPanel>
+
             </StackPanel>
         </ScrollViewer>
     </Border>
