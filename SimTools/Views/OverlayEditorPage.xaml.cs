@@ -112,7 +112,9 @@ namespace SimTools.Views
 
         private void PreviewElement_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
         {
-            if (sender is DependencyObject d)
+            if(_suppressSelection) { e.Handled = true; return; }
+
+            if(sender is DependencyObject d)
             {
                 e.Handled = true;
                 ShowInspectorFor(d, e.GetPosition(PreviewSurface));
@@ -121,7 +123,9 @@ namespace SimTools.Views
 
         private void ToolRoot_PreviewMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
         {
-            if (_currentToolRoot == null) return;
+            if(_suppressSelection) { e.Handled = true; return; }
+
+            if(_currentToolRoot == null) return;
 
             var pos = e.GetPosition(_currentToolRoot);
 
@@ -232,6 +236,8 @@ namespace SimTools.Views
 
         private void PreviewSurface_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
         {
+            if(_suppressSelection) { e.Handled = true; return; }
+
             var pos = e.GetPosition(PreviewSurface);
             DependencyObject found = null;
 
@@ -412,6 +418,12 @@ namespace SimTools.Views
         {
             _isDraggingInspector = false;
             Mouse.Capture(null);
+            _suppressSelection = false;
+        }
+
+        private void InspectorPopup_Opened(object sender, EventArgs e)
+        {
+            _suppressSelection = true;
         }
 
         #endregion

@@ -146,12 +146,13 @@
 
                 <!-- Inspector popup (draggable) -->
                 <Popup x:Name="InspectorPopup"
-                       PlacementTarget="{Binding ElementName=PreviewSurface}"
-                       Placement="RelativePoint"
-                       StaysOpen="True"
-                       AllowsTransparency="True"
-                       PopupAnimation="Fade"
-                       Closed="InspectorPopup_Closed">
+                        PlacementTarget="{Binding ElementName=PreviewSurface}"
+                        Placement="RelativePoint"
+                        StaysOpen="True"
+                        AllowsTransparency="True"
+                        PopupAnimation="Fade"
+                        Opened="InspectorPopup_Opened"            
+                        Closed="InspectorPopup_Closed">
                     <Border Background="{DynamicResource Brush.Surface}"
                             BorderBrush="{DynamicResource Brush.Border}"
                             BorderThickness="1"

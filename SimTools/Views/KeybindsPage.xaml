@@ -319,10 +319,10 @@
     </UserControl.Resources>
 
     <Grid Margin="20">
+        <!-- Removed third row so content stretches to bottom -->
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition/>
-            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
         <TextBlock Text="Keybind Profiles &amp; Maps" FontWeight="Bold" FontSize="18" Margin="0,0,0,8"/>
@@ -336,7 +336,7 @@
             </Grid.ColumnDefinitions>
 
             <!-- Profiles -->
-            <Border Style="{DynamicResource Card}" Margin="0,0,8,0">
+            <Border Style="{DynamicResource Card}" Margin="0,0,8,0" VerticalAlignment="Stretch">
                 <DockPanel LastChildFill="True">
                     <Grid DockPanel.Dock="Top" Margin="0,0,0,8">
                         <Grid.ColumnDefinitions>
@@ -384,7 +384,7 @@
             </Border>
 
             <!-- Maps -->
-            <Border Grid.Column="1" Style="{DynamicResource Card}" Margin="4,0,4,0">
+            <Border Grid.Column="1" Style="{DynamicResource Card}" Margin="4,0,4,0" VerticalAlignment="Stretch">
                 <DockPanel LastChildFill="True">
                     <Grid DockPanel.Dock="Top" Margin="0,0,0,8">
                         <Grid.ColumnDefinitions>
@@ -400,6 +400,69 @@
                             <Button Style="{StaticResource ToolbarTextButton}" FontFamily="Segoe MDL2 Assets" FontSize="14" Content="&#xE8C8;" ToolTip="Duplicate map" AutomationProperties.Name="Duplicate map" Command="{Binding DuplicateMap}" />
                         </StackPanel>
                     </Grid>
+
+                    <!-- moved hotkeys block into Maps (bottom) -->
+                    <StackPanel DockPanel.Dock="Bottom" Margin="0,8,0,0">
+                        <TextBlock Text="Map Hotkeys" FontWeight="Bold" Margin="0,0,0,6"/>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition/>
+                                <ColumnDefinition/>
+                            </Grid.ColumnDefinitions>
+
+                            <!-- Next Map -->
+                            <StackPanel Grid.Column="0" Margin="0,0,10,0">
+                                <TextBlock Text="Hotkey: Next Map"/>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <Button x:Name="NextMapBtn"
+                                            Grid.Column="0"
+                                            Style="{StaticResource AssignButton}"
+                                            Click="NextMapAssign_Click"
+                                            HorizontalAlignment="Stretch">
+                                        <TextBlock Text="{Binding NextMapHotkey}" TextTrimming="CharacterEllipsis"/>
+                                    </Button>
+
+                                    <Button Grid.Column="1"
+                                            Style="{StaticResource LinkAccentButton}"
+                                            FontFamily="Segoe MDL2 Assets" FontSize="12"
+                                            Content="&#xE894;"
+                                            ToolTip="Clear Next Map hotkey"
+                                            Click="NextMapClear_Click"/>
+                                </Grid>
+                            </StackPanel>
+
+                            <!-- Previous Map -->
+                            <StackPanel Grid.Column="1" Margin="10,0,0,0">
+                                <TextBlock Text="Hotkey: Previous Map"/>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <Button x:Name="PrevMapBtn"
+                                            Grid.Column="0"
+                                            Style="{StaticResource AssignButton}"
+                                            Click="PrevMapAssign_Click"
+                                            HorizontalAlignment="Stretch">
+                                        <TextBlock Text="{Binding PrevMapHotkey}" TextTrimming="CharacterEllipsis"/>
+                                    </Button>
+
+                                    <Button Grid.Column="1"
+                                            Style="{StaticResource LinkAccentButton}"
+                                            FontFamily="Segoe MDL2 Assets" FontSize="12"
+                                            Content="&#xE894;"
+                                            ToolTip="Clear Previous Map hotkey"
+                                            Click="PrevMapClear_Click"/>
+                                </Grid>
+                            </StackPanel>
+                        </Grid>
+                    </StackPanel>
 
                     <ListBox x:Name="MapsList"
                              ItemsSource="{Binding Maps}"
@@ -432,7 +495,7 @@
             </Border>
 
             <!-- Keybinds -->
-            <Border Grid.Column="2" Style="{DynamicResource Card}" Margin="8,0,0,0">
+            <Border Grid.Column="2" Style="{DynamicResource Card}" Margin="8,0,0,0" VerticalAlignment="Stretch">
                 <DockPanel LastChildFill="True">
                     <Grid DockPanel.Dock="Top" Margin="0,0,0,8">
                         <Grid.ColumnDefinitions>
@@ -535,69 +598,6 @@
             </Border>
         </Grid>
 
-        <!-- General settings -->
-        <Border Grid.Row="2" Style="{DynamicResource Card}" Margin="0,12,0,0">
-            <StackPanel>
-                <TextBlock Text="General Settings" FontWeight="Bold" Margin="0,0,0,6"/>
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition/>
-                        <ColumnDefinition/>
-                    </Grid.ColumnDefinitions>
-
-                    <!-- Next Map -->
-                    <StackPanel Grid.Column="0" Margin="0,0,10,0">
-                        <TextBlock Text="Hotkey: Next Map"/>
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition/>
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
-
-                            <Button x:Name="NextMapBtn"
-                                    Grid.Column="0"
-                                    Style="{StaticResource AssignButton}"
-                                    Click="NextMapAssign_Click"
-                                    HorizontalAlignment="Stretch">
-                                <TextBlock Text="{Binding NextMapHotkey}" TextTrimming="CharacterEllipsis"/>
-                            </Button>
-
-                            <Button Grid.Column="1"
-                                    Style="{StaticResource LinkAccentButton}"
-                                    FontFamily="Segoe MDL2 Assets" FontSize="12"
-                                    Content="&#xE894;"
-                                    ToolTip="Clear Next Map hotkey"
-                                    Click="NextMapClear_Click"/>
-                        </Grid>
-                    </StackPanel>
-
-                    <!-- Previous Map -->
-                    <StackPanel Grid.Column="1" Margin="10,0,0,0">
-                        <TextBlock Text="Hotkey: Previous Map"/>
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition/>
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
-
-                            <Button x:Name="PrevMapBtn"
-                                    Grid.Column="0"
-                                    Style="{StaticResource AssignButton}"
-                                    Click="PrevMapAssign_Click"
-                                    HorizontalAlignment="Stretch">
-                                <TextBlock Text="{Binding PrevMapHotkey}" TextTrimming="CharacterEllipsis"/>
-                            </Button>
-
-                            <Button Grid.Column="1"
-                                    Style="{StaticResource LinkAccentButton}"
-                                    FontFamily="Segoe MDL2 Assets" FontSize="12"
-                                    Content="&#xE894;"
-                                    ToolTip="Clear Previous Map hotkey"
-                                    Click="PrevMapClear_Click"/>
-                        </Grid>
-                    </StackPanel>
-                </Grid>
-            </StackPanel>
-        </Border>
+        <!-- Removed original "General Settings" bottom card -->
     </Grid>
 </UserControl>
