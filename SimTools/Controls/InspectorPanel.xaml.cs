@@ -4,6 +4,8 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
 
 namespace SimTools.Controls
 {
@@ -26,6 +28,7 @@ namespace SimTools.Controls
             {
                 _target = obj as DependencyObject;
                 Title = BuildTitle(obj);
+                MotorsportFonts = BuildMotorsportFonts();
                 Hydrate();
             }
 
@@ -71,7 +74,6 @@ namespace SimTools.Controls
                 var existing = GetBackgroundBrush() as SolidColorBrush;
                 var opacity = existing?.Opacity ?? 1.0;
 
-                // Always assign a fresh brush; many resource brushes are Frozen/shared.
                 var local = new SolidColorBrush(c) { Opacity = opacity };
                 SetBackgroundBrush(local);
             }
@@ -125,48 +127,6 @@ namespace SimTools.Controls
                 set { if (_target is UIElement u) u.Opacity = Math.Max(0, Math.Min(1, value)); }
             }
 
-            // MARGIN
-            public bool HasMargin => _target is FrameworkElement;
-            public string MarginText
-            {
-                get => _target is FrameworkElement fe ? fe.Margin.ToString() : "0";
-                set
-                {
-                    if (!(_target is FrameworkElement fe)) return;
-                    if (TryParseThickness(value, out var t)) fe.Margin = t;
-                }
-            }
-
-            // PADDING
-            public bool HasPadding => _target is Control || _target is Border;
-            public string PaddingText
-            {
-                get
-                {
-                    if (_target is Control c) return c.Padding.ToString();
-                    if (_target is Border b) return b.Padding.ToString();
-                    return "0";
-                }
-                set
-                {
-                    if (!TryParseThickness(value, out var t)) return;
-                    if (_target is Control c) c.Padding = t;
-                    if (_target is Border b) b.Padding = t;
-                }
-            }
-
-            // CORNER RADIUS
-            public bool HasCornerRadius => _target is Border;
-            public string CornerRadiusText
-            {
-                get => _target is Border b ? b.CornerRadius.ToString() : "0";
-                set
-                {
-                    if (_target is Border b && TryParseCornerRadius(value, out var r))
-                        b.CornerRadius = r;
-                }
-            }
-
             // FONT SIZE
             public bool HasFontSize => _target is Control || _target is TextBlock;
             public double FontSize
@@ -184,30 +144,6 @@ namespace SimTools.Controls
                 }
             }
 
-            // TEXT / CONTENT
-            public bool HasText => _target is TextBlock || _target is TextBox;
-            public string Text
-            {
-                get
-                {
-                    if (_target is TextBlock tb) return tb.Text;
-                    if (_target is TextBox tbox) return tbox.Text;
-                    return "";
-                }
-                set
-                {
-                    if (_target is TextBlock tb) tb.Text = value;
-                    if (_target is TextBox tbox) tbox.Text = value;
-                }
-            }
-
-            public bool HasContent => _target is ContentControl;
-            public string Content
-            {
-                get => _target is ContentControl cc ? cc.Content?.ToString() ?? "" : "";
-                set { if (_target is ContentControl cc) cc.Content = value; }
-            }
-
             private void Hydrate() { }
 
             private static bool TryParseThickness(string s, out Thickness t)
@@ -220,21 +156,6 @@ namespace SimTools.Controls
                     if (parts.Length == 1) t = new Thickness(parts[0]);
                     else if (parts.Length == 2) t = new Thickness(parts[0], parts[1], parts[0], parts[1]);
                     else if (parts.Length == 4) t = new Thickness(parts[0], parts[1], parts[2], parts[3]);
-                    else return false;
-                    return true;
-                }
-                catch { return false; }
-            }
-
-            private static bool TryParseCornerRadius(string s, out CornerRadius r)
-            {
-                r = new CornerRadius();
-                try
-                {
-                    var parts = s.Split(new[] { ',', ' ' }, StringSplitOptions.RemoveEmptyEntries)
-                                 .Select(p => double.Parse(p, CultureInfo.InvariantCulture)).ToArray();
-                    if (parts.Length == 1) r = new CornerRadius(parts[0]);
-                    else if (parts.Length == 4) r = new CornerRadius(parts[0], parts[1], parts[2], parts[3]);
                     else return false;
                     return true;
                 }
@@ -267,7 +188,7 @@ namespace SimTools.Controls
                 double t = v * (1 - (1 - f) * s);
 
                 double r = 0, g = 0, b = 0;
-                switch (i % 6)
+                switch(i % 6)
                 {
                     case 0: r = v; g = t; b = p; break;
                     case 1: r = q; g = v; b = p; break;
@@ -281,6 +202,70 @@ namespace SimTools.Controls
                     (byte)Math.Round(g * 255),
                     (byte)Math.Round(b * 255));
             }
+
+            // FONT FAMILY
+            public bool HasFontFamily => _target is Control || _target is TextBlock;
+
+            public FontFamily FontFamily
+            {
+                get
+                {
+                    if(_target is Control c) return c.FontFamily;
+                    if(_target is TextBlock t) return t.FontFamily;
+                    return new FontFamily("Segoe UI");
+                }
+                set
+                {
+                    if(_target is Control c) c.FontFamily = value;
+                    if(_target is TextBlock t) t.FontFamily = value;
+                }
+            }
+
+            public IReadOnlyList<FontFamily> MotorsportFonts { get; }
+
+            private static IReadOnlyList<FontFamily> BuildMotorsportFonts()
+            {
+                string[] preferred = new[]
+                {
+                    "Formula1", "F1",
+                    "Eurostile", "Microgramma",
+                    "DIN", "DIN 1451",
+                    "Futura", "Compacta",
+                    "Bebas", "Oswald",
+                    "Roboto Condensed",
+                    "Agency", "Agency FB",
+                    "Bank Gothic",
+                    "Impact",
+                    "Avenir Next Condensed", "Avenir",
+                    "Helvetica Neue", "Helvetica", "Arial",
+                    "SF Pro", "San Francisco",
+                    "Titillium", "Russo One"
+                };
+
+                var all = Fonts.SystemFontFamilies.ToList();
+                var list = new List<FontFamily>();
+
+                bool ContainsIgnoreCase(string haystack, string needle) =>
+                    haystack?.IndexOf(needle, StringComparison.OrdinalIgnoreCase) >= 0;
+
+                // Pass 1: add best matches in preference order
+                foreach(var token in preferred)
+                {
+                    var match = all.FirstOrDefault(f =>
+                        ContainsIgnoreCase(f.Source, token) ||
+                        (f.FamilyNames?.Values?.Any(n => ContainsIgnoreCase(n, token)) ?? false));
+
+                    if(match != null && !list.Contains(match))
+                        list.Add(match);
+                }
+
+                // Fallback: if nothing matched, give user a sensible default set
+                if(list.Count == 0)
+                    list.Add(new FontFamily("Segoe UI"));
+
+                return list;
+            }
+
         }
     }
 }

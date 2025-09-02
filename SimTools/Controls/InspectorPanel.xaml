@@ -75,30 +75,6 @@
                     <Slider Minimum="0" Maximum="1" Value="{Binding Opacity, Mode=TwoWay}"/>
                 </StackPanel>
 
-                <!-- Margin -->
-                <StackPanel Margin="0,6,0,6"
-                            Visibility="{Binding HasMargin, Converter={StaticResource BoolToVisibility}}">
-                    <TextBlock Text="Margin" FontWeight="SemiBold"
-                               Foreground="{DynamicResource Brush.TextDim}"/>
-                    <TextBox Text="{Binding MarginText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
-                </StackPanel>
-
-                <!-- Padding -->
-                <StackPanel Margin="0,6,0,6"
-                            Visibility="{Binding HasPadding, Converter={StaticResource BoolToVisibility}}">
-                    <TextBlock Text="Padding" FontWeight="SemiBold"
-                               Foreground="{DynamicResource Brush.TextDim}"/>
-                    <TextBox Text="{Binding PaddingText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
-                </StackPanel>
-
-                <!-- CornerRadius -->
-                <StackPanel Margin="0,6,0,6"
-                            Visibility="{Binding HasCornerRadius, Converter={StaticResource BoolToVisibility}}">
-                    <TextBlock Text="Corner Radius" FontWeight="SemiBold"
-                               Foreground="{DynamicResource Brush.TextDim}"/>
-                    <TextBox Text="{Binding CornerRadiusText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
-                </StackPanel>
-
                 <!-- Font Size -->
                 <StackPanel Margin="0,6,0,6"
                             Visibility="{Binding HasFontSize, Converter={StaticResource BoolToVisibility}}">
@@ -107,21 +83,23 @@
                     <Slider Minimum="8" Maximum="48" Value="{Binding FontSize, Mode=TwoWay}"/>
                 </StackPanel>
 
-                <!-- Text/Content -->
                 <StackPanel Margin="0,6,0,6"
-                            Visibility="{Binding HasText, Converter={StaticResource BoolToVisibility}}">
-                    <TextBlock Text="Text" FontWeight="SemiBold"
+                            Visibility="{Binding HasFontFamily, Converter={StaticResource BoolToVisibility}}">
+                    <TextBlock Text="Font Family" FontWeight="SemiBold"
                                Foreground="{DynamicResource Brush.TextDim}"/>
-                    <TextBox Text="{Binding Text, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
-                </StackPanel>
 
-                <StackPanel Margin="0,6,0,6"
-                            Visibility="{Binding HasContent, Converter={StaticResource BoolToVisibility}}">
-                    <TextBlock Text="Content" FontWeight="SemiBold"
-                               Foreground="{DynamicResource Brush.TextDim}"/>
-                    <TextBox Text="{Binding Content, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                    <ComboBox ItemsSource="{Binding MotorsportFonts}"
+                                SelectedItem="{Binding FontFamily, Mode=TwoWay}"
+                                Width="220"
+                                MaxDropDownHeight="320">
+                        <ComboBox.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock FontFamily="{Binding}"
+                                            Text="{Binding Source}"/>
+                            </DataTemplate>
+                        </ComboBox.ItemTemplate>
+                    </ComboBox>
                 </StackPanel>
-
             </StackPanel>
         </ScrollViewer>
     </Border>
