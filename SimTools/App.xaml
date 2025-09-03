@@ -1,10 +1,10 @@
 ﻿<Application x:Class="SimTools.App"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             ShutdownMode="OnExplicitShutdown">
     <Application.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
-                <!-- Your app-wide theme dictionaries -->
                 <ResourceDictionary Source="pack://application:,,,/Themes/Colors.xaml"/>
                 <ResourceDictionary Source="pack://application:,,,/Themes/OverlayTheme.xaml"/>
                 <ResourceDictionary Source="pack://application:,,,/Themes/Styles.xaml"/>
