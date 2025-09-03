@@ -3,12 +3,13 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
         xmlns:controls="clr-namespace:SimTools.Controls"
-        Title="Checking for updates…"
+        Title="SimTools — starting up…"
         WindowStartupLocation="CenterScreen"
         SizeToContent="WidthAndHeight"
         ResizeMode="CanResize"
         WindowStyle="None"
-        ShowInTaskbar="False"
+        ShowInTaskbar="True"
+        ShowActivated="True"
         Background="{DynamicResource Surface}"
         Foreground="{DynamicResource OnSurface}">
 

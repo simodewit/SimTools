@@ -11,24 +11,26 @@ namespace SimTools.Views
 {
     public partial class UpdateCheckWindow : Window
     {
-        // Manifest endpoint + timeouts (tweak to taste)
+        // Manifest endpoint + timeouts
         private const string ManifestUrl = "https://example.com/simtools/update.json";
         private static readonly TimeSpan ConnectTimeout = TimeSpan.FromSeconds(6);
 
         private readonly UpdateService _service = new();
         private UpdateManifest? _manifest;
 
-        // Splash/progress animation
+        // Completion signaling for App.xaml.cs
+        private readonly TaskCompletionSource<bool> _tcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        public Task<bool> Completion => _tcs.Task;
+
+        // Smooth progress
         private readonly DispatcherTimer _progressTimer;
-        private double _progress;          // 0..100
-        private double _progressTarget;    // we ease towards this
-        private bool _checkingDone;
+        private double _progress;       // 0..100
+        private double _progressTarget; // ease towards
 
         public UpdateCheckWindow()
         {
             InitializeComponent();
 
-            // Smooth “Discord-like” progress: crawl up to 90% while checking
             _progressTimer = new DispatcherTimer(DispatcherPriority.Background)
             {
                 Interval = TimeSpan.FromMilliseconds(25)
@@ -36,27 +38,29 @@ namespace SimTools.Views
             _progressTimer.Tick += ProgressTimer_Tick;
 
             Loaded += UpdateCheckWindow_Loaded;
-            Unloaded += (_, __) => _progressTimer.Stop();
+            Closed += (_, __) => _progressTimer.Stop();
         }
 
         private void ProgressTimer_Tick(object? sender, EventArgs e)
         {
-            // Ease towards target
-            const double ease = 0.12; // smaller = smoother
+            const double ease = 0.12;
             var delta = (_progressTarget - _progress) * ease;
             if(Math.Abs(delta) < 0.1) delta = Math.Sign(delta) * 0.1;
             _progress = Math.Clamp(_progress + delta, 0, 100);
-
             Bar.Value = _progress;
             PercentText.Text = $"{(int)_progress}%";
         }
 
         private async void UpdateCheckWindow_Loaded(object sender, RoutedEventArgs e)
         {
+            // Bring to front in case other apps were active
+            Activate();
+            Topmost = true; Topmost = false; // one-time bump
+
             TitleText.Text = "Getting things ready…";
             StatusText.Text = "Checking for updates…";
             _progress = 0;
-            _progressTarget = 90; // while we’re connecting
+            _progressTarget = 90;
             _progressTimer.Start();
 
             bool success;
@@ -71,26 +75,22 @@ namespace SimTools.Views
                 success = false;
             }
 
-            _checkingDone = true;
-
             if(!success)
             {
-                // Connection failed: keep splash open, show error + Close button
-                _progressTarget = Math.Max(_progress, 92); // give a near-full “completed” look
+                // Keep window open; user decides what to do
+                _progressTarget = Math.Max(_progress, 92);
                 await CompleteBarAsync();
                 TitleText.Text = "We hit a snag";
                 StatusText.Text = "Couldn’t verify updates.";
                 ErrorText.Visibility = Visibility.Visible;
                 CloseBtn.Visibility = Visibility.Visible;
                 UpdateBtn.Visibility = Visibility.Collapsed;
-                return; // leave window up; user decides to close
+                return;
             }
 
-            // Success: decide based on version
             var current = Assembly.GetEntryAssembly()!.GetName().Version ?? new Version(0, 0, 0, 0);
             if(_manifest!.Version > current)
             {
-                // Update available
                 _progressTarget = 100;
                 await CompleteBarAsync();
 
@@ -100,15 +100,14 @@ namespace SimTools.Views
                     : _manifest.ReleaseNotes;
 
                 ErrorText.Visibility = Visibility.Collapsed;
-                CloseBtn.Visibility = Visibility.Visible;   // user can bail
-                UpdateBtn.Visibility = Visibility.Visible;  // or install
+                CloseBtn.Visibility = Visibility.Visible;
+                UpdateBtn.Visibility = Visibility.Visible;
             }
             else
             {
-                // No update -> continue into the app
                 _progressTarget = 100;
                 await CompleteBarAsync();
-                DialogResult = true;
+                _tcs.TrySetResult(true); // continue into app
                 Close();
             }
         }
@@ -116,7 +115,6 @@ namespace SimTools.Views
         private async Task CompleteBarAsync()
         {
             _progressTarget = 100;
-            // let the easing tick catch up for a short beat
             await Task.Delay(300);
             _progressTimer.Stop();
             Bar.Value = 100;
@@ -140,14 +138,12 @@ namespace SimTools.Views
                 _progressTarget = 10;
                 _progressTimer.Start();
 
-                string? downloaded = null;
-                downloaded = await _service.DownloadAsync(
+                var downloaded = await _service.DownloadAsync(
                     _manifest.Url,
                     _manifest.Sha256,
                     p =>
                     {
-                        // Map 10..100 to download progress
-                        var mapped = 10 + (p * 90.0);
+                        var mapped = 10 + (p * 90.0); // 10..100
                         _progressTarget = Math.Max(mapped, _progressTarget);
                     },
                     CancellationToken.None);
@@ -158,8 +154,7 @@ namespace SimTools.Views
                 StatusText.Text = "SimTools will close during the update.";
                 _service.RunInstaller(downloaded);
 
-                // Tell App to exit while installer runs
-                DialogResult = false;
+                _tcs.TrySetResult(false); // tell App to exit while installer runs
                 Close();
             }
             catch(Exception ex)
@@ -177,8 +172,7 @@ namespace SimTools.Views
 
         private void CloseBtn_Click(object? sender, RoutedEventArgs e)
         {
-            // User chooses to close; App will see false and exit.
-            DialogResult = false;
+            _tcs.TrySetResult(false); // user chose to exit
             Close();
         }
     }

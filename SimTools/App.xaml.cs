@@ -11,45 +11,23 @@ namespace SimTools
     {
         private VirtualGamepadService _vjoy;
 
-        protected override void OnStartup(StartupEventArgs e)
+        protected override async void OnStartup(StartupEventArgs e)
         {
             base.OnStartup(e);
 
-            // Global safety nets to ensure graceful exits in debug/release
-            this.DispatcherUnhandledException += (s, ex) =>
-            {
-                // TODO: log ex.Exception
-                ex.Handled = true;
-                Shutdown(0);
-            };
-            AppDomain.CurrentDomain.UnhandledException += (s, ex) =>
-            {
-                // TODO: log ex.ExceptionObject
-                Shutdown(0);
-            };
-            TaskScheduler.UnobservedTaskException += (s, ex) =>
-            {
-                // TODO: log ex.Exception
-                ex.SetObserved();
-                Shutdown(0);
-            };
+            // Keep graceful exits if anything goes sideways
+            this.DispatcherUnhandledException += (s, ex) => { ex.Handled = true; Shutdown(0); };
+            AppDomain.CurrentDomain.UnhandledException += (s, ex) => { Shutdown(0); };
+            TaskScheduler.UnobservedTaskException += (s, ex) => { ex.SetObserved(); Shutdown(0); };
 
-            // --- Pre-launch updater ---
-            bool continueToApp = true;
-            try
-            {
-                var upd = new UpdateCheckWindow { Owner = null };
-                // ShowDialog returns:
-                //   true  => continue into app
-                //   false => user chose Close or update is launching
-                //   null  => window was closed: treat as false for safety
-                continueToApp = upd.ShowDialog() ?? false;
-            }
-            catch
-            {
-                // If the popup itself fails, we choose to exit (quietly)
-                continueToApp = false;
-            }
+            // --- Pre-launch splash/updater (modeless, shows in taskbar) ---
+            var splash = new UpdateCheckWindow();
+            splash.Show();               // modeless => appears in taskbar/Alt-Tab
+            splash.Activate();           // try to foreground
+            splash.Topmost = true;       // bring to front once…
+            splash.Topmost = false;      // …then return to normal
+
+            bool continueToApp = await splash.Completion; // waits until splash closes
 
             if(!continueToApp)
             {
