@@ -2,7 +2,6 @@
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Interop;
-using SimTools.Debug;
 using SimTools.Models;
 
 namespace SimTools.Services
@@ -21,7 +20,7 @@ namespace SimTools.Services
         public static void RouteSynthetic(InputBindingResult res)
         {
             try { SyntheticRouted?.Invoke(res); }
-            catch (Exception ex) { Diag.LogEx("RIM.RouteSynthetic", ex); }
+            catch (Exception ex) {  }
         }
 
         /// <summary>Raised for BOTH real WM_INPUT and synthetic inputs.</summary>
@@ -36,7 +35,6 @@ namespace SimTools.Services
             {
                 _owner.SourceInitialized += OwnerOnSourceInitialized;
                 _owner.Loaded += OwnerOnLoaded; // extra guard in case SourceInitialized already fired
-                Diag.Log("RIM.Ctor: HwndSource null; will register on SourceInitialized/Loaded");
             }
             else
             {
@@ -54,7 +52,7 @@ namespace SimTools.Services
                 var src = (HwndSource)PresentationSource.FromVisual(_owner);
                 if (src != null) Init(src);
             }
-            catch (Exception ex) { Diag.LogEx("RIM.OwnerOnSourceInitialized", ex); }
+            catch (Exception ex) {  }
             finally { _owner.SourceInitialized -= OwnerOnSourceInitialized; }
         }
 
@@ -66,7 +64,7 @@ namespace SimTools.Services
                 var src = (HwndSource)PresentationSource.FromVisual(_owner);
                 if (src != null) Init(src);
             }
-            catch (Exception ex) { Diag.LogEx("RIM.OwnerOnLoaded", ex); }
+            catch (Exception ex) {  }
             finally { _owner.Loaded -= OwnerOnLoaded; }
         }
 
@@ -78,7 +76,6 @@ namespace SimTools.Services
             {
                 _source = src;
                 _source.AddHook(WndProc);
-                Diag.Log($"RIM.Init: hwnd={_source.Handle}");
 
                 // Register Raw Input: keyboard only, INPUTSINK
                 var rid = new RAWINPUTDEVICE
@@ -90,13 +87,10 @@ namespace SimTools.Services
                 };
 
                 bool ok = RegisterRawInputDevices(new[] { rid }, 1, Marshal.SizeOf<RAWINPUTDEVICE>());
-                Diag.Log($"RIM.Register(Keyboard only) => {ok} (err={Marshal.GetLastWin32Error()})");
                 _registered = ok;
-                if (ok) Diag.Log("RIM.Init: registration OK; WM_INPUT should arrive.");
             }
             catch (Exception ex)
             {
-                Diag.LogEx("RIM.Init", ex);
             }
         }
 
@@ -104,20 +98,17 @@ namespace SimTools.Services
         {
             if (msg == WM_INPUT)
             {
-                Diag.Log("RIM.WndProc: WM_INPUT received");
                 InputBindingResult res = null;
                 try { res = InputCapture.ReadInput(lParam); }
-                catch (Exception ex) { Diag.LogEx("InputCapture.ReadInput", ex); }
+                catch (Exception ex) {  }
 
                 if (res == null)
                 {
-                    Diag.Log("RIM.WndProc: ReadInput -> NULL");
                 }
                 else
                 {
-                    Diag.Log($"RIM.WndProc: ReadInput -> dev='{res.DeviceType}' key='{res.ControlLabel}'");
                     try { InputReceived?.Invoke(res); }
-                    catch (Exception ex) { Diag.LogEx("RIM.InputReceived.Invoke", ex); }
+                    catch (Exception ex) {  }
                 }
             }
 
@@ -134,16 +125,13 @@ namespace SimTools.Services
             {
                 if (res == null)
                 {
-                    Diag.Log("RIM.Synth: NULL result");
                     return;
                 }
 
-                Diag.Log($"RIM.Synth: dev='{res.DeviceType}' key='{res.ControlLabel}'");
                 InputReceived?.Invoke(res);
             }
             catch (Exception ex)
             {
-                Diag.LogEx("RIM.Synth", ex);
             }
         }
 

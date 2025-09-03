@@ -7,7 +7,6 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Threading;
-using SimTools.Debug;
 using SimTools.Helpers;
 using SimTools.Models;
 using SimTools.Services;
@@ -59,13 +58,11 @@ namespace SimTools.Views
             {
                 _rim = new RawInputMonitor(owner);
                 _rim.InputReceived += OnGlobalInput_FromRIM;
-                Diag.Log("[KP] RawInputMonitor started");
             }
 
             // Ensure vJoy is started
             if (_gamepad == null) _gamepad = new VirtualGamepadService();
             var started = _gamepad.TryStart();
-            Diag.Log($"[KP] vJoy.TryStart => {started}; status='{_gamepad.StatusSummary()}'");
         }
 
         private void KeybindsPage_Unloaded(object sender, RoutedEventArgs e)
@@ -75,7 +72,6 @@ namespace SimTools.Views
                 _rim.InputReceived -= OnGlobalInput_FromRIM;
                 _rim.Dispose();
                 _rim = null;
-                Diag.Log("[KP] RawInputMonitor disposed");
             }
         }
 
@@ -112,7 +108,6 @@ namespace SimTools.Views
             {
                 _hwndSrc = (HwndSource)PresentationSource.FromVisual(owner);
                 _hwndSrc?.AddHook(DeviceChangeHook);
-                Diag.Log("[KP] WM_DEVICECHANGE hook attached");
             }
 
             if (owner != null && _inputMonitor == null)
@@ -329,7 +324,6 @@ namespace SimTools.Views
                 try
                 {
                     var ok = _gamepad?.TryStart() ?? false;
-                    if (!ok) Diag.Log("[KP] vJoy.TryStart before TapVirtual returned false; output may not be sent.");
                 }
                 catch { }
 
@@ -611,7 +605,6 @@ namespace SimTools.Views
                 // Re-acquire vJoy when devices (re)enumerate (e.g., HidHide toggled).
                 try
                 {
-                    Diag.Log("[KP] WM_DEVICECHANGE received – attempting vJoy re-acquire");
                     _gamepad?.TryStart();
                 }
                 catch { }

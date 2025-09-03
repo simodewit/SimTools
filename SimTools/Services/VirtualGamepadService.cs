@@ -1,7 +1,6 @@
 ﻿using System;
 using vJoyInterfaceWrap;
 using SimTools.Models;
-using SimTools.Debug;
 
 namespace SimTools.Services
 {
@@ -32,30 +31,25 @@ namespace SimTools.Services
                 {
                     var enabled = _vjoy.vJoyEnabled();
                     var status = _vjoy.GetVJDStatus(DeviceId);
-                    Diag.Log($"vJoy.TryStart: enabled={enabled}, deviceId={DeviceId}, status={status}");
 
                     if(!enabled)
                     {
                         LastError = "vJoy driver not enabled/installed.";
-                        Diag.Log($"vJoy.TryStart: FAIL -> {LastError}");
                         return false;
                     }
 
                     if(status != VjdStat.VJD_STAT_FREE && status != VjdStat.VJD_STAT_OWN)
                     {
                         LastError = $"vJoy Device #{DeviceId} is not available (status: {status}).";
-                        Diag.Log($"vJoy.TryStart: FAIL -> {LastError}");
                         return false;
                     }
 
                     if(status == VjdStat.VJD_STAT_FREE)
                     {
                         var ok = _vjoy.AcquireVJD(DeviceId);
-                        Diag.Log($"vJoy.AcquireVJD({DeviceId}) => {ok}");
                         if(!ok)
                         {
                             LastError = "AcquireVJD returned false.";
-                            Diag.Log($"vJoy.TryStart: FAIL -> {LastError}");
                             return false;
                         }
                         _acquired = true;
@@ -66,19 +60,17 @@ namespace SimTools.Services
                         _acquired = true;
                     }
 
-                    try { _vjoy.ResetVJD(DeviceId); } catch(Exception ex) { Diag.LogEx("vJoy.ResetVJD", ex); }
+                    try { _vjoy.ResetVJD(DeviceId); } catch(Exception ex) {  }
 
                     try { ButtonCount = (int)_vjoy.GetVJDButtonNumber(DeviceId); }
-                    catch(Exception ex) { ButtonCount = 0; Diag.LogEx("vJoy.GetVJDButtonNumber", ex); }
+                    catch(Exception ex) { ButtonCount = 0; }
 
                     IsReady = true;
-                    Diag.Log($"vJoy.TryStart: SUCCESS, buttons={ButtonCount}");
                     return true;
                 }
                 catch(Exception ex)
                 {
                     LastError = ex.Message;
-                    Diag.LogEx("vJoy.TryStart", ex);
                     return false;
                 }
             }
@@ -100,7 +92,6 @@ namespace SimTools.Services
                 {
                     IsReady = false;
                     _acquired = false;
-                    Diag.Log("vJoy.SetButton: vJoy driver not enabled");
                     return;
                 }
 
@@ -111,7 +102,6 @@ namespace SimTools.Services
                     if(status == VjdStat.VJD_STAT_FREE)
                     {
                         var okAcquire = _vjoy.AcquireVJD(DeviceId);
-                        Diag.Log($"vJoy.SetButton: re-acquire -> {okAcquire}, status was {status}");
                         _acquired = okAcquire;
                         IsReady = okAcquire;
                         if(!okAcquire) return;
@@ -121,13 +111,11 @@ namespace SimTools.Services
                         // Busy or missing – bail out cleanly
                         _acquired = false;
                         IsReady = false;
-                        Diag.Log($"vJoy.SetButton: device not OWN (status={status})");
                         return;
                     }
                 }
 
                 var ok = _vjoy.SetBtn(down, DeviceId, index);
-                Diag.Log($"vJoy.SetButton: out={output}({index}) down={down} -> {ok}");
                 if(!ok)
                 {
                     // Last-chance: device may have bounced mid-call; reset our state

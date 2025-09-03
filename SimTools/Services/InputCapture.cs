@@ -4,7 +4,6 @@ using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Threading;
-using SimTools.Debug;
 using SimTools.Models;
 using SimTools.Helpers; 
 
@@ -17,7 +16,6 @@ namespace SimTools.Services
             if(owner == null) throw new ArgumentNullException(nameof(owner));
             if(onInput == null) throw new ArgumentNullException(nameof(onInput));
 
-            Diag.Log("IC.StartMonitor: creating RawInputMonitor");
             var rim = new RawInputMonitor(owner);
 
             Action<InputBindingResult> forward = null;
@@ -25,16 +23,13 @@ namespace SimTools.Services
             {
                 if(res == null)
                 {
-                    Diag.Log("IC.Forward: NULL result (ignored)");
                     return;
                 }
-                Diag.Log("IC.Forward: delivering result to callback -> dev='" + res.DeviceType + "' key='" + res.ControlLabel + "'");
                 try { onInput(res); }
-                catch(Exception ex) { Diag.LogEx("IC.Forward callback", ex); }
+                catch(Exception ex) { }
             };
 
             rim.InputReceived += forward;
-            Diag.Log("IC.StartMonitor: subscribed to RawInputMonitor");
 
             return new RimHandle(rim, forward);
         }
@@ -44,7 +39,6 @@ namespace SimTools.Services
         /// </summary>
         public static InputBindingResult CaptureBinding(Window owner)
         {
-            Diag.Log("IC.CaptureBinding: begin");
             InputBindingResult captured = null;
 
             var rim = new RawInputMonitor(owner);
@@ -56,13 +50,11 @@ namespace SimTools.Services
             timeCb = (s, e) =>
             {
                 try { timeout.Stop(); } catch { }
-                Diag.Log("IC.CaptureBinding: timeout");
                 frame.Continue = false;
             };
 
             handler = (res) =>
             {
-                Diag.Log("IC.CaptureBinding: got result -> " + (res == null ? "NULL" : $"dev='{res.DeviceType}' key='{res.ControlLabel}'"));
                 if(res == null) return;
                 captured = res;
                 try { rim.InputReceived -= handler; } catch { }
@@ -83,7 +75,6 @@ namespace SimTools.Services
                 try { rim.Dispose(); } catch { }
             }
 
-            Diag.Log("IC.CaptureBinding: end (captured=" + (captured == null ? "NULL" : captured.ControlLabel) + ")");
             return captured;
         }
 
@@ -98,7 +89,6 @@ namespace SimTools.Services
                 uint want0 = GetRawInputData(lParam, RID_INPUT, IntPtr.Zero, ref size, (uint)Marshal.SizeOf(typeof(RAWINPUTHEADER)));
                 if(want0 != 0 || size == 0)
                 {
-                    Diag.Log("IC.ReadInput: size query failed (ret=" + want0 + ", size=" + size + ")");
                     return null;
                 }
 
@@ -108,30 +98,25 @@ namespace SimTools.Services
                     uint read = GetRawInputData(lParam, RID_INPUT, buffer, ref size, (uint)Marshal.SizeOf(typeof(RAWINPUTHEADER)));
                     if(read == 0)
                     {
-                        Diag.Log("IC.ReadInput: data query returned 0");
                         return null;
                     }
 
                     var raw = (RAWINPUT)Marshal.PtrToStructure(buffer, typeof(RAWINPUT));
                     if(raw.header.dwType != RIM_TYPEKEYBOARD)
                     {
-                        Diag.Log("IC.ReadInput: non-keyboard type=" + raw.header.dwType);
                         return null;
                     }
 
                     var k = raw.data.keyboard;
-                    Diag.Log("IC.Raw: VK=" + k.VKey + " Make=" + k.MakeCode + " Flags=0x" + k.Flags.ToString("X") + " Msg=0x" + k.Message.ToString("X"));
 
                     if(k.VKey == 0xFF)
                     {
-                        Diag.Log("IC.ReadInput: VKey=0xFF -> ignoring");
                         return null;
                     }
 
                     bool isBreak = (k.Flags & RI_KEY_BREAK) != 0;
                     if(isBreak)
                     {
-                        Diag.Log("IC.ReadInput: BREAK -> ignoring");
                         return null;
                     }
 
@@ -146,12 +131,10 @@ namespace SimTools.Services
                     if(key == Key.None || string.IsNullOrEmpty(label))
                     {
                         var fb = VkToFallbackLabel(vk, mods);
-                        Diag.Log("IC.ReadInput: fallback label used -> '" + fb + "'");
                         label = fb;
                     }
                     else
                     {
-                        Diag.Log("IC.ReadInput: built label -> '" + label + "'");
                     }
 
                     var result = new InputBindingResult
@@ -169,7 +152,6 @@ namespace SimTools.Services
             }
             catch(Exception ex)
             {
-                Diag.LogEx("IC.ReadInput", ex);
                 return null;
             }
         }
@@ -272,13 +254,11 @@ namespace SimTools.Services
                 Application.Current?.Dispatcher.BeginInvoke(new Action(() =>
                 {
                     var res = new InputBindingResult { DeviceType = device, ControlLabel = label };
-                    SimTools.Debug.Diag.Log($"IC.RouteFromHook: synth -> dev='{device}' key='{label}'");
                     RawInputMonitor.RouteSynthetic(res);
                 }));
             }
             catch(Exception ex)
             {
-                SimTools.Debug.Diag.LogEx("IC.RouteFromHook", ex);
             }
         }
     }

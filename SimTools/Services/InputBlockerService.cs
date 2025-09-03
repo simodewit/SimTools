@@ -2,7 +2,6 @@
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Windows.Input;
-using SimTools.Debug;
 using SimTools.Helpers; 
 
 namespace SimTools.Services
@@ -30,7 +29,6 @@ namespace SimTools.Services
                 _hook = SetWindowsHookEx(WH_KEYBOARD_LL, _proc,
                     GetModuleHandle(curModule.ModuleName), 0);
             }
-            Diag.Log($"HOOK.Start: WH_KEYBOARD_LL installed -> {_hook != IntPtr.Zero}");
         }
 
         public void Stop()
@@ -38,7 +36,6 @@ namespace SimTools.Services
             if(_hook != IntPtr.Zero)
             {
                 UnhookWindowsHookEx(_hook);
-                Diag.Log("HOOK.Stop: unhooked");
                 _hook = IntPtr.Zero;
             }
         }
@@ -66,10 +63,7 @@ namespace SimTools.Services
                     }
                     catch(Exception ex)
                     {
-                        Diag.LogEx("HOOK predicate", ex);
                     }
-
-                    Diag.Log($"HOOK {(isDown ? "DOWN" : "UP  ")} vk=0x{data.vkCode:X} sc=0x{data.scanCode:X} injected={injected} mods={mods} swallow={swallow}");
 
                     // Never swallow injected events (our own SendInput / test taps)
                     if(injected) swallow = false;
@@ -86,13 +80,11 @@ namespace SimTools.Services
                                 if(string.IsNullOrEmpty(label))
                                     label = "VK_" + ((int)data.vkCode).ToString("X2");
 
-                                Diag.Log($"HOOK ROUTE: swallow=True -> '{label}'");
                                 // Push into InputCapture; it will marshal to UI thread and then into RawInputMonitor
                                 InputCapture.RouteFromHook("Keyboard", label);
                             }
                             catch(Exception ex)
                             {
-                                Diag.LogEx("HOOK.RouteFromHook", ex);
                             }
                         }
 
