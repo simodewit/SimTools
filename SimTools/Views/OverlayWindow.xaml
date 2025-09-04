@@ -1,7 +1,7 @@
 ﻿<Window x:Class="SimTools.Views.OverlayWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:conv="clr-namespace:SimTools.Converters"
+        xmlns:controls="clr-namespace:SimTools.Controls"
         WindowStyle="None"
         AllowsTransparency="True"
         Background="#00000000"
@@ -10,98 +10,80 @@
         Title="Overlay"
         Width="960" Height="540">
 
-    <Window.Resources>
-        <BooleanToVisibilityConverter x:Key="BoolToVisibility"/>
-        <conv:FuncToElementConverter x:Key="FuncToElementConverter"/>
-    </Window.Resources>
+    <Grid>
+        <Canvas x:Name="OverlayCanvas" ClipToBounds="True"/>
 
-    <DockPanel LastChildFill="True">
-
-        <!-- SIDE MENU (long, narrow) -->
-        <Border DockPanel.Dock="{Binding OverlayMenuDock, RelativeSource={RelativeSource AncestorType=Window}}"
+        <!-- Compact toolbar -->
+        <Border x:Name="SideToolbar"
                 Width="260"
-                Background="#AA1E1E1E"
-                BorderBrush="#33000000"
+                HorizontalAlignment="Right"
+                VerticalAlignment="Center"
+                CornerRadius="12"
+                Background="#F0131315"
+                BorderBrush="#28FFFFFF"
                 BorderThickness="1"
-                Padding="12"
-                SnapsToDevicePixels="True">
-            <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-                <StackPanel>
-                    <TextBlock Text="Overlay tools" FontWeight="Bold" Margin="0,0,0,8"/>
+                Padding="10"
+                Margin="0,0,18,0">
+            <Border.Effect>
+                <DropShadowEffect BlurRadius="14" Direction="270" ShadowDepth="2" Opacity="0.35"/>
+            </Border.Effect>
 
-                    <!-- Toggle list -->
-                    <ItemsControl ItemsSource="{Binding ToolStates, RelativeSource={RelativeSource AncestorType=Window}}">
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate>
-                                <!-- Descriptor.Name resolves by reflection; Descriptor is object -->
-                                <CheckBox Content="{Binding Descriptor.Name}"
-                                          IsChecked="{Binding IsEnabled, Mode=TwoWay}"
-                                          Margin="0,2,0,2"/>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
+            <StackPanel>
+                <DockPanel>
+                    <TextBlock Text="Overlay tools" FontWeight="SemiBold" Foreground="#F0FFFFFF" />
+                    <Button Content="⤢" Width="26" Height="26" Margin="6,0,0,0"
+                            HorizontalAlignment="Right" DockPanel.Dock="Right"
+                            Background="#22FFFFFF" BorderBrush="#33FFFFFF" Foreground="#F0FFFFFF"
+                            ToolTip="Collapse"
+                            Click="CollapseToolbar_Click"/>
+                </DockPanel>
 
-                    <Separator Margin="0,12,0,12"/>
+                <Separator Margin="0,8,0,8" Opacity="0.2"/>
 
-                    <TextBlock Text="Attach menu" FontWeight="SemiBold" Margin="0,0,0,6"/>
-
-                    <UniformGrid Columns="4" Margin="0,0,0,6">
-                        <Button Content="Left"
-                                Command="{Binding SetMenuDockCommand, RelativeSource={RelativeSource AncestorType=Window}}"
-                                CommandParameter="Left" />
-                        <Button Content="Right"
-                                Command="{Binding SetMenuDockCommand, RelativeSource={RelativeSource AncestorType=Window}}"
-                                CommandParameter="Right" />
-                        <Button Content="Top"
-                                Command="{Binding SetMenuDockCommand, RelativeSource={RelativeSource AncestorType=Window}}"
-                                CommandParameter="Top" />
-                        <Button Content="Bottom"
-                                Command="{Binding SetMenuDockCommand, RelativeSource={RelativeSource AncestorType=Window}}"
-                                CommandParameter="Bottom" />
-                    </UniformGrid>
-
-                    <Button Content="Close overlay"
-                            Command="{Binding CloseOverlayCommand, RelativeSource={RelativeSource AncestorType=Window}}"/>
-                </StackPanel>
-            </ScrollViewer>
-        </Border>
-
-        <!-- OVERLAY SURFACE (sample scaffolding; keep or wire to your real elements) -->
-        <Grid>
-            <Canvas>
-                <ItemsControl ItemsSource="{Binding OverlayElements}">
-                    <ItemsControl.ItemsPanel>
-                        <ItemsPanelTemplate>
-                            <Canvas/>
-                        </ItemsPanelTemplate>
-                    </ItemsControl.ItemsPanel>
-                    <ItemsControl.ItemTemplate>
-                        <DataTemplate>
-                            <Border Background="#33000000"
-                                    CornerRadius="8"
-                                    Padding="8"
-                                    Canvas.Left="{Binding X}"
-                                    Canvas.Top="{Binding Y}">
-                                <StackPanel>
-                                    <TextBlock Text="Mapping" Foreground="White" Opacity="0.85" FontSize="12"/>
-                                    <TextBlock Text="{Binding DataContext.CurrentMapName, RelativeSource={RelativeSource AncestorType=Window}}"
-                                               FontSize="20" FontWeight="Bold" Foreground="White"/>
-                                </StackPanel>
-                            </Border>
-                        </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                </ItemsControl>
-
-                <!-- Tool previews controlled by toggles -->
                 <ItemsControl ItemsSource="{Binding ToolStates, RelativeSource={RelativeSource AncestorType=Window}}">
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
-                            <ContentPresenter Visibility="{Binding IsEnabled, Converter={StaticResource BoolToVisibility}}"
-                                              Content="{Binding Descriptor.BuildPreview, Converter={StaticResource FuncToElementConverter}}"/>
+                            <CheckBox Content="{Binding Descriptor.Name}"
+                                      IsChecked="{Binding IsEnabled, Mode=TwoWay}"
+                                      Margin="0,4,0,0"
+                                      Foreground="#F0FFFFFF"/>
                         </DataTemplate>
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>
-            </Canvas>
-        </Grid>
-    </DockPanel>
+
+                <Separator Margin="0,8,0,8" Opacity="0.2"/>
+
+                <TextBlock Text="Attach toolbar" Foreground="#D0FFFFFF" Margin="0,0,0,6"/>
+
+                <UniformGrid Columns="4">
+                    <Button Content="L" Command="{Binding SetMenuDockCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="Left"
+                            Background="#1EFFFFFF" BorderBrush="#30FFFFFF" Foreground="#F0FFFFFF" />
+                    <Button Content="R" Command="{Binding SetMenuDockCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="Right"
+                            Background="#1EFFFFFF" BorderBrush="#30FFFFFF" Foreground="#F0FFFFFF" />
+                    <Button Content="T" Command="{Binding SetMenuDockCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="Top"
+                            Background="#1EFFFFFF" BorderBrush="#30FFFFFF" Foreground="#F0FFFFFF" />
+                    <Button Content="B" Command="{Binding SetMenuDockCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="Bottom"
+                            Background="#1EFFFFFF" BorderBrush="#30FFFFFF" Foreground="#F0FFFFFF" />
+                </UniformGrid>
+
+                <Button Content="Close overlay"
+                        Margin="0,8,0,0"
+                        Command="{Binding CloseOverlayCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                        Background="#2A66C2FF" BorderBrush="#3A7BCAFF" Foreground="White"/>
+            </StackPanel>
+        </Border>
+
+        <!-- Collapsed puck -->
+        <Button x:Name="CollapsedPuck"
+                Width="34" Height="34"
+                Visibility="Collapsed"
+                Background="#F0131315" BorderBrush="#28FFFFFF" BorderThickness="1"
+                Foreground="#F0FFFFFF"
+                Content="◀"
+                Click="ExpandToolbar_Click">
+            <Button.Effect>
+                <DropShadowEffect BlurRadius="14" Direction="270" ShadowDepth="2" Opacity="0.35"/>
+            </Button.Effect>
+        </Button>
+    </Grid>
 </Window>
