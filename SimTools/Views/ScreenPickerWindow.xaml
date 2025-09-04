@@ -2,47 +2,56 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Choose a screen"
-        Width="520" Height="360"
+        Width="540" Height="380"
         ResizeMode="NoResize"
         WindowStyle="None"
         AllowsTransparency="True"
-        Background="#00000000"
+        Background="Transparent"
         WindowStartupLocation="CenterOwner">
 
-    <Border CornerRadius="10" BorderBrush="#2FFFFFFF" BorderThickness="1" Background="#F0101214">
+    <!-- Fully opaque rounded card so nothing square shows behind -->
+    <Border CornerRadius="12"
+            BorderBrush="#26FFFFFF"
+            BorderThickness="1"
+            Background="#FF101214"
+            SnapsToDevicePixels="True">
+
         <Grid>
             <Grid.RowDefinitions>
-                <RowDefinition Height="40"/>
+                <RowDefinition Height="46"/>
                 <RowDefinition/>
-                <RowDefinition Height="56"/>
+                <RowDefinition Height="68"/>
             </Grid.RowDefinitions>
 
-            <!-- Title bar (drag region) -->
-            <Grid Grid.Row="0" Background="#00121212" MouseLeftButtonDown="TitleRow_MouseLeftButtonDown">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition/>
-                    <ColumnDefinition Width="Auto"/>
-                </Grid.ColumnDefinitions>
+            <!-- Title bar (drag region) - same color as window -->
+            <Border Grid.Row="0" Background="#FF101214" CornerRadius="12,12,0,0">
+                <Grid MouseLeftButtonDown="TitleRow_MouseLeftButtonDown">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
 
-                <TextBlock Text="Choose a display"
-                           Margin="12,0,0,0"
-                           VerticalAlignment="Center"
-                           Foreground="#F0FFFFFF"
-                           FontSize="13"/>
+                    <TextBlock Text="Choose a display"
+                               Margin="14,0,0,0"
+                               VerticalAlignment="Center"
+                               Foreground="#F0FFFFFF"
+                               FontSize="13"/>
 
-                <Button Grid.Column="1"
-                        Content="✕"
-                        Width="28" Height="28"
-                        Margin="0,0,8,0"
-                        Background="#22FFFFFF"
-                        BorderBrush="#33FFFFFF"
-                        Foreground="#F0FFFFFF"
-                        Padding="0"
-                        Click="Close_Click"/>
-            </Grid>
+                    <Button Grid.Column="1"
+                            Content="✕"
+                            Width="28" Height="28"
+                            Margin="0,0,10,0"
+                            VerticalAlignment="Center"
+                            Background="#22FFFFFF"
+                            BorderBrush="#33FFFFFF"
+                            Foreground="#F0FFFFFF"
+                            Padding="0"
+                            Click="Close_Click"/>
+                </Grid>
+            </Border>
 
             <!-- Content -->
-            <Grid Grid.Row="1" Margin="14">
+            <Grid Grid.Row="1" Margin="16,14,16,14">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="8"/>
@@ -86,20 +95,21 @@
                 </ListBox>
             </Grid>
 
-            <!-- Buttons -->
-            <Grid Grid.Row="2" Margin="14,0,14,14">
+            <!-- Buttons (extra padding so nothing gets clipped) -->
+            <Grid Grid.Row="2" Margin="16,0,16,12">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition/>
                     <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="8"/>
+                    <ColumnDefinition Width="10"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
 
-                <Button Grid.Column="1" Content="Cancel" Width="100" Height="36"
+                <!-- Neutral (no blue accent) -->
+                <Button Grid.Column="1" Content="Cancel" Width="110" Height="38"
                         Background="#1EFFFFFF" BorderBrush="#30FFFFFF" Foreground="#F0FFFFFF"
                         Click="Cancel_Click"/>
-                <Button Grid.Column="3" Content="OK" Width="100" Height="36"
-                        Background="#2A66C2FF" BorderBrush="#3A7BCAFF" Foreground="White"
+                <Button Grid.Column="3" Content="OK" Width="110" Height="38"
+                        Background="#1EFFFFFF" BorderBrush="#30FFFFFF" Foreground="#F0FFFFFF"
                         IsDefault="True"
                         Click="Ok_Click"/>
             </Grid>
