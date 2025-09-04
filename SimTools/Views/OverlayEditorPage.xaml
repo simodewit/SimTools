@@ -198,10 +198,12 @@
         <Border Grid.Row="2" Style="{DynamicResource Card}" Margin="0,12,0,0" Padding="12">
             <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                 <TextBlock Text="Preview background:" VerticalAlignment="Center"
-                           Foreground="{DynamicResource Brush.Text}" Margin="0,0,8,0"/>
+           Foreground="{DynamicResource Brush.Text}" Margin="0,0,8,0"/>
+
                 <ComboBox x:Name="BackgroundSelector"
-                          Width="185"
-                          SelectionChanged="BackgroundSelector_SelectionChanged">
+          Width="185"
+          Style="{StaticResource ComboBox.Themed}"
+          SelectionChanged="BackgroundSelector_SelectionChanged">
                     <ComboBoxItem Content="Asphalt (default)" IsSelected="True"/>
                     <ComboBoxItem Content="Solid gray"/>
                     <ComboBoxItem Content="Solid dark"/>

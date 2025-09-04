@@ -220,8 +220,7 @@ namespace SimTools.Views
         // ---------- Assign / Clear / Remove row ----------
         private void AssignKey_Click(object sender, RoutedEventArgs e)
         {
-            var owner = Window.GetWindow(this);
-            var result = InputCapture.CaptureBinding(owner);
+            var result = CaptureWithDialog();
             if (result == null) return;
 
             if (!((sender as FrameworkElement)?.DataContext is KeybindBinding binding)) return;
@@ -233,8 +232,9 @@ namespace SimTools.Views
 
             if (sender is Button btn)
             {
-                btn.Tag = new DeviceBindingDescriptor { DeviceType = binding.Device, ControlLabel = binding.DeviceKey };
-                KeybindUiHelpers.SetButtonText(btn, binding.ToString());
+                // Keep Tag up to date so highlight-matching works
+                btn.Tag = new DeviceBindingDescriptor { DeviceType = result.DeviceType, ControlLabel = result.ControlLabel };
+                KeybindUiHelpers.SetButtonText(btn, result.ToString());
             }
 
             QueueSave();
@@ -360,8 +360,7 @@ namespace SimTools.Views
         // ---------- General settings assign (unchanged) ----------
         private void NextMapAssign_Click(object sender, RoutedEventArgs e)
         {
-            var owner = Window.GetWindow(this);
-            var result = InputCapture.CaptureBinding(owner);
+            var result = CaptureWithDialog();
             if (result == null) return;
 
             var profile = ReflectionUtils.GetCurrentProfile(DataContext) ?? DataContext;
@@ -380,8 +379,7 @@ namespace SimTools.Views
 
         private void PrevMapAssign_Click(object sender, RoutedEventArgs e)
         {
-            var owner = Window.GetWindow(this);
-            var result = InputCapture.CaptureBinding(owner);
+            var result = CaptureWithDialog();
             if (result == null) return;
 
             var profile = ReflectionUtils.GetCurrentProfile(DataContext) ?? DataContext;
@@ -515,8 +513,8 @@ namespace SimTools.Views
             }
         }
 
-        // Highlights the "Assign" button in any row whose binding matches the incoming input.
-        // Used for visual feedback when an input is detected.
+        // Highlights any row whose Assign button Tag matches the input.
+        // Also checks the Next/Prev Map assigners if present.
         private void HighlightMatches(InputBindingResult input)
         {
             var items = (KeybindsList?.ItemsSource as System.Collections.IEnumerable)
@@ -527,7 +525,6 @@ namespace SimTools.Views
                 var container = KeybindsList.ItemContainerGenerator.ContainerFromItem(item) as System.Windows.DependencyObject;
                 if (container == null) continue;
 
-                // Find the Assign button in column 1 for this row
                 var btn = SimTools.Helpers.KeybindUiHelpers
                     .FindVisualDescendants<System.Windows.Controls.Button>(container)
                     .FirstOrDefault(b =>
@@ -536,13 +533,21 @@ namespace SimTools.Views
                         catch { return true; }
                     });
 
-                // During assignment/rehydration we store a DeviceBindingDescriptor in the Assign button's Tag
                 if (btn?.Tag is SimTools.Models.DeviceBindingDescriptor tag &&
                     SimTools.Models.DeviceBindingDescriptor.IsMatch(tag, input))
                 {
                     _lights?.Highlight(btn);
                 }
             }
+
+            // Also check Next/Prev Map buttons if their Tag is set
+            if (NextMapBtn?.Tag is DeviceBindingDescriptor nextTag &&
+                DeviceBindingDescriptor.IsMatch(nextTag, input))
+                _lights?.Highlight(NextMapBtn);
+
+            if (PrevMapBtn?.Tag is DeviceBindingDescriptor prevTag &&
+                DeviceBindingDescriptor.IsMatch(prevTag, input))
+                _lights?.Highlight(PrevMapBtn);
         }
 
         // --------- Blocker predicate (decides whether to swallow a key) ---------
@@ -610,6 +615,26 @@ namespace SimTools.Views
                 catch { }
             }
             return IntPtr.Zero;
+        }
+
+        private InputBindingResult? CaptureWithDialog()
+        {
+            var owner = Window.GetWindow(this);
+            var dlg = new InputCaptureDialog
+            {
+                Owner = owner,
+                WindowStartupLocation = WindowStartupLocation.CenterOwner
+            };
+
+            var ok = dlg.ShowDialog() == true;
+            if (!ok) return null;
+
+            // Prefer the richer Result if present, otherwise build one manually
+            return dlg.Result ?? new InputBindingResult
+            {
+                DeviceType = dlg.Device,
+                ControlLabel = dlg.DeviceKey
+            };
         }
     }
 }
