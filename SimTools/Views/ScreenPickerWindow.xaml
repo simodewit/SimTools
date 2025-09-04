@@ -1,0 +1,25 @@
+﻿<Window x:Class="SimTools.Views.ScreenPickerWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Choose a screen"
+        Width="420" Height="300"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize"
+        WindowStyle="ToolWindow">
+    <Border Padding="12" Background="#FF1F1F1F" BorderBrush="#33000000" BorderThickness="1">
+        <DockPanel LastChildFill="True">
+            <TextBlock DockPanel.Dock="Top"
+                       Margin="0,0,0,8"
+                       Text="Pick a display to place the overlay on"
+                       FontWeight="Bold"/>
+            <ListBox x:Name="ScreenList"
+                     DisplayMemberPath="Display"
+                     BorderBrush="#33000000"
+                     BorderThickness="1"/>
+            <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,8,0,0">
+                <Button Content="Cancel" Width="90" Margin="0,0,8,0" Click="Cancel_Click"/>
+                <Button Content="OK" Width="90" IsDefault="True" Click="Ok_Click"/>
+            </StackPanel>
+        </DockPanel>
+    </Border>
+</Window>

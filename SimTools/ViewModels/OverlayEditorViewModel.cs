@@ -175,10 +175,22 @@ namespace SimTools.ViewModels
 
         private void OpenOverlayWindow()
         {
-            var win = new Views.OverlayWindow
+            var owner = Application.Current?.Windows.OfType<Window>()?.FirstOrDefault(w => w.IsActive);
+
+            var picker = new SimTools.Views.ScreenPickerWindow
             {
-                DataContext = this
+                Owner = owner
             };
+
+            if(picker.ShowDialog() != true || picker.Selected == null)
+                return;
+
+            var win = new SimTools.Views.OverlayWindow
+            {
+                DataContext = this,
+                TargetScreenBoundsPx = picker.Selected.Screen.Bounds
+            };
+
             win.Show();
         }
 
