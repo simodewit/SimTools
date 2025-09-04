@@ -11,18 +11,22 @@ namespace SimTools.Views
 {
     public partial class UpdateCheckWindow : Window
     {
-        // Manifest endpoint + timeouts
-        private const string ManifestUrl = "https://example.com/simtools/update.json";
+        // Use GitHub Pages for the manifest
+        private const string ManifestUrl =
+#if DEBUG
+            "https://simodewit.github.io/SimTools/update-dev.json"; // optional dev feed
+#else
+            "https://simodewit.github.io/SimTools/update.json";     // prod feed
+#endif
+
         private static readonly TimeSpan ConnectTimeout = TimeSpan.FromSeconds(6);
 
         private readonly UpdateService _service = new();
         private UpdateManifest? _manifest;
 
-        // Completion signaling for App.xaml.cs
         private readonly TaskCompletionSource<bool> _tcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
         public Task<bool> Completion => _tcs.Task;
 
-        // Smooth progress
         private readonly DispatcherTimer _progressTimer;
         private double _progress;       // 0..100
         private double _progressTarget; // ease towards
@@ -53,9 +57,8 @@ namespace SimTools.Views
 
         private async void UpdateCheckWindow_Loaded(object sender, RoutedEventArgs e)
         {
-            // Bring to front in case other apps were active
             Activate();
-            Topmost = true; Topmost = false; // one-time bump
+            Topmost = true; Topmost = false;
 
             TitleText.Text = "Getting things ready…";
             StatusText.Text = "Checking for updates…";
@@ -77,7 +80,6 @@ namespace SimTools.Views
 
             if(!success)
             {
-                // Keep window open; user decides what to do
                 _progressTarget = Math.Max(_progress, 92);
                 await CompleteBarAsync();
                 TitleText.Text = "We hit a snag";

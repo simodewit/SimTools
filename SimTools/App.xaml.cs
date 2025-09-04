@@ -15,6 +15,8 @@ namespace SimTools
         {
             base.OnStartup(e);
 
+            /*
+
             // Keep graceful exits if anything goes sideways
             this.DispatcherUnhandledException += (s, ex) => { ex.Handled = true; Shutdown(0); };
             AppDomain.CurrentDomain.UnhandledException += (s, ex) => { Shutdown(0); };
@@ -34,6 +36,8 @@ namespace SimTools
                 Shutdown(0);
                 return;
             }
+
+            */
 
             if (e.Args != null && e.Args.Any(a => string.Equals(a, "--postinstall", StringComparison.OrdinalIgnoreCase)))
             {
