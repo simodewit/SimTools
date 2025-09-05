@@ -12,8 +12,9 @@
             </ResourceDictionary.MergedDictionaries>
 
             <BooleanToVisibilityConverter x:Key="BoolToVisibility"/>
+            <conv:MultiEqualityConverter x:Key="MultiEqualityConverter"/>
 
-            <!-- Fallback base button style -->
+            <!-- Fallback base button style (unchanged) -->
             <Style x:Key="SecondaryButton" TargetType="Button">
                 <Setter Property="Foreground" Value="{DynamicResource Brush.Text}"/>
                 <Setter Property="Background" Value="{DynamicResource Brush.Surface}"/>
@@ -30,10 +31,7 @@
                 </Style.Triggers>
             </Style>
 
-            <!-- Compare two values (item == SelectedTool) -->
-            <conv:MultiEqualityConverter x:Key="MultiEqualityConverter"/>
-
-            <!-- Chrome-like tab toggle button -->
+            <!-- Chrome-like tab toggle button (unchanged) -->
             <Style x:Key="TabToggleButton" TargetType="ToggleButton">
                 <Setter Property="Foreground" Value="{DynamicResource Brush.Text}"/>
                 <Setter Property="Background" Value="{DynamicResource Brush.Surface}"/>
@@ -73,17 +71,193 @@
                     </Setter.Value>
                 </Setter>
             </Style>
+
+            <!-- ▼▼▼ DROPDOWN STYLES PORTED FROM KEYBINDS PAGE ▼▼▼ -->
+            <!-- ComboBoxItem (rows) -->
+            <Style x:Key="ThemedComboBoxItem" TargetType="ComboBoxItem">
+                <Setter Property="Foreground" Value="{DynamicResource Brush.Text}"/>
+                <Setter Property="Background" Value="Transparent"/>
+                <Setter Property="Padding" Value="8,4"/>
+                <Setter Property="Height" Value="32"/>
+                <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="ComboBoxItem">
+                            <Grid>
+                                <Border x:Name="Bd"
+                                        Background="{TemplateBinding Background}"
+                                        Padding="{TemplateBinding Padding}"/>
+                                <ContentPresenter Margin="0,0,24,0" VerticalAlignment="Center"/>
+                                <!-- checkmark shown when selected -->
+                                <Path x:Name="Chk"
+                                      Width="12" Height="12"
+                                      HorizontalAlignment="Right" Margin="8,0,8,0" VerticalAlignment="Center"
+                                      Data="M 0 6 L 4 10 L 12 2"
+                                      Stroke="{DynamicResource Brush.Accent}"
+                                      StrokeThickness="2"
+                                      StrokeEndLineCap="Square"
+                                      Visibility="Collapsed"/>
+                            </Grid>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsHighlighted" Value="True">
+                                    <Setter TargetName="Bd" Property="Background" Value="#14000000"/>
+                                </Trigger>
+                                <Trigger Property="IsSelected" Value="True">
+                                    <Setter TargetName="Bd" Property="Background" Value="#1F4CC38A"/>
+                                    <Setter Property="Foreground" Value="{DynamicResource Brush.Text}"/>
+                                    <Setter TargetName="Chk" Property="Visibility" Value="Visible"/>
+                                </Trigger>
+                                <Trigger Property="IsEnabled" Value="False">
+                                    <Setter Property="Opacity" Value="0.55"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <!-- ComboBox (dark, arrow-hover only, full-pill click highlight) -->
+            <Style x:Key="ComboBox.Themed" TargetType="ComboBox">
+                <Setter Property="SnapsToDevicePixels" Value="True"/>
+                <Setter Property="OverridesDefaultStyle" Value="True"/>
+                <Setter Property="Height" Value="32"/>
+                <Setter Property="MinWidth" Value="140"/>
+                <Setter Property="Padding" Value="6,0"/>
+                <Setter Property="Foreground" Value="{DynamicResource Brush.Text}"/>
+                <Setter Property="Background" Value="{DynamicResource Brush.SurfaceAlt}"/>
+                <Setter Property="BorderBrush" Value="{DynamicResource Brush.Border}"/>
+                <Setter Property="BorderThickness" Value="1"/>
+                <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Disabled"/>
+                <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Auto"/>
+                <!-- apply the item container style we defined above -->
+                <Setter Property="ItemContainerStyle" Value="{StaticResource ThemedComboBoxItem}"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="ComboBox">
+                            <Grid SnapsToDevicePixels="True">
+
+                                <!-- full-size toggle with inline template -->
+                                <ToggleButton x:Name="Toggle"
+                                              Focusable="False"
+                                              OverridesDefaultStyle="True"
+                                              IsChecked="{Binding IsDropDownOpen, RelativeSource={RelativeSource TemplatedParent}, Mode=TwoWay}">
+                                    <ToggleButton.Template>
+                                        <ControlTemplate TargetType="ToggleButton">
+                                            <Border x:Name="Root"
+                                                    CornerRadius="6"
+                                                    Background="{Binding Background, RelativeSource={RelativeSource AncestorType=ComboBox}}"
+                                                    BorderBrush="{Binding BorderBrush, RelativeSource={RelativeSource AncestorType=ComboBox}}"
+                                                    BorderThickness="{Binding BorderThickness, RelativeSource={RelativeSource AncestorType=ComboBox}}">
+                                                <Grid>
+                                                    <ContentPresenter Margin="8,0,36,0"
+                                                                      VerticalAlignment="Center"
+                                                                      HorizontalAlignment="Left"
+                                                                      Content="{Binding SelectionBoxItem, RelativeSource={RelativeSource AncestorType=ComboBox}}"
+                                                                      ContentStringFormat="{Binding SelectionBoxItemStringFormat, RelativeSource={RelativeSource AncestorType=ComboBox}}"/>
+                                                    <!-- arrow side -->
+                                                    <Border x:Name="ArrowHost"
+                                                            Width="32"
+                                                            HorizontalAlignment="Right"
+                                                            CornerRadius="6"
+                                                            Background="Transparent">
+                                                        <Grid>
+                                                            <Rectangle HorizontalAlignment="Left" Width="1"
+                                                                       Fill="{DynamicResource Brush.Border}" Opacity="0.7"/>
+                                                            <Path x:Name="Arrow"
+                                                                  HorizontalAlignment="Center"
+                                                                  VerticalAlignment="Center"
+                                                                  Data="M 0 0 L 8 0 L 4 4 Z"
+                                                                  Fill="{DynamicResource Brush.TextDim}"/>
+                                                        </Grid>
+                                                    </Border>
+                                                </Grid>
+                                            </Border>
+
+                                            <!-- Triggers -->
+                                            <ControlTemplate.Triggers>
+                                                <!-- keyboard focus accent -->
+                                                <Trigger Property="IsKeyboardFocused" Value="True">
+                                                    <Setter TargetName="Root" Property="BorderBrush" Value="{DynamicResource Brush.Accent}"/>
+                                                </Trigger>
+
+                                                <!-- arrow-only hover -->
+                                                <Trigger SourceName="ArrowHost" Property="IsMouseOver" Value="True">
+                                                    <Setter TargetName="ArrowHost" Property="Background" Value="#1F4CC38A"/>
+                                                    <Setter TargetName="Arrow" Property="Fill" Value="{DynamicResource Brush.Text}"/>
+                                                </Trigger>
+
+                                                <!-- FULL-PILL CLICK HIGHLIGHT -->
+                                                <Trigger Property="IsPressed" Value="True">
+                                                    <Setter TargetName="Root" Property="Background" Value="#1F4CC38A"/>
+                                                    <Setter TargetName="Root" Property="BorderBrush" Value="{DynamicResource Brush.Accent}"/>
+                                                    <Setter TargetName="ArrowHost" Property="Background" Value="Transparent"/>
+                                                    <Setter TargetName="Arrow" Property="Fill" Value="{DynamicResource Brush.Text}"/>
+                                                </Trigger>
+
+                                                <!-- while open -->
+                                                <Trigger Property="IsChecked" Value="True">
+                                                    <Setter TargetName="Root" Property="Background" Value="#1F4CC38A"/>
+                                                    <Setter TargetName="Root" Property="BorderBrush" Value="{DynamicResource Brush.Accent}"/>
+                                                    <Setter TargetName="ArrowHost" Property="Background" Value="Transparent"/>
+                                                    <Setter TargetName="Arrow" Property="Fill" Value="{DynamicResource Brush.Text}"/>
+                                                </Trigger>
+
+                                                <!-- disabled -->
+                                                <Trigger Property="IsEnabled" Value="False">
+                                                    <Setter Property="Opacity" Value="0.55"/>
+                                                </Trigger>
+                                            </ControlTemplate.Triggers>
+                                        </ControlTemplate>
+                                    </ToggleButton.Template>
+                                </ToggleButton>
+
+                                <!-- dropdown -->
+                                <Popup x:Name="Popup"
+                                       Placement="Bottom"
+                                       IsOpen="{TemplateBinding IsDropDownOpen}"
+                                       AllowsTransparency="True"
+                                       Focusable="False"
+                                       PopupAnimation="Slide">
+                                    <Border x:Name="DropDownBorder"
+                                            Width="{Binding ActualWidth, RelativeSource={RelativeSource TemplatedParent}}"
+                                            Background="{DynamicResource Brush.Surface}"
+                                            BorderBrush="{DynamicResource Brush.Border}"
+                                            BorderThickness="1"
+                                            CornerRadius="6"
+                                            Padding="2"
+                                            SnapsToDevicePixels="True">
+                                        <ScrollViewer CanContentScroll="False"
+                                                      HorizontalScrollBarVisibility="Disabled"
+                                                      VerticalScrollBarVisibility="Auto">
+                                            <ItemsPresenter/>
+                                        </ScrollViewer>
+                                    </Border>
+                                </Popup>
+                            </Grid>
+
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="HasItems" Value="False">
+                                    <Setter TargetName="DropDownBorder" Property="MinHeight" Value="36"/>
+                                </Trigger>
+                                <Trigger Property="IsEnabled" Value="False">
+                                    <Setter Property="Opacity" Value="0.55"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+            <!-- ▲▲▲ END PORTED DROPDOWN STYLES ▲▲▲ -->
+
         </ResourceDictionary>
     </UserControl.Resources>
 
     <Grid Margin="20" x:Name="Root">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
-            <!-- Header + Tool Tabs -->
-            <RowDefinition Height="*" />
-            <!-- Preview Surface -->
+            <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
-            <!-- Small Settings -->
         </Grid.RowDefinitions>
 
         <!-- HEADER -->
@@ -94,7 +268,7 @@
                        Foreground="{DynamicResource Brush.TextDim}" Margin="0,4,0,0"/>
         </StackPanel>
 
-        <!-- TOOL TABS (Chrome-like) -->
+        <!-- TOOL TABS -->
         <ScrollViewer Grid.Row="0" Margin="0,48,0,8"
                       HorizontalScrollBarVisibility="Auto"
                       VerticalScrollBarVisibility="Disabled">
@@ -111,11 +285,8 @@
                                       Click="ToolTab_Click"
                                       Style="{StaticResource TabToggleButton}">
                             <ToggleButton.IsChecked>
-                                <!-- Force OneWay to avoid TwoWay requirement on child bindings -->
                                 <MultiBinding Converter="{StaticResource MultiEqualityConverter}" Mode="OneWay">
-                                    <!-- Current item -->
                                     <Binding/>
-                                    <!-- Selected tool -->
                                     <Binding Path="DataContext.SelectedTool"
                                              RelativeSource="{RelativeSource AncestorType=UserControl}"/>
                                 </MultiBinding>
@@ -137,29 +308,27 @@
                   Background="#00000000"
                   MouseLeftButtonUp="PreviewSurface_MouseLeftButtonUp">
 
-                <!-- Tool host directly -->
                 <Viewbox Stretch="Uniform" StretchDirection="DownOnly" Margin="32">
                     <Border Background="#00000000">
                         <ContentPresenter x:Name="ToolHost"/>
                     </Border>
                 </Viewbox>
 
-                <!-- Inspector popup (draggable) -->
+                <!-- Inspector popup (unchanged) -->
                 <Popup x:Name="InspectorPopup"
-                        PlacementTarget="{Binding ElementName=PreviewSurface}"
-                        Placement="RelativePoint"
-                        StaysOpen="True"
-                        AllowsTransparency="True"
-                        PopupAnimation="Fade"
-                        Opened="InspectorPopup_Opened"            
-                        Closed="InspectorPopup_Closed">
+                       PlacementTarget="{Binding ElementName=PreviewSurface}"
+                       Placement="RelativePoint"
+                       StaysOpen="True"
+                       AllowsTransparency="True"
+                       PopupAnimation="Fade"
+                       Opened="InspectorPopup_Opened"
+                       Closed="InspectorPopup_Closed">
                     <Border Background="{DynamicResource Brush.Surface}"
                             BorderBrush="{DynamicResource Brush.Border}"
                             BorderThickness="1"
                             CornerRadius="10"
                             SnapsToDevicePixels="True">
                         <DockPanel LastChildFill="True">
-                            <!-- Draggable header -->
                             <Grid DockPanel.Dock="Top"
                                   Background="{DynamicResource Brush.SurfaceAlt}"
                                   Height="28"
@@ -198,12 +367,13 @@
         <Border Grid.Row="2" Style="{DynamicResource Card}" Margin="0,12,0,0" Padding="12">
             <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                 <TextBlock Text="Preview background:" VerticalAlignment="Center"
-           Foreground="{DynamicResource Brush.Text}" Margin="0,0,8,0"/>
+                           Foreground="{DynamicResource Brush.Text}" Margin="0,0,8,0"/>
 
+                <!-- Uses the themed ComboBox style from KeybindsPage -->
                 <ComboBox x:Name="BackgroundSelector"
-          Width="185"
-          Style="{StaticResource ComboBox.Themed}"
-          SelectionChanged="BackgroundSelector_SelectionChanged">
+                          Width="185"
+                          Style="{StaticResource ComboBox.Themed}"
+                          SelectionChanged="BackgroundSelector_SelectionChanged">
                     <ComboBoxItem Content="Asphalt (default)" IsSelected="True"/>
                     <ComboBoxItem Content="Solid gray"/>
                     <ComboBoxItem Content="Solid dark"/>
