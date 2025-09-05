@@ -4,13 +4,15 @@
              AllowDrop="True"
              Focusable="True">
     <Border Background="#F0131315" BorderBrush="#28FFFFFF" BorderThickness="1" CornerRadius="14" SnapsToDevicePixels="True">
-        <Grid>
-            <!-- Title / drag / pin -->
+        <!-- Use DockPanel so the header is always docked to the top and the rest fills -->
+        <DockPanel LastChildFill="True">
+            <!-- Title / drag / pin - docked to the top -->
             <Border x:Name="DragHandle"
                     Height="36"
                     Background="#201C1F22"
                     CornerRadius="14,14,0,0"
-                    Cursor="SizeAll">
+                    Cursor="SizeAll"
+                    DockPanel.Dock="Top">
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition/>
@@ -43,14 +45,10 @@
                 </Grid>
             </Border>
 
-            <Border Margin="0,36,0,0" CornerRadius="0,0,14,14" Background="#0C121212">
+            <!-- Content area fills the rest -->
+            <Border CornerRadius="0,0,14,14" Background="#0C121212">
                 <ContentPresenter x:Name="ContentHost" Margin="10"/>
             </Border>
-
-            <!-- Resize -->
-            <Thumb x:Name="ResizeBR" Width="12" Height="12"
-                   HorizontalAlignment="Right" VerticalAlignment="Bottom"
-                   Cursor="SizeNWSE" Background="#00FFFFFF"/>
-        </Grid>
+        </DockPanel>
     </Border>
 </UserControl>

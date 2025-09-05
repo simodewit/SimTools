@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 
 namespace SimTools.Controls
@@ -18,9 +17,11 @@ namespace SimTools.Controls
 
             Loaded += (_, __) =>
             {
+                // Drag (move) behavior from the top bar
                 DragHandle.MouseLeftButtonDown += DragStart;
-                DragHandle.MouseMove += DragMoveStartDrag; // (no export, but keeps threshold consistent)
-                ResizeBR.DragDelta += (s, e) => { if (!IsPinned) { PanelWidth = Math.Max(200, PanelWidth + e.HorizontalChange); PanelHeight = Math.Max(140, PanelHeight + e.VerticalChange); Clamp(); } };
+                DragHandle.MouseMove += DragMoveStartDrag; // keeps threshold behavior consistent
+
+                // Removed: ResizeBR hookup (the tiny white thumb no longer exists)
 
                 PrevBtn.Click += (_, __2) => Prev();
                 NextBtn.Click += (_, __2) => Next();
@@ -32,7 +33,8 @@ namespace SimTools.Controls
                 PinBtn.Checked += (_, __2) => UpdatePinState();
                 PinBtn.Unchecked += (_, __2) => UpdatePinState();
 
-                Width = PanelWidth; Height = PanelHeight;
+                Width = PanelWidth;
+                Height = PanelHeight;
                 UpdateContent();
                 UpdatePinState();
             };
@@ -231,8 +233,8 @@ namespace SimTools.Controls
             var pinned = IsPinned || (PinBtn.IsChecked == true);
             PinBtn.IsChecked = pinned;
             DragHandle.Cursor = pinned ? Cursors.Arrow : Cursors.SizeAll;
-            ResizeBR.IsHitTestVisible = !pinned;
-            ResizeBR.Opacity = pinned ? 0 : 1;
+
+            // Removed: ResizeBR interactivity/opacity toggles (no longer present)
         }
     }
 }
