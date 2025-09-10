@@ -1,5 +1,4 @@
 ﻿using System.Collections.ObjectModel;
-using System.Linq;
 using System.Threading.Tasks;
 using SimTools.Services;
 
@@ -7,29 +6,21 @@ namespace SimTools.ViewModels
 {
     public class HomeViewModel
     {
-        public ObservableCollection<NewsItem> News { get; } = new ObservableCollection<NewsItem>();
+        // Removed: public ObservableCollection<NewsItem> News { get; } = ...
         public ObservableCollection<MediaItem> Media { get; } = new ObservableCollection<MediaItem>();
 
         public HomeViewModel()
         {
-            // Kick off async load (fire-and-forget)
             _ = LoadAsync();
         }
 
         private async Task LoadAsync()
         {
-            // 1) Load News (balanced & capped per series)
-            var newsSvc = new NewsService();
-            var newsItems = await newsSvc.FetchAsync(40);
-            News.Clear();
-            foreach (var n in newsItems) News.Add(n);
-
-            // 2) Load Media excluding News links (unique content), balanced & capped
-            var excludeLinks = newsItems.Select(n => n.Link);
+            // Simply load Media; no split, no exclusions.
             var mediaSvc = new MediaService();
-            var mediaItems = await mediaSvc.FetchAsync(30, excludeLinks);
+            var mediaItems = await mediaSvc.FetchAsync(40 /* or whatever count you prefer */);
             Media.Clear();
-            foreach (var m in mediaItems) Media.Add(m);
+            foreach(var m in mediaItems) Media.Add(m);
         }
     }
 }

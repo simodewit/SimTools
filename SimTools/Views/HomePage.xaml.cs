@@ -1,6 +1,6 @@
 ﻿using System.Diagnostics;
 using System.Windows.Controls;
-using System.Windows.Navigation;
+// using System.Windows.Navigation; // <-- remove
 
 namespace SimTools.Views
 {
@@ -16,28 +16,22 @@ namespace SimTools.Views
 
         private static void OpenUrl(string url)
         {
-            if (string.IsNullOrWhiteSpace(url)) return;
+            if(string.IsNullOrWhiteSpace(url)) return;
 
             try
             {
-                var psi = new System.Diagnostics.ProcessStartInfo
+                var psi = new ProcessStartInfo
                 {
                     FileName = url,
                     UseShellExecute = true
                 };
-                System.Diagnostics.Process.Start(psi);
+                Process.Start(psi);
             }
             catch { /* optionally log */ }
         }
 
-        // Opens when clicking the title Hyperlink
-        void NewsLink_RequestNavigate(object sender, System.Windows.Navigation.RequestNavigateEventArgs e)
-        {
-            OpenUrl(e?.Uri?.AbsoluteUri ?? string.Empty);
-            e.Handled = true;
-        }
+        // Removed: NewsLink_RequestNavigate(...)
 
-        // Opens when clicking the image/tile overlay button
         void OpenLink_Click(object sender, System.Windows.RoutedEventArgs e)
         {
             var btn = sender as System.Windows.Controls.Button;
@@ -45,15 +39,7 @@ namespace SimTools.Views
             OpenUrl(url ?? string.Empty);
         }
 
-        // Optional quick-links
-        private void Discord_Click(object sender, System.Windows.RoutedEventArgs e)
-        {
-            OpenUrl(DiscordUrl);
-        }
-
-        private void Website_Click(object sender, System.Windows.RoutedEventArgs e)
-        {
-            OpenUrl(WebsiteUrl);
-        }
+        private void Discord_Click(object sender, System.Windows.RoutedEventArgs e) => OpenUrl(DiscordUrl);
+        private void Website_Click(object sender, System.Windows.RoutedEventArgs e) => OpenUrl(WebsiteUrl);
     }
 }
