@@ -1,6 +1,6 @@
 ﻿using System.Diagnostics;
+using System.Windows;
 using System.Windows.Controls;
-// using System.Windows.Navigation; // <-- remove
 
 namespace SimTools.Views
 {
@@ -20,26 +20,26 @@ namespace SimTools.Views
 
             try
             {
-                var psi = new ProcessStartInfo
-                {
-                    FileName = url,
-                    UseShellExecute = true
-                };
+                var psi = new ProcessStartInfo { FileName = url, UseShellExecute = true };
                 Process.Start(psi);
             }
-            catch { /* optionally log */ }
+            catch { }
         }
 
-        // Removed: NewsLink_RequestNavigate(...)
+        private void Discord_Click(object sender, RoutedEventArgs e) => OpenUrl(DiscordUrl);
+        private void Website_Click(object sender, RoutedEventArgs e) => OpenUrl(WebsiteUrl);
 
-        void OpenLink_Click(object sender, System.Windows.RoutedEventArgs e)
+        private void OpenLink_Click(object sender, RoutedEventArgs e)
         {
-            var btn = sender as System.Windows.Controls.Button;
+            var btn = sender as Button;
             var url = btn?.Tag as string;
             OpenUrl(url ?? string.Empty);
         }
 
-        private void Discord_Click(object sender, System.Windows.RoutedEventArgs e) => OpenUrl(DiscordUrl);
-        private void Website_Click(object sender, System.Windows.RoutedEventArgs e) => OpenUrl(WebsiteUrl);
+        // Ensures the races panel starts at the top
+        private void RacesScroll_Loaded(object sender, RoutedEventArgs e)
+        {
+            if(sender is ScrollViewer sv) sv.ScrollToHome();
+        }
     }
 }
