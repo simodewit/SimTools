@@ -31,10 +31,14 @@
     </UserControl.Resources>
 
     <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-        <StackPanel Margin="20" Orientation="Vertical">
+        <Grid Margin="20">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
 
             <!-- Header Card -->
-            <Border Style="{DynamicResource Card}">
+            <Border Grid.Row="0" Style="{DynamicResource Card}">
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition/>
@@ -63,7 +67,7 @@
             </Border>
 
             <!-- Two columns below the header -->
-            <Grid Margin="0,12,0,0">
+            <Grid Grid.Row="1" Margin="0,12,0,0">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="*"/>
@@ -80,77 +84,71 @@
                         <TextBlock Grid.Row="0" Text="Upcoming Races" FontWeight="Bold" FontSize="16" Margin="0,0,0,6"/>
 
                         <!-- Internal scroll; forced to top alignment -->
-                        <ScrollViewer x:Name="RacesScroll"
-                                      Grid.Row="1"
-                                      VerticalScrollBarVisibility="Auto"
-                                      HorizontalScrollBarVisibility="Disabled"
-                                      VerticalContentAlignment="Top"
-                                      Height="520"
-                                      Loaded="RacesScroll_Loaded">
-                            <ItemsControl ItemsSource="{Binding Source={StaticResource racesByMonth}}"
-                                          VerticalAlignment="Top"
-                                          SnapsToDevicePixels="True">
-                                <ItemsControl.GroupStyle>
-                                    <GroupStyle>
-                                        <GroupStyle.HeaderTemplate>
-                                            <DataTemplate>
-                                                <TextBlock Text="{Binding Name}" FontSize="14" FontWeight="SemiBold" Margin="0,10,0,4"/>
-                                            </DataTemplate>
-                                        </GroupStyle.HeaderTemplate>
-                                    </GroupStyle>
-                                </ItemsControl.GroupStyle>
+                        <ItemsControl Grid.Row="1"
+                                      ItemsSource="{Binding Source={StaticResource racesByMonth}}"
+                                      VerticalAlignment="Top"
+                                      SnapsToDevicePixels="True">
+                            <ItemsControl.GroupStyle>
+                                <GroupStyle>
+                                    <GroupStyle.HeaderTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding Name}" FontSize="14" FontWeight="SemiBold" Margin="0,10,0,4"/>
+                                        </DataTemplate>
+                                    </GroupStyle.HeaderTemplate>
+                                </GroupStyle>
+                            </ItemsControl.GroupStyle>
 
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate>
-                                        <Border Margin="0,4,0,0" Padding="8"
-                                                CornerRadius="8"
-                                                Background="{DynamicResource Brush.SurfaceAlt}"
-                                                BorderBrush="{DynamicResource Brush.Border}" BorderThickness="1">
-                                            <Grid>
-                                                <Grid.ColumnDefinitions>
-                                                    <ColumnDefinition Width="Auto"/>
-                                                    <ColumnDefinition/>
-                                                    <ColumnDefinition Width="Auto"/>
-                                                </Grid.ColumnDefinitions>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Margin="0,4,0,0" Padding="8"
+                                            CornerRadius="8"
+                                            Background="{DynamicResource Brush.SurfaceAlt}"
+                                            BorderBrush="{DynamicResource Brush.Border}" BorderThickness="1">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto"/>
+                                                <ColumnDefinition/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
 
-                                                <!-- Date pill -->
-                                                <Border Grid.Column="0" Margin="0,0,8,0" Padding="8,6"
-                                                        CornerRadius="6"
-                                                        Background="{DynamicResource Brush.Surface}">
-                                                    <StackPanel>
-                                                        <TextBlock Text="{Binding DateLocal, Mode=OneWay, StringFormat={}{0:dd}}" FontSize="16" FontWeight="Bold"/>
-                                                        <TextBlock Text="{Binding DateLocal, Mode=OneWay, StringFormat={}{0:MMM}}" FontSize="11" Foreground="{DynamicResource Brush.TextDim}"/>
-                                                    </StackPanel>
-                                                </Border>
-
-                                                <!-- Details -->
-                                                <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                                                    <TextBlock>
-                                                        <Run Text="{Binding Series}" FontWeight="SemiBold"/>
-                                                        <Run Text=" — "/>
-                                                        <Run Text="{Binding Event}"/>
-                                                    </TextBlock>
-                                                    <TextBlock Foreground="{DynamicResource Brush.TextDim}" FontSize="12">
-                                                        <Run Text="{Binding Circuit}"/>
-                                                        <Run Text=", "/>
-                                                        <Run Text="{Binding Country}"/>
-                                                        <Run Text=" • "/>
-                                                        <Run Text="{Binding DateLocal, Mode=OneWay, StringFormat={}{0:ddd HH:mm}}"/>
-                                                    </TextBlock>
+                                            <!-- Date pill -->
+                                            <Border Grid.Column="0" Margin="0,0,8,0" Padding="8,6"
+                                                    CornerRadius="6"
+                                                    Background="{DynamicResource Brush.Surface}">
+                                                <StackPanel>
+                                                    <TextBlock Text="{Binding DateLocal, Mode=OneWay, StringFormat={}{0:dd}}" FontSize="16" FontWeight="Bold"/>
+                                                    <TextBlock Text="{Binding DateLocal, Mode=OneWay, StringFormat={}{0:MMM}}" FontSize="11" Foreground="{DynamicResource Brush.TextDim}"/>
                                                 </StackPanel>
+                                            </Border>
 
-                                                <!-- Action -->
-                                                <Button Grid.Column="2"
-                                                        Content="Details"
-                                                        Style="{StaticResource GhostButton}"
-                                                        Tag="{Binding Link}"
-                                                        Click="OpenLink_Click"/>
-                                            </Grid>
-                                        </Border>
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
-                        </ScrollViewer>
+                                            <!-- Details -->
+                                            <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                                <TextBlock>
+                                                    <Run Text="{Binding Series}" FontWeight="SemiBold"/>
+                                                    <Run Text=" — "/>
+                                                    <Run Text="{Binding Event}"/>
+                                                </TextBlock>
+                                                <TextBlock Foreground="{DynamicResource Brush.TextDim}" FontSize="12">
+                                                    <Run Text="{Binding Circuit}"/>
+                                                    <Run Text=", "/>
+                                                    <Run Text="{Binding Country}"/>
+                                                    <Run Text=" • "/>
+                                                    <Run Text="{Binding DateLocal, Mode=OneWay, StringFormat={}{0:ddd HH:mm}}"/>
+                                                </TextBlock>
+                                            </StackPanel>
+
+                                            <!-- Action -->
+                                            <Button Grid.Column="2"
+                                                    Content="Details"
+                                                    Style="{StaticResource GhostButton}"
+                                                    Tag="{Binding Link}"
+                                                    Click="OpenLink_Click"/>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+
                     </Grid>
                 </Border>
 
@@ -225,6 +223,6 @@
                 </Border>
             </Grid>
 
-        </StackPanel>
+        </Grid>
     </ScrollViewer>
 </UserControl>
